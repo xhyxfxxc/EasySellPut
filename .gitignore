@@ -1,0 +1,25 @@
+﻿# Build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.pdb
+TestResults/
+
+# Local toolchain (re-creatable via tools/setup-*.ps1)
+tools/dotnet/
+tools/InnoSetup/
+tools/_downloads/
+tools/nuget-packages/
+tools/.dotnet-home/
+
+# Probe raw outputs (large, regenerable)
+tools/probes/out/
+
+# Scratch & artifacts
+scratch/
+build/out/
+dist/
+*.log
