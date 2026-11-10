@@ -23,3 +23,7 @@ scratch/
 build/out/
 dist/
 *.log
+
+# Parallel worktrees
+build/wt-*/
+

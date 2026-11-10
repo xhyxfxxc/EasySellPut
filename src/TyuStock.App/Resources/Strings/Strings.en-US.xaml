@@ -1,0 +1,107 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="App_Title">tyu US Stocks</sys:String>
+    <sys:String x:Key="App_Subtitle">US stocks · ETFs · Options — free multi-source data with automatic failover</sys:String>
+
+    <sys:String x:Key="Nav_Dashboard">Overview</sys:String>
+    <sys:String x:Key="Nav_Watchlist">Watchlist</sys:String>
+    <sys:String x:Key="Nav_Charts">Charts</sys:String>
+    <sys:String x:Key="Nav_Options">Options</sys:String>
+    <sys:String x:Key="Nav_Strategy">Strategy P/L</sys:String>
+    <sys:String x:Key="Nav_News">News &amp; Fundamentals</sys:String>
+    <sys:String x:Key="Nav_Alerts">Price Alerts</sys:String>
+    <sys:String x:Key="Nav_DataSources">Data Sources</sys:String>
+    <sys:String x:Key="Nav_Settings">Settings</sys:String>
+
+    <sys:String x:Key="Title_ToggleTheme">Toggle dark/light</sys:String>
+    <sys:String x:Key="Title_ToggleLanguage">切换到中文</sys:String>
+    <sys:String x:Key="Title_LanguageButton">中</sys:String>
+
+    <sys:String x:Key="Status_Eastern">New York</sys:String>
+    <sys:String x:Key="Status_Beijing">Beijing</sys:String>
+    <sys:String x:Key="Session_Closed">Closed</sys:String>
+    <sys:String x:Key="Session_PreMarket">Pre-market</sys:String>
+    <sys:String x:Key="Session_Regular">Market open</sys:String>
+    <sys:String x:Key="Session_AfterHours">After hours</sys:String>
+    <sys:String x:Key="Status_DataDir">Data folder</sys:String>
+    <sys:String x:Key="Status_Proxy">Network</sys:String>
+
+    <sys:String x:Key="Dash_Welcome">Welcome</sys:String>
+    <sys:String x:Key="Dash_WelcomeBody">Live quotes, K-line charts, option chains with Greeks, strategy P/L, alerts and export — all from free sources that need no account. If one source fails, the next one takes over automatically.</sys:String>
+    <sys:String x:Key="Dash_Watchlist">My watchlist</sys:String>
+    <sys:String x:Key="Dash_Market">Market overview</sys:String>
+    <sys:String x:Key="Dash_Refresh">Refresh</sys:String>
+    <sys:String x:Key="Dash_LastUpdated">Updated</sys:String>
+    <sys:String x:Key="Dash_Loading">Fetching quotes…</sys:String>
+    <sys:String x:Key="Col_Symbol">Symbol</sys:String>
+    <sys:String x:Key="Col_Name">Name</sys:String>
+    <sys:String x:Key="Col_Price">Last</sys:String>
+    <sys:String x:Key="Col_Change">Change</sys:String>
+    <sys:String x:Key="Col_ChangePct">Change %</sys:String>
+    <sys:String x:Key="Col_Ext">Pre/Post</sys:String>
+    <sys:String x:Key="Col_Volume">Volume</sys:String>
+    <sys:String x:Key="Col_Source">Source</sys:String>
+    <sys:String x:Key="Quote_Realtime">Real-time</sys:String>
+    <sys:String x:Key="Quote_Delayed">Delayed</sys:String>
+
+    <sys:String x:Key="Placeholder_Title">Coming soon</sys:String>
+    <sys:String x:Key="Placeholder_Body">This feature is under development and will arrive in a later version.</sys:String>
+
+    <sys:String x:Key="Set_Appearance">Appearance</sys:String>
+    <sys:String x:Key="Set_Language">Language</sys:String>
+    <sys:String x:Key="Set_LanguageDesc">Takes effect immediately, no restart needed</sys:String>
+    <sys:String x:Key="Set_Theme">Theme</sys:String>
+    <sys:String x:Key="Set_ThemeDesc">Follow Windows, or always light/dark</sys:String>
+    <sys:String x:Key="Set_ThemeSystem">Use system setting</sys:String>
+    <sys:String x:Key="Set_ThemeLight">Light</sys:String>
+    <sys:String x:Key="Set_ThemeDark">Dark</sys:String>
+    <sys:String x:Key="Set_UpDown">Up/down colors</sys:String>
+    <sys:String x:Key="Set_UpDownDesc">Choose which colors show gains and losses</sys:String>
+    <sys:String x:Key="Set_RedUp">Red up, green down</sys:String>
+    <sys:String x:Key="Set_GreenUp">Green up, red down</sys:String>
+    <sys:String x:Key="Set_Network">Network &amp; proxy</sys:String>
+    <sys:String x:Key="Set_ProxyMode">Proxy mode</sys:String>
+    <sys:String x:Key="Set_ProxyModeDesc">In mainland China, Yahoo, CBOE and other overseas sources usually need a proxy</sys:String>
+    <sys:String x:Key="Set_ProxyAuto">Auto-detect (recommended)</sys:String>
+    <sys:String x:Key="Set_ProxySystem">Use system proxy</sys:String>
+    <sys:String x:Key="Set_ProxyManual">Manual</sys:String>
+    <sys:String x:Key="Set_ProxyDirect">Direct (no proxy)</sys:String>
+    <sys:String x:Key="Set_ManualProxy">Proxy address</sys:String>
+    <sys:String x:Key="Set_ManualProxyDesc">e.g. http://127.0.0.1:7890 or socks5://127.0.0.1:7891</sys:String>
+    <sys:String x:Key="Set_ProxyApply">Apply &amp; detect</sys:String>
+    <sys:String x:Key="Set_ProxyEffective">In use</sys:String>
+    <sys:String x:Key="Set_Storage">Storage</sys:String>
+    <sys:String x:Key="Set_DataDir">Data folder</sys:String>
+    <sys:String x:Key="Set_DataDirDesc">Settings, watchlist and caches live here. Override with --data-dir, or put portable.flag next to the exe for portable mode</sys:String>
+    <sys:String x:Key="Set_OpenFolder">Open folder</sys:String>
+    <sys:String x:Key="Set_About">About</sys:String>
+    <sys:String x:Key="Set_AboutDesc">Data comes from public endpoints of Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney. For personal reference only, not investment advice. Options data is usually delayed 15 minutes.</sys:String>
+    <sys:String x:Key="Set_Version">Version</sys:String>
+
+    <sys:String x:Key="Ds_Title">Data sources</sys:String>
+    <sys:String x:Key="Ds_Desc">Health and response time of each source. When one fails the app switches to the next automatically; click Test all to check now.</sys:String>
+    <sys:String x:Key="Ds_TestAll">Test all</sys:String>
+    <sys:String x:Key="Ds_Testing">Testing…</sys:String>
+    <sys:String x:Key="Ds_Capabilities">Capabilities</sys:String>
+    <sys:String x:Key="Ds_Latency">Latency</sys:String>
+    <sys:String x:Key="Ds_Success">OK</sys:String>
+    <sys:String x:Key="Ds_Failures">Failed</sys:String>
+    <sys:String x:Key="Ds_LastError">Last error</sys:String>
+    <sys:String x:Key="Ds_LastUsed">Last used</sys:String>
+    <sys:String x:Key="Ds_Healthy">Healthy</sys:String>
+    <sys:String x:Key="Ds_Degraded">Unstable</sys:String>
+    <sys:String x:Key="Ds_Down">Down</sys:String>
+    <sys:String x:Key="Ds_Unknown">Not tested</sys:String>
+    <sys:String x:Key="Ds_Failover">Failover order</sys:String>
+    <sys:String x:Key="Ds_Never">—</sys:String>
+
+    <sys:String x:Key="Cap_Quote">Quotes</sys:String>
+    <sys:String x:Key="Cap_IntradayBars">Intraday bars</sys:String>
+    <sys:String x:Key="Cap_DailyBars">Daily/weekly bars</sys:String>
+    <sys:String x:Key="Cap_Options">Option chains</sys:String>
+    <sys:String x:Key="Cap_Fundamentals">Fundamentals</sys:String>
+    <sys:String x:Key="Cap_Financials">Financials</sys:String>
+    <sys:String x:Key="Cap_News">News</sys:String>
+    <sys:String x:Key="Cap_Search">Symbol search</sys:String>
+</ResourceDictionary>
