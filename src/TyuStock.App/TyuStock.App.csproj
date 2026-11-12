@@ -9,6 +9,8 @@
     <AssemblyName>MeiliTerminal</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <!-- B3: library XML docs (named after internal assemblies) are not part of the product. -->
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="WPF-UI" />
