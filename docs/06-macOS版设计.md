@@ -25,7 +25,7 @@
 | **Apple 芯片要求签名**：未签名的 arm64 可执行文件会被系统直接杀掉 | 不签名就打不开 | 打包脚本对整个 .app 做 ad-hoc 签名，并用 `rcodesign verify` 校验 |
 | **Intel 支持结束**：macOS 26 是最后支持 Intel 的版本，Rosetta 2 只保留到 macOS 27 [5][6] | x64 包只服务 4 款机型 | 主推 arm64；x64 单独打包、说明中注明 |
 | **通知权限**：macOS 26 对通知发送者的认定更严格，ad-hoc 签名应用的通知可能被归到“脚本编辑器”或不显示 [10][11] | 系统横幅可能看不到 | 提醒触发时：①应用内横幅 + 提醒历史（一定有）；②`osascript` 系统通知（需要用户在“系统设置 → 通知 → 脚本编辑器”里允许）；③Dock 图标弹跳。使用说明写明 |
-| **App Nap / 计时器节流**：应用在后台、窗口被遮挡时，系统会推迟计时器、降低优先级 [20][21][22] | 后台时价格提醒的轮询会被拖慢 | 提醒轮询本来就在后台线程用 `PeriodicTimer`（不依赖 UI 计时器）；有启用的提醒时，通过 `NSProcessInfo beginActivityWithOptions:reason:`（`NSActivityUserInitiatedAllowingIdleSystemSleep`，允许系统空闲睡眠）声明“用户发起的活动”，没有提醒时结束该活动，让系统正常省电 |
+| **App Nap / 计时器节流**：应用在后台、窗口被遮挡时，系统会推迟计时器、降低优先级 [20][21][22] | 后台时价格提醒的轮询会被拖慢 | 行情与提醒共用一个报价泵 `QuotePump`，它是**界面线程计时器**（Avalonia `DispatcherTimer`），每拍只发起一次合并请求：网络请求是异步 IO（数据层 `ConfigureAwait(false)`，等待和解析都不占界面线程），结果回到界面线程后只做合批更新。界面计时器会被 App Nap 推迟，所以应用启动时（未用 `--no-alerts`）通过 `NSProcessInfo beginActivityWithOptions:reason:`（`NSActivityUserInitiatedAllowingIdleSystemSleep`，仍允许系统空闲睡眠）声明“用户发起的活动”，退出时结束；不另开后台 `PeriodicTimer` |
 | **ProMotion 120Hz / Metal** | 高刷新率下每帧时间只有 8 ms，界面线程上的任何重活都会掉帧 | Metal 渲染；图表重绘节流（见第 4 节）；大表格虚拟化 |
 | **数据目录约定** | 应用数据应在 `~/Library/Application Support/<应用>` | 默认 `~/Library/Application Support/美丽稻谷终端`；若 `.app` 旁边有 `portable.flag`，数据放在 `.app` 旁边的 `data/`（与 Windows 便携版一致） |
 | **系统代理** | Windows 版读注册表；macOS 的系统代理在 SystemConfiguration 里 | Meili.Data 新增读取 `scutil --proxy` 输出（HTTPS/HTTP/SOCKS，只认本机回环地址），再走原有的环境变量和常见端口探测 |
@@ -53,7 +53,7 @@
 | 4 | 行情推送合批 | 报价泵按 1 秒节拍合并一批再更新界面（沿用 QuotePump），不是每个报价各自投递 |
 | 5 | 大表格虚拟化 | 期权 T 型表、自选、新闻列表用虚拟化的 `ListBox`/`ItemsRepeater`，不用一次性生成全部行的面板 |
 | 6 | 图表增量更新 + 重绘节流 | 只在数据或设置变化时重建图层；鼠标移动（十字线、画线）合并到每帧最多一次 `Refresh`（用 `DispatcherTimer` 16 ms 节流，与 ProMotion 无关地封顶） |
-| 7 | 计时器与 App Nap | 界面计时器只做轻量工作；提醒检查在后台 `PeriodicTimer`；有启用的提醒时声明用户活动（见第 2 节） |
+| 7 | 计时器与 App Nap | `QuotePump` 仍是界面线程计时器（不是后台 `PeriodicTimer`）：每拍一次合并请求，网络等待与解析在线程池，界面线程只做合批更新；重入保护（上一拍未完成就跳过）。为防 App Nap 推迟这个计时器，启动时声明用户活动、退出时结束（见第 2 节）。（更正：早先版本写成“提醒检查在后台 `PeriodicTimer`、仅有启用的提醒时声明活动”，与实现不符） |
 | 8 | 事件订阅不泄漏 | 页面卸载时退订服务事件；单例 ViewModel 只订阅单例服务；报价订阅按页面 owner 管理（QuoteHub 已有） |
 | 9 | 未处理异常 | `AppDomain.UnhandledException` 与 `TaskScheduler.UnobservedTaskException` 只写 crash.log；界面线程异常经 Avalonia `Dispatcher.UIThread.UnhandledException` 记录并标记已处理，**同一异常 1 秒内重复出现时不再弹提示**——避免 Windows 版 M7 那样“错误处理中再次触发布局→再报错”的重入（当时 1 秒内写了 2,632 行日志）；错误提示用应用内横幅，不弹模态框 |
 | 10 | 子进程（osascript、scutil、open）不阻塞界面 | 全部 `Process` 异步启动，读输出加超时（2–5 秒），超时就结束子进程 |
