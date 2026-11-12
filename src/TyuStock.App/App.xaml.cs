@@ -9,6 +9,8 @@ namespace TyuStock.App;
 
 public partial class App : Application
 {
+    private bool _handlingUnhandled;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -43,15 +45,24 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // Always mark handled first so a layout-time XAML error cannot re-enter this
+        // handler (MessageBox would pump a new dispatcher frame and overflow the stack).
+        e.Handled = true;
+        if (_handlingUnhandled) return;
+        _handlingUnhandled = true;
         try
         {
             var log = Path.Combine(AppServices.DataDirectory?.Path ?? AppContext.BaseDirectory, "logs");
             Directory.CreateDirectory(log);
-            File.AppendAllText(Path.Combine(log, "crash.log"), $"[{DateTime.Now:O}] {e.Exception}\n\n");
+            File.AppendAllText(Path.Combine(log, "crash.log"), $"[{DateTime.Now:O}] {e.Exception}{Environment.NewLine}{Environment.NewLine}");
+            var title = TryFindResource("App_Title") as string ?? "美丽稻谷卖方绿泡群专用终端";
+            var message = e.Exception.Message;
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+            {
+                try { System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning); }
+                catch { }
+            });
         }
         catch { }
-                var title = TryFindResource("App_Title") as string ?? "美丽稻谷卖方绿泡群专用终端";
-        System.Windows.MessageBox.Show(e.Exception.Message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
-        e.Handled = true;
     }
 }
