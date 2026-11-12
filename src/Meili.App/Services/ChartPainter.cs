@@ -3,7 +3,6 @@ using ScottPlot;
 using ScottPlot.Plottables;
 using ScottPlot.WPF;
 using Meili.Analytics;
-using Meili.App.ViewModels;
 using Meili.Core.Models;
 using BarSeries = Meili.Core.Models.BarSeries;
 using Meili.Core.Time;

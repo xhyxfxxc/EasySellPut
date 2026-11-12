@@ -1,6 +1,5 @@
 using System.Windows.Input;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 using Meili.App.Views.Pages;
 
 namespace Meili.App.Tests;

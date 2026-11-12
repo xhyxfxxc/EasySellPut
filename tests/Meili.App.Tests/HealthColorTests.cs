@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 using Meili.Core.Settings;
 using Meili.Data.Routing;
 
@@ -34,7 +33,7 @@ public class HealthColorTests
     [Fact]
     public void Every_state_has_a_distinct_icon()
     {
-        var icons = Enum.GetValues<HealthState>().Select(HealthVisuals.Icon).ToList();
+        var icons = Enum.GetValues<HealthState>().Select(Meili.App.Services.HealthIconConverter.Icon).ToList();
         Assert.Equal(icons.Count, icons.Distinct().Count());
     }
 

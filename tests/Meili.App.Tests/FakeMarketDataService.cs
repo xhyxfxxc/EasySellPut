@@ -108,7 +108,7 @@ public sealed class FakeMarketDataService : IMarketDataService
 }
 
 /// <summary>Offline IV readings for the app tests (the real source would reach CBOE over the network).</summary>
-public sealed class FakeIvSource : Meili.App.Services.IIvSource
+public sealed class FakeIvSource : Meili.Shared.Services.IIvSource
 {
     public double Iv { get; set; } = 0.25;
     public Task<Meili.Core.Alerts.IvSample?> GetAsync(string symbol, DateTimeOffset now, CancellationToken ct = default) =>
@@ -116,7 +116,7 @@ public sealed class FakeIvSource : Meili.App.Services.IIvSource
 }
 
 /// <summary>D7: proxy detection result under test control; never touches the real network stack.</summary>
-public sealed class FakeNetwork : Meili.App.Services.INetworkController
+public sealed class FakeNetwork : Meili.Shared.Services.INetworkController
 {
     public bool NoProxyDetected { get; set; }
     public int Reconfigured { get; private set; }

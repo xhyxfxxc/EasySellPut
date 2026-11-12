@@ -632,4 +632,5 @@
     <sys:String x:Key="Dash_Guide3Btn">打开期权</sys:String>
     <sys:String x:Key="Dash_NoProxyBody">所有数据源都连不上，且未检测到本机代理。海外数据源在中国大陆通常需要代理：请启动 Clash 等工具后点“重新检测代理”，或在“设置”里手动填写代理地址。下面是最后一次成功获取的价格。</sys:String>
     <sys:String x:Key="Dash_OpenSettings">打开设置</sys:String>
+    <sys:String x:Key="Net_FromMac">来自 macOS 代理设置</sys:String>
 </ResourceDictionary>

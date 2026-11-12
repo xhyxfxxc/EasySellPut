@@ -75,7 +75,7 @@ public class HostSafetyTests
         {
             Assert.IsNotType<App>(System.Windows.Application.Current);
             Assert.Empty(System.Windows.Application.Current.Windows);
-            Assert.IsType<FakeMarketDataService>(Meili.App.Services.AppServices.Get<Meili.Core.Abstractions.IMarketDataService>());
+            Assert.IsType<FakeMarketDataService>(Meili.Shared.Services.AppServices.Get<Meili.Core.Abstractions.IMarketDataService>());
         });
     }
 }

@@ -39,7 +39,7 @@ public class SymbolBoxTests
     {
         WpfHost.Run(async () =>
         {
-            var vm = AppServices.Get<Meili.App.ViewModels.OptionsViewModel>();
+            var vm = AppServices.Get<Meili.Shared.ViewModels.OptionsViewModel>();
             var page = new Meili.App.Views.Pages.OptionsPage();
             PageLoadTests.Layout(page);
             await WpfHost.Settle();

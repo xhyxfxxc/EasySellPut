@@ -4,7 +4,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:controls="clr-namespace:Meili.App.Views.Controls"
-      xmlns:vm="clr-namespace:Meili.App.ViewModels">
+      xmlns:vm="clr-namespace:Meili.Shared.ViewModels;assembly=Meili.Shared">
     <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="32,24,32,12">
             <TextBlock Style="{StaticResource PageTitle}" Text="{DynamicResource Nav_Alerts}" />

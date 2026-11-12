@@ -1,6 +1,5 @@
 using Meili.Analytics;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 using Meili.Core.Abstractions;
 
 namespace Meili.App.Tests;

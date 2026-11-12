@@ -632,4 +632,5 @@
     <sys:String x:Key="Dash_Guide3Btn">Open options</sys:String>
     <sys:String x:Key="Dash_NoProxyBody">No data source is reachable and no local proxy was found. Overseas sources usually need a proxy from mainland China: start Clash or a similar tool and click Re-detect proxy, or enter a proxy in Settings. Prices below are the last ones received.</sys:String>
     <sys:String x:Key="Dash_OpenSettings">Open settings</sys:String>
+    <sys:String x:Key="Net_FromMac">from macOS proxy setting</sys:String>
 </ResourceDictionary>

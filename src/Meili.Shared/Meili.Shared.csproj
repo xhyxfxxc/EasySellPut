@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Platform-neutral services and view-models shared by the Windows (WPF) and macOS (Avalonia) front ends. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Meili.Shared</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meili.Core\Meili.Core.csproj" />
+    <ProjectReference Include="..\Meili.Data\Meili.Data.csproj" />
+    <ProjectReference Include="..\Meili.Analytics\Meili.Analytics.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- One copy of the UI text: the WPF string dictionaries, read as plain key/value pairs on every platform. -->
+    <EmbeddedResource Include="..\Meili.App\Resources\Strings\Strings.zh-CN.xaml" LogicalName="Strings.zh-CN.xaml" />
+    <EmbeddedResource Include="..\Meili.App\Resources\Strings\Strings.en-US.xaml" LogicalName="Strings.en-US.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="MeiliTerminal" />
+    <InternalsVisibleTo Include="Meili.App.Tests" />
+    <InternalsVisibleTo Include="Meili.Shared.Tests" />
+    <InternalsVisibleTo Include="MeiliMac" />
+    <InternalsVisibleTo Include="Meili.Mac.Tests" />
+  </ItemGroup>
+</Project>

@@ -13,7 +13,7 @@ using Meili.Core.Settings;
 namespace Meili.App.Services;
 
 /// <summary>Tray icon plus Windows toast notifications. Failures are written to the log folder, never shown as dialogs.</summary>
-public sealed class NotificationService : IDisposable
+public sealed class NotificationService : IAlertNotifier, IDisposable
 {
     public const string AppUserModelId = "MeiliDaogu.SellerTerminal";
 
@@ -73,13 +73,13 @@ public sealed class NotificationService : IDisposable
         catch (Exception ex) { Log(ex); }
     }
 
-    public void ShowAlertToast(PriceAlert alert, AlertEvalResult result, Meili.Core.Models.Quote? quote = null)
+    public void ShowAlert(PriceAlert alert, AlertEvalResult result, Meili.Core.Models.Quote? quote = null)
     {
         if (_options.NoAlerts || !result.Fired) return;
         try
         {
-            var title = string.Format(_loc["Al_FiredToastTitle"], alert.Symbol);
-            var body = FormatBody(alert, result);
+            var title = AlertText.Title(alert, _loc);
+            var body = AlertText.Body(alert, result, _loc);
             if (result.UsedExtended) body += " " + _loc["Al_UsedExtended"];
             // F3: say where the price came from and how old it may be.
             var timing = quote is null ? null : FreshnessText.SourceAndTiming(quote, _loc, DateTimeOffset.Now);
@@ -99,30 +99,20 @@ public sealed class NotificationService : IDisposable
     }
 
     /// <summary>B1: IV alert toast; the third line says what was measured (IV30 index or ATM IV of which expiry).</summary>
-    public void ShowIvAlertToast(PriceAlert alert, AlertEvalResult result, IvSample sample)
+    public void ShowIvAlert(PriceAlert alert, AlertEvalResult result, IvSample sample)
     {
         if (_options.NoAlerts || !result.Fired) return;
         try
         {
             new ToastContentBuilder()
-                .AddText(string.Format(_loc["Al_FiredToastTitle"], alert.Symbol))
-                .AddText(FormatBody(alert, result))
-                .AddText(IvBasisText(sample, _loc))
+                .AddText(AlertText.Title(alert, _loc))
+                .AddText(AlertText.Body(alert, result, _loc))
+                .AddText(AlertText.IvBasisText(sample, _loc))
                 .AddArgument("action", "open")
                 .AddArgument("symbol", alert.Symbol)
                 .Show();
         }
         catch (Exception ex) { Log(ex); }
-    }
-
-    public static string IvBasisText(IvSample sample, LocalizationService loc)
-    {
-        var src = Meili.App.ViewModels.SourceNames.Display(sample.Source, loc);
-        var text = sample.Basis == IvBasis.Iv30
-            ? string.Format(loc["Al_IvBasisIv30"], src)
-            : string.Format(loc["Al_IvBasisAtm"], src, sample.Expiration?.ToString("yyyy-MM-dd") ?? "—", sample.DaysToExpiry ?? 0);
-        if (sample.AsOf is { } t) text += " · " + t.ToLocalTime().ToString("MM-dd HH:mm");
-        return text;
     }
 
     private bool _hiddenHintShown;
@@ -171,31 +161,6 @@ public sealed class NotificationService : IDisposable
         });
     }
 
-    public string FormatBody(PriceAlert alert, AlertEvalResult result)
-    {
-        var value = FormatValue(alert.Kind, result.Value ?? 0);
-        var key = alert.Kind switch
-        {
-            AlertKind.PriceAbove => "Al_FiredPriceAbove",
-            AlertKind.PriceBelow => "Al_FiredPriceBelow",
-            AlertKind.PercentUp => "Al_FiredPercentUp",
-            AlertKind.PercentDown => "Al_FiredPercentDown",
-            AlertKind.VolumeAbove => "Al_FiredVolumeAbove",
-            AlertKind.IvAbove => "Al_FiredIvAbove",
-            AlertKind.IvBelow => "Al_FiredIvBelow",
-            _ => "Al_FiredPriceAbove",
-        };
-        return string.Format(_loc[key], value, FormatValue(alert.Kind, alert.Threshold));
-    }
-
-    public static string FormatValue(AlertKind kind, double value) => kind switch
-    {
-        AlertKind.PercentUp or AlertKind.PercentDown => value.ToString("0.##", CultureInfo.InvariantCulture),
-        AlertKind.IvAbove or AlertKind.IvBelow => value.ToString("0.0", CultureInfo.InvariantCulture),
-        AlertKind.VolumeAbove => value.ToString("N0", CultureInfo.InvariantCulture),
-        _ => Meili.Core.Models.NumberDisplay.Price(value),
-    };
-
     public void Dispose()
     {
         if (_disposed) return;
@@ -233,7 +198,7 @@ public sealed class NotificationService : IDisposable
             {
                 Restore();
                 if (!string.IsNullOrWhiteSpace(symbol))
-                    _nav.Go(typeof(Views.Pages.ChartsPage), symbol);
+                    _nav.Go(AppPage.Charts, symbol);
             });
         }
         catch (Exception ex) { Log(ex); }

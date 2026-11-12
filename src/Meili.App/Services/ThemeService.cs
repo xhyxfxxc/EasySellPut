@@ -7,8 +7,11 @@ using Wpf.Ui.Controls;
 namespace Meili.App.Services;
 
 /// <summary>Light/dark/system theme via WPF-UI, plus the up/down price colour brushes.</summary>
-public sealed class ThemeService
+public sealed class ThemeService : IThemeController
 {
+    void IThemeController.Apply(AppThemeMode mode) => Apply(mode);
+    void IThemeController.ApplyUpDownColors(UpDownColorMode mode) => ApplyUpDownColors(mode);
+
     private Window? _watched;
     public AppThemeMode Mode { get; private set; } = AppThemeMode.System;
     public event EventHandler? ThemeChanged;

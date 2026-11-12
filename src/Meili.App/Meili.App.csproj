@@ -24,10 +24,15 @@
     <ProjectReference Include="..\Meili.Core\Meili.Core.csproj" />
     <ProjectReference Include="..\Meili.Data\Meili.Data.csproj" />
     <ProjectReference Include="..\Meili.Analytics\Meili.Analytics.csproj" />
+    <ProjectReference Include="..\Meili.Shared\Meili.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
     <Resource Include="Assets\app-64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Meili.Shared.Services" />
+    <Using Include="Meili.Shared.ViewModels" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Meili.App.Tests" />

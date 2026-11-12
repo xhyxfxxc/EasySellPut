@@ -35,5 +35,5 @@ public class ExportMetadataTests
         });
     }
 
-    private static string SourceNamesFor(LocalizationService loc, string id) => Meili.App.ViewModels.SourceNames.Display(id, loc);
+    private static string SourceNamesFor(LocalizationService loc, string id) => Meili.Shared.ViewModels.SourceNames.Display(id, loc);
 }

@@ -5,7 +5,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ScottPlot;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 using Color = ScottPlot.Color;
 
 namespace Meili.App.Views.Pages;

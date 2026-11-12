@@ -3,7 +3,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 
 namespace Meili.App.Views.Pages;
 

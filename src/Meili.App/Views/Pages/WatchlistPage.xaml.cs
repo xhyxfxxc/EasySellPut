@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 using Meili.Core.Models;
 
 namespace Meili.App.Views.Pages;

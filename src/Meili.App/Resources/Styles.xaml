@@ -6,6 +6,7 @@
     <svc:BoolToVisConverter x:Key="BoolToVis" />
     <svc:BoolToVisConverter x:Key="InverseBoolToVis" Invert="True" />
     <svc:NonEmptyToVisConverter x:Key="NonEmptyToVis" />
+    <svc:HealthIconConverter x:Key="HealthIcon" />
     <!-- Typography: nothing in the app is smaller than 12px. -->
     <FontFamily x:Key="AppFont">Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="NumberFont">Segoe UI Variable Text, Segoe UI</FontFamily>

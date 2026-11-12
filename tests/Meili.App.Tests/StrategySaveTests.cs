@@ -1,7 +1,6 @@
 using System.IO;
 using Meili.Analytics;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 
 namespace Meili.App.Tests;
 

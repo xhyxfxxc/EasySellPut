@@ -1,5 +1,4 @@
 using Meili.App.Services;
-using Meili.App.ViewModels;
 
 namespace Meili.App.Tests;
 

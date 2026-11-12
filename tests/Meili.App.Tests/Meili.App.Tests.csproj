@@ -15,6 +15,8 @@
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="Meili.Shared.Services" />
+    <Using Include="Meili.Shared.ViewModels" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meili.App\Meili.App.csproj" />

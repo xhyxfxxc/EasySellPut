@@ -2,7 +2,6 @@ using System.Windows.Controls;
 using Meili.App.Views.Pages;
 using Meili.Core.Settings;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 
 namespace Meili.App.Tests;
 

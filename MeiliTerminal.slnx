@@ -4,6 +4,7 @@
     <Project Path="src/Meili.Data/Meili.Data.csproj" />
     <Project Path="src/Meili.App/Meili.App.csproj" />
     <Project Path="src/Meili.Analytics/Meili.Analytics.csproj" />
+    <Project Path="src/Meili.Shared/Meili.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Meili.Core.Tests/Meili.Core.Tests.csproj" />

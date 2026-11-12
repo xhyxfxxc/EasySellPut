@@ -5,7 +5,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using Meili.App.Services;
-using Meili.App.ViewModels;
 using Meili.App.Views.Pages;
 using Meili.Core.Settings;
 using Wpf.Ui.Controls;
@@ -134,7 +133,7 @@ public partial class MainWindow : FluentWindow
         var text = WizardBox.Text;
         CloseWizard();
         if (!WatchlistStore.TryNormalizeSymbol(text, out var symbol, out _)) return;
-        _nav.Go(typeof(ChartsPage), symbol);
+        _nav.Go(AppPage.Charts, symbol);
     }
 
     private void CloseWizard()
@@ -161,16 +160,29 @@ public partial class MainWindow : FluentWindow
         return typeof(DashboardPage).Assembly.GetType($"Meili.App.Views.Pages.{args[i + 1]}Page", false, true);
     }
 
+    private static Type PageType(AppPage page) => page switch
+    {
+        AppPage.Dashboard => typeof(DashboardPage),
+        AppPage.Watchlist => typeof(WatchlistPage),
+        AppPage.Charts => typeof(ChartsPage),
+        AppPage.Options => typeof(OptionsPage),
+        AppPage.Strategy => typeof(StrategyPage),
+        AppPage.News => typeof(NewsPage),
+        AppPage.Alerts => typeof(AlertsPage),
+        AppPage.DataSources => typeof(DataSourcesPage),
+        _ => typeof(SettingsPage),
+    };
+
     private void OnNavigateRequested(object? sender, NavigationRequest e)
     {
         Dispatcher.BeginInvoke(() =>
         {
             // D1: set the shared symbol first; the target page adopts it when it activates (or at once if it is
             // already showing), so every symbol-aware page is reachable with a symbol — not only K-line and alerts.
-            if (!string.IsNullOrWhiteSpace(e.Symbol) && e.PageType != typeof(AlertsPage))
+            if (!string.IsNullOrWhiteSpace(e.Symbol) && e.Page != AppPage.Alerts)
                 AppServices.Get<SymbolContext>().Set(e.Symbol);
-            RootNavigation.Navigate(e.PageType);
-            if (!string.IsNullOrWhiteSpace(e.Symbol) && e.PageType == typeof(AlertsPage))
+            RootNavigation.Navigate(PageType(e.Page));
+            if (!string.IsNullOrWhiteSpace(e.Symbol) && e.Page == AppPage.Alerts)
                 AppServices.Get<AlertsViewModel>().PrepareForSymbol(e.Symbol);
         });
     }
