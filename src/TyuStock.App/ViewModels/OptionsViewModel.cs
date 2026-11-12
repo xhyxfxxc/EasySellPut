@@ -55,6 +55,8 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "";
+    /// <summary>F8: latest stock price beside the chain's (delayed, in-sync) underlying price.</summary>
+    [ObservableProperty] public partial string LivePriceText { get; set; } = "";
     [ObservableProperty] public partial string DelayText { get; set; } = "";
     /// <summary>F5: "BSM (European) · r = x %" with the rate's origin.</summary>
     [ObservableProperty] public partial string ModelText { get; set; } = "";
@@ -240,9 +242,10 @@ public partial class OptionsViewModel : ObservableObject
             var quotes = await quoteTask;
             var yield = await fundTask;
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
-            var spot = chain.UnderlyingPrice ?? q?.Price ?? 0;
-            if (!(spot > 0) && q is { PreviousClose: > 0 }) spot = q.PreviousClose.Value;
-            Spot = spot > 0 ? spot : null;
+            // F8: the chain's own underlying price (same moment as the option quotes) drives IV/Greeks.
+            var underlying = UnderlyingText.Describe(chain, q, _loc, DateTimeOffset.Now);
+            var spot = underlying.Spot ?? 0;
+            Spot = underlying.Spot;
 
             _suppressExpChange = true;
             try
@@ -300,9 +303,8 @@ public partial class OptionsViewModel : ObservableObject
 
             var src = SourceNames.Display(chain.Source, _loc);
             _lastError = Rows.Count == 0 ? _loc["Op_Empty"] : null;
-            Headline = Spot is { } p
-                ? $"{symbol}   {string.Format(_loc["Op_Spot"], NumberDisplay.Price(p))}"
-                : symbol;
+            Headline = underlying.Main.Length > 0 ? $"{symbol}   {underlying.Main}" : symbol;
+            LivePriceText = underlying.Live;
             DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
             HasDelay = DelayText.Length > 0;
             LocalNote = usedLocal ? string.Format(_loc["Op_LocalGreeks"], _rate.Rate) : "";
@@ -336,6 +338,7 @@ public partial class OptionsViewModel : ObservableObject
         HasRows = false;
         AtmRow = null;
         Headline = "";
+        LivePriceText = "";
         DelayText = "";
         HasDelay = false;
         LocalNote = "";

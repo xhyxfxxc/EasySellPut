@@ -544,4 +544,10 @@
     <sys:String x:Key="Dash_AllFailedTitle">All data sources are unreachable</sys:String>
     <sys:String x:Key="Dash_AllFailedBody">Prices below are the last ones received (marked Stale). Check your network or proxy, or open Data sources to see each source.</sys:String>
     <sys:String x:Key="Dash_OpenSources">Open data sources</sys:String>
+    <sys:String x:Key="Op_SpotSynced">Underlying {0} (in sync with options, {1}-min delay)</sys:String>
+    <sys:String x:Key="Op_SpotSyncedNoDelay">Underlying {0} (in sync with option quotes)</sys:String>
+    <sys:String x:Key="Op_SpotFromQuote">Underlying {0} (from the stock quote; may not match option quotes)</sys:String>
+    <sys:String x:Key="Op_SpotPrevClose">Underlying {0} (previous close)</sys:String>
+    <sys:String x:Key="Op_LivePrice">Latest {0} · {1}</sys:String>
+    <sys:String x:Key="Op_LivePriceTip">The underlying price in the chain is from the same moment as the option quotes and is used for IV and Greeks; the latest price comes from the stock quote and is shown for comparison.</sys:String>
 </ResourceDictionary>

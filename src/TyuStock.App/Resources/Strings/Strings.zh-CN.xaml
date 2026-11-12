@@ -544,4 +544,10 @@
     <sys:String x:Key="Dash_AllFailedTitle">所有数据源都无法连接</sys:String>
     <sys:String x:Key="Dash_AllFailedBody">下面是最后一次成功获取的价格（已标“过期”）。请检查网络或代理设置，或打开“数据源”页查看各源状态。</sys:String>
     <sys:String x:Key="Dash_OpenSources">查看数据源</sys:String>
+    <sys:String x:Key="Op_SpotSynced">标的价 {0}（与期权同步，延迟 {1} 分钟）</sys:String>
+    <sys:String x:Key="Op_SpotSyncedNoDelay">标的价 {0}（与期权报价同步）</sys:String>
+    <sys:String x:Key="Op_SpotFromQuote">标的价 {0}（取自股票行情，可能与期权报价不同步）</sys:String>
+    <sys:String x:Key="Op_SpotPrevClose">标的价 {0}（昨收）</sys:String>
+    <sys:String x:Key="Op_LivePrice">最新价 {0} · {1}</sys:String>
+    <sys:String x:Key="Op_LivePriceTip">期权链里的标的价与期权报价同一时刻，用于计算隐含波动率和希腊值；最新价来自股票行情，仅供对照。</sys:String>
 </ResourceDictionary>
