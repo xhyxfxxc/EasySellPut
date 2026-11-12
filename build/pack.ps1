@@ -41,13 +41,17 @@ if (-not $SkipTests) {
     if ($LASTEXITCODE -ne 0) { throw "dotnet test failed ($LASTEXITCODE)" }
 }
 
-Write-Host "=== publish self-contained win-x64 (single-file, compressed) ==="
+# Single-file, self-contained, NOT compressed and NOT ReadyToRun (C6 measurements, docs\04):
+#   compressed JIT 83 MB, first render ~1.29 s, working set ~340 MB;
+#   uncompressed JIT 199 MB, first render ~1.17 s, working set ~200 MB (no in-memory decompressed copy);
+#   ReadyToRun adds 30-100 MB and gave no reliable gain. The zip and the installer (lzma2) compress the exe anyway.
+Write-Host "=== publish self-contained win-x64 (single-file, uncompressed) ==="
 if (Test-Path $PublishDir) { Remove-Item $PublishDir -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $PublishDir, $PayloadDir, $DistDir | Out-Null
 
 dotnet publish $AppProj -c Release -r win-x64 --self-contained true -o $PublishDir -nologo --verbosity minimal `
     /p:PublishSingleFile=true `
-    /p:EnableCompressionInSingleFile=true `
+    /p:EnableCompressionInSingleFile=false `
     /p:IncludeNativeLibrariesForSelfExtract=true `
     /p:DebugType=None `
     /p:DebugSymbols=false
@@ -134,7 +138,51 @@ $readme = @"
 "@
 Write-Utf8 (Join-Path $DistDir "使用说明.txt") $readme
 
+Write-Host "=== Installers ==="
+# Hand-out folder for the user: one subfolder per edition. Regenerated on every pack (gitignored like dist\).
+$Installers = Join-Path $Root "Installers"
+$PortableOut = Join-Path $Installers "1-Windows便携版"
+$SetupOut = Join-Path $Installers "2-Windows安装版"
+$MacOut = Join-Path $Installers "3-macOS便携版"
+if (Test-Path $Installers) { Remove-Item $Installers -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $PortableOut, $SetupOut, $MacOut | Out-Null
+Copy-Item $PortableDir (Join-Path $PortableOut $PortableLabel) -Recurse
+Copy-Item $portableZip $PortableOut
+Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
+「$ProductName」Windows 便携版（$Version），免安装，不需要管理员权限。
+
+1. 解压「${PortableLabel}.zip」，或直接使用同目录下的「$PortableLabel」文件夹。
+2. 双击文件夹里的「$ExeFileName」运行。
+3. 设置、自选、提醒保存在该文件夹的 data\ 目录；整个文件夹可拷到 U 盘或其他电脑继续使用。
+4. 请勿删除 portable.flag，否则数据会改存到 %LOCALAPPDATA%\美丽稻谷终端。
+5. 关闭主窗口会最小化到托盘；要退出请右键托盘图标选择「退出」。
+6. 访问海外行情（Yahoo、CBOE 等）需要本机代理（如 Clash），程序会自动检测。
+
+系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
+本软件仅供个人参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
+"@
+Copy-Item (Join-Path $DistDir "${SetupLabel}.exe") $SetupOut
+Write-Utf8 (Join-Path $SetupOut "使用说明.txt") @"
+「$ProductName」Windows 安装版（$Version）。
+
+1. 双击「${SetupLabel}.exe」，按提示安装。只安装到当前用户（%LOCALAPPDATA%\Programs\美丽稻谷终端），不需要管理员权限。
+2. 可选创建桌面快捷方式；开始菜单里的名称为「$ProductName」。
+3. 设置和自选数据保存在 %LOCALAPPDATA%\美丽稻谷终端，卸载时默认保留。
+4. 卸载：系统设置 → 应用 → 已安装的应用 → 「$ProductName」→ 卸载。
+5. 关闭主窗口会最小化到托盘；要退出请右键托盘图标选择「退出」。
+6. 访问海外行情（Yahoo、CBOE 等）需要本机代理（如 Clash），程序会自动检测。
+
+系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
+本软件仅供个人参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
+"@
+Write-Utf8 (Join-Path $MacOut "README.txt") @"
+「$ProductName」macOS 便携版（macOS 26 及以上）——尚未提供。
+
+macOS 版将作为单独一步制作：复用与平台无关的 Meili.Core / Meili.Data / Meili.Analytics，
+另做 macOS 界面，并针对 macOS 26 的差异、显示性能和防卡死/崩溃专门测试。完成后会放在本文件夹。
+"@
+
 Write-Host "=== artifacts ==="
-Get-ChildItem $DistDir -Recurse -File | Where-Object { $_.FullName -notmatch '\\data\\' } | ForEach-Object {
+Get-ChildItem $DistDir, $Installers -Recurse -File | Where-Object { $_.FullName -notmatch '\\data\\' } | ForEach-Object {
     "{0,12:N0}  {1}" -f $_.Length, $_.FullName.Replace($Root + '\', '')
 } | Write-Host
