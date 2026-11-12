@@ -19,7 +19,7 @@ public sealed record BarCacheMeta(string Source, DateTimeOffset FetchedAt, DateT
 /// </summary>
 public sealed class MarketDb
 {
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
     private readonly string _cs;
 
     public MarketDb(string path)
@@ -59,6 +59,9 @@ public sealed class MarketDb
             CREATE TABLE IF NOT EXISTS iv_samples (
                 symbol TEXT NOT NULL, t INTEGER NOT NULL, kind TEXT NOT NULL, iv REAL NOT NULL, source TEXT NOT NULL,
                 PRIMARY KEY (symbol, t, kind)) WITHOUT ROWID;
+            CREATE TABLE IF NOT EXISTS oi_daily (
+                symbol TEXT NOT NULL, d INTEGER NOT NULL, contract TEXT NOT NULL, oi REAL NOT NULL,
+                PRIMARY KEY (symbol, d, contract)) WITHOUT ROWID;
             """;
         cmd.ExecuteNonQuery();
         // v2 (F7): adjustment basis of each cached series. Old rows read as Unknown and get refreshed by the next fetch.
@@ -214,6 +217,55 @@ public sealed class MarketDb
         using var cmd = c.CreateCommand();
         cmd.CommandText = "DELETE FROM iv_samples WHERE t < $t";
         cmd.Parameters.AddWithValue("$t", before.ToUnixTimeSeconds());
+        return cmd.ExecuteNonQuery();
+    }
+
+    // ---------------- Open interest by day (B6) ----------------
+
+    private static long Day(DateOnly d) => d.Year * 10000L + d.Month * 100 + d.Day;
+
+    /// <summary>B6: one open-interest reading per contract and trading day (later readings of the same day replace earlier ones).</summary>
+    public void SaveOpenInterest(string symbol, DateOnly day, IEnumerable<(string Contract, double Oi)> readings)
+    {
+        using var c = Open();
+        using var tx = c.BeginTransaction();
+        using var cmd = c.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "INSERT OR REPLACE INTO oi_daily (symbol, d, contract, oi) VALUES ($s,$d,$c,$oi)";
+        var pc = cmd.Parameters.Add("$c", Microsoft.Data.Sqlite.SqliteType.Text);
+        var po = cmd.Parameters.Add("$oi", Microsoft.Data.Sqlite.SqliteType.Real);
+        cmd.Parameters.AddWithValue("$s", symbol);
+        cmd.Parameters.AddWithValue("$d", Day(day));
+        foreach (var (contract, oi) in readings)
+        {
+            pc.Value = contract;
+            po.Value = oi;
+            cmd.ExecuteNonQuery();
+        }
+        tx.Commit();
+    }
+
+    /// <summary>B6: open interest from the most recent stored day before <paramref name="day"/>, by contract.</summary>
+    public IReadOnlyDictionary<string, double> LoadPreviousOpenInterest(string symbol, DateOnly day)
+    {
+        using var c = Open();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = "SELECT contract, oi FROM oi_daily WHERE symbol=$s AND d = (SELECT MAX(d) FROM oi_daily WHERE symbol=$s AND d < $d)";
+        cmd.Parameters.AddWithValue("$s", symbol);
+        cmd.Parameters.AddWithValue("$d", Day(day));
+        using var r = cmd.ExecuteReader();
+        var map = new Dictionary<string, double>(StringComparer.Ordinal);
+        while (r.Read()) map[r.GetString(0)] = r.GetDouble(1);
+        return map;
+    }
+
+    /// <summary>Drops open-interest days before <paramref name="before"/>.</summary>
+    public int PruneOpenInterest(DateOnly before)
+    {
+        using var c = Open();
+        using var cmd = c.CreateCommand();
+        cmd.CommandText = "DELETE FROM oi_daily WHERE d < $d";
+        cmd.Parameters.AddWithValue("$d", Day(before));
         return cmd.ExecuteNonQuery();
     }
 }

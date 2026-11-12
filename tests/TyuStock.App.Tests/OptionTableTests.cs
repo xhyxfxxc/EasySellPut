@@ -15,11 +15,12 @@ public class OptionTableTests
         var all = new OptionColumnSet();
         var calls = OptionColumns.Side(true, all).Select(c => c.Key).ToList();
         var puts = OptionColumns.Side(false, all).Select(c => c.Key).ToList();
-        Assert.Equal(["Volume", "Oi", "Iv", "Delta", "Gamma", "Theta", "Vega", "SpreadPct", "Bid", "Ask", "Last"], calls);
+        Assert.Equal(["Volume", "Oi", "OiChange", "Iv", "Delta", "Gamma", "Theta", "Vega", "SpreadPct", "Bid", "Ask", "Last"], calls);
         Assert.Equal(Enumerable.Reverse(calls), puts);
         Assert.Equal(["Strike", "Distance"], OptionColumns.Middle(all).Select(c => c.Key));
 
         var lean = new OptionColumnSet(Volume: false, Gamma: false, Spread: false, Distance: false);
+        Assert.DoesNotContain("OiChange", OptionColumns.Side(true, all with { OiChange = false }).Select(c => c.Key));
         Assert.DoesNotContain("Volume", OptionColumns.Side(true, lean).Select(c => c.Key));
         Assert.DoesNotContain("SpreadPct", OptionColumns.Side(false, lean).Select(c => c.Key));
         Assert.Equal(["Strike"], OptionColumns.Middle(lean).Select(c => c.Key));
@@ -118,6 +119,70 @@ public class CompactColumnsTests
                 vm.CompactColumns = false;
                 vm.Deactivate();
             }
+        });
+    }
+}
+
+/// <summary>B6: IV Rank from recorded history, ATM term structure, and OI change against the previous stored day.</summary>
+public class VolatilityInsightsTests
+{
+    [Fact]
+    public void Options_page_shows_iv_rank_term_structure_and_oi_change()
+    {
+        WpfHost.Run(async () =>
+        {
+            var vm = AppServices.Get<OptionsViewModel>();
+            var db = AppServices.Get<TyuStock.Data.Cache.MarketDb>();
+            var loc = AppServices.Get<LocalizationService>();
+            var now = DateTimeOffset.Now;
+            var today = DateOnly.FromDateTime(TyuStock.Core.Time.MarketClock.ToEastern(now).Date);
+            const string sym = "IVRK";
+            try
+            {
+                for (var i = 1; i <= 30; i++)                                           // 30 past days: 0.10 … 0.40
+                    db.AddIvSample(sym, now.AddDays(-i), "Iv30", 0.10 + (30 - i) * 0.01, "fake");
+                db.SaveOpenInterest(sym, today.AddDays(-1), [($"{sym}{vm.Expirations.FirstOrDefault()?.Date ?? default:yyMMdd}C00125000", 0)]);
+                WpfHost.Iv.Iv = 0.25;
+                vm.SymbolText = sym;
+                await vm.LoadAsync();
+                for (var i = 0; i < 40 && vm.TermPoints.Count == 0; i++) await ScreenRenderTests.Settle(1);
+
+                Assert.StartsWith("IV Rank", vm.IvRankText);
+                Assert.Contains(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0}", (0.25 - 0.10) / (0.39 - 0.10) * 100), vm.IvRankText);
+                Assert.Equal(2, vm.TermPoints.Count);                                   // the fake chain lists two expirations
+                Assert.All(vm.TermPoints, p => Assert.Equal(0.25, p.Iv, 2));
+
+                // Today's OI was stored on this load; a load "tomorrow" compares with it.
+                var prev = AppServices.Get<VolatilityInsights>().SwapOpenInterest(sym, today.AddDays(1), []);
+                Assert.Equal(1000, prev.Values.First());
+                var row = vm.Rows.First(r => r.Strike == 125);
+                Assert.Equal("—", row.Put!.OiChange);                                     // no earlier day for the put
+            }
+            finally
+            {
+                db.PruneIvSamples(now.AddDays(1));
+                db.PruneOpenInterest(today.AddDays(5));
+                vm.Deactivate();
+            }
+        });
+    }
+
+    [Fact]
+    public void Oi_change_text_is_signed_and_uses_amount_units()
+    {
+        WpfHost.Run(() =>
+        {
+            var loc = AppServices.Get<LocalizationService>();
+            var c = new TyuStock.Core.Models.OptionContract
+            {
+                ContractSymbol = "X", Underlying = "X", Right = TyuStock.Core.Models.OptionRight.Call, Strike = 1, Expiration = new DateOnly(2027, 1, 1), OpenInterest = 25_000,
+            };
+            var e = TyuStock.Analytics.OptionEnricher.Enrich(TyuStock.Analytics.OptionRight.Call, 1, 1, new DateOnly(2027, 1, 1), null, null, null, null,
+                null, null, null, null, null, null, null, new TyuStock.Analytics.OptionEnrichmentSettings());
+            Assert.Equal("+" + loc.Amount(5000), EnrichedSide.From(c, e, loc, 20_000).OiChange);
+            Assert.Equal("−" + loc.Amount(5000), EnrichedSide.From(c, e, loc, 30_000).OiChange);
+            Assert.Equal("—", EnrichedSide.From(c, e, loc).OiChange);
+            return Task.CompletedTask;
         });
     }
 }

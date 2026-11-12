@@ -12,7 +12,7 @@ public enum OptionCellKind
 
 /// <summary>Which optional columns are on (mirrors the page's column check boxes).</summary>
 public sealed record OptionColumnSet(bool Volume = true, bool Oi = true, bool Iv = true, bool Delta = true, bool Gamma = true,
-    bool Theta = true, bool Vega = true, bool Spread = true, bool Distance = true, bool Compact = false);
+    bool Theta = true, bool Vega = true, bool Spread = true, bool Distance = true, bool Compact = false, bool OiChange = true);
 
 /// <param name="Path">Binding path relative to the side (e.g. "Bid" → "Call.Bid"), or to the row for the strike block.</param>
 /// <param name="Width">Normal width (px); <paramref name="CompactWidth"/> applies in the compact preset (E6).</param>
@@ -27,6 +27,7 @@ public static class OptionColumns
 {
     private static readonly OptionColumnDef Volume = new("Volume", "Op_Volume", "Volume", 72, 60);
     private static readonly OptionColumnDef Oi = new("Oi", "Op_OI", "Oi", 80, 64, OptionCellKind.OiBar);
+    private static readonly OptionColumnDef OiChange = new("OiChange", "Op_OiChange", "OiChange", 72, 58);
     private static readonly OptionColumnDef Iv = new("Iv", "Op_IV", "Iv", 64, 56);
     private static readonly OptionColumnDef Delta = new("Delta", "Op_Delta", "Delta", 64, 54);
     private static readonly OptionColumnDef Gamma = new("Gamma", "Op_Gamma", "Gamma", 64, 58);
@@ -46,6 +47,7 @@ public static class OptionColumns
         var outerToInner = new List<OptionColumnDef>();
         if (set.Volume) outerToInner.Add(Volume);
         if (set.Oi) outerToInner.Add(Oi);
+        if (set.OiChange) outerToInner.Add(OiChange);
         if (set.Iv) outerToInner.Add(Iv);
         if (set.Delta) outerToInner.Add(Delta);
         if (set.Gamma) outerToInner.Add(Gamma);

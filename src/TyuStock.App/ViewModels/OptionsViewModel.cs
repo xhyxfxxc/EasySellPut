@@ -66,7 +66,7 @@ public partial class OptionsViewModel : ObservableObject
     /// <summary>E6: compact preset — narrow columns, and volume/gamma/theta/vega switched off (they can be switched back on).</summary>
     [ObservableProperty] public partial bool CompactColumns { get; set; }
 
-    public OptionColumnSet ColumnSet => new(ShowVolume, ShowOi, ShowIv, ShowDelta, ShowGamma, ShowTheta, ShowVega, ShowSpread, ShowDistance, CompactColumns);
+    public OptionColumnSet ColumnSet => new(ShowVolume, ShowOi, ShowIv, ShowDelta, ShowGamma, ShowTheta, ShowVega, ShowSpread, ShowDistance, CompactColumns, ShowOiChange);
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "";
@@ -84,11 +84,19 @@ public partial class OptionsViewModel : ObservableObject
 
     public event EventHandler? TableChanged;
     private readonly SettingsStore _settings;
+    private readonly VolatilityInsights _insights;
+
+    // B6: IV Rank (from the locally recorded IV history), ATM term structure, OI change vs. the previous stored day.
+    [ObservableProperty] public partial string IvRankText { get; set; } = "";
+    [ObservableProperty] public partial string IvRankTip { get; set; } = "";
+    [ObservableProperty] public partial bool ShowTerm { get; set; }
+    [ObservableProperty] public partial bool ShowOiChange { get; set; } = true;
+    public IReadOnlyList<TermPoint> TermPoints { get; private set; } = [];
 
     public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
-        TyuStock.Core.Pricing.RiskFreeRateProvider rates, SettingsStore settings)
+        TyuStock.Core.Pricing.RiskFreeRateProvider rates, SettingsStore settings, VolatilityInsights insights)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates; _settings = settings;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates; _settings = settings; _insights = insights;
         CompactColumns = settings.Current.Options.CompactColumns;
         _rate = rates.Current;
         ModelText = PricingText.Model(_rate, loc);
@@ -232,10 +240,12 @@ public partial class OptionsViewModel : ObservableObject
     partial void OnShowSmileChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowSpreadChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowDistanceChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
+    partial void OnShowOiChangeChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
+    partial void OnShowTermChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
 
     partial void OnCompactColumnsChanged(bool value)
     {
-        ShowVolume = ShowGamma = ShowTheta = ShowVega = !value;
+        ShowVolume = ShowGamma = ShowTheta = ShowVega = ShowOiChange = !value;
         if (_settings.Current.Options.CompactColumns != value) _settings.Update(s => s.Options.CompactColumns = value);
         TableChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -297,6 +307,7 @@ public partial class OptionsViewModel : ObservableObject
                 Now = DateTimeOffset.Now,
             };
             var usedLocal = false;
+            var prevOi = OpenInterestBefore(symbol, chain);
             var calls = new Dictionary<double, EnrichedSide>();
             var puts = new Dictionary<double, EnrichedSide>();
             foreach (var c in chain.Contracts)
@@ -310,7 +321,7 @@ public partial class OptionsViewModel : ObservableObject
                     c.InTheMoney, settings);
                 if (e.GreeksComputedLocally || e.IvOrigin is IvOrigin.SolvedFromMid or IvOrigin.SolvedFromLast)
                     usedLocal = true;
-                var side = EnrichedSide.From(c, e, _loc);
+                var side = EnrichedSide.From(c, e, _loc, prevOi.TryGetValue(c.ContractSymbol, out var before) ? before : null);
                 var bag = c.Right == CRight.Call ? calls : puts;
                 bag[c.Strike] = side;
             }
@@ -335,6 +346,7 @@ public partial class OptionsViewModel : ObservableObject
             _lastError = Rows.Count == 0 ? _loc["Op_Empty"] : null;
             (_hdrSymbol, _hdrQuote, _hdrLocal) = (symbol, q, usedLocal);
             RelabelHeader();
+            if (!refreshOnly) _ = LoadInsightsAsync(symbol, chain.Expirations, spot, ct);
         }
         catch (AllSourcesFailedException) { Fail(_loc["Op_AllFailed"], refreshOnly); }
         catch (OperationCanceledException) when (_active && !refreshOnly) { Fail(_loc["Op_Timeout"], refreshOnly); }
@@ -418,6 +430,51 @@ public partial class OptionsViewModel : ObservableObject
         var dte = OptionTime.DaysToExpiry(d, DateTimeOffset.Now);
         var days = string.Format(_loc["Op_Dte"], dte);
         return $"{d:yyyy-MM-dd}  ·  {days}";
+    }
+
+    /// <summary>B6: stores today's open interest and returns the previous stored day's (empty when there is none).</summary>
+    private IReadOnlyDictionary<string, double> OpenInterestBefore(string symbol, OptionChain chain)
+    {
+        var day = DateOnly.FromDateTime(MarketClock.ToEastern(chain.AsOf ?? DateTimeOffset.Now).Date);
+        try { return _insights.SwapOpenInterest(symbol, day, chain.Contracts); }
+        catch (Microsoft.Data.Sqlite.SqliteException ex)
+        {
+            AppLog.Warn("options", "open interest history unavailable", ex);
+            return new Dictionary<string, double>();
+        }
+    }
+
+    private async Task LoadInsightsAsync(string symbol, IReadOnlyList<DateOnly> expirations, double spot, CancellationToken ct)
+    {
+        IvRankText = "";
+        IvRankTip = "";
+        TermPoints = [];
+        try
+        {
+            var now = DateTimeOffset.Now;
+            if (await _insights.RankAsync(symbol, now, ct) is var (sample, rank, days))
+            {
+                var basis = NotificationService.IvBasisText(sample, _loc);
+                var inv = CultureInfo.InvariantCulture;
+                if (rank is { } r)
+                {
+                    IvRankText = string.Format(inv, _loc["Op_IvRank"], r.Rank, r.Percentile);
+                    IvRankTip = string.Format(inv, _loc["Op_IvRankTip"], r.Days, basis, r.Low * 100, r.High * 100, sample.Iv * 100);
+                }
+                else
+                {
+                    IvRankText = string.Format(inv, _loc["Op_IvRankPending"], days, TyuStock.Analytics.IvRank.MinDays);
+                    IvRankTip = _loc["Op_IvRankPendingTip"];
+                }
+            }
+            TermPoints = await _insights.TermStructureAsync(symbol, expirations, spot, now, ct);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is AllSourcesFailedException or Microsoft.Data.Sqlite.SqliteException)
+        {
+            AppLog.Warn("options", "volatility insights failed", ex);
+        }
+        if (string.Equals(symbol, _loadedSymbol, StringComparison.OrdinalIgnoreCase)) TableChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>E4: header/status texts from the last load, rebuilt in the current language.</summary>
@@ -533,8 +590,13 @@ public sealed class EnrichedSide
     public bool IvLocal { get; init; }
     public string IvHint { get; init; } = "";
 
-    public static EnrichedSide From(OptionContract c, EnrichedOption e, LocalizationService loc)
+    /// <summary>B6: open interest change since the previous stored day ("—" without one).</summary>
+    public string OiChange { get; init; } = "—";
+    public double? OiChangeValue { get; init; }
+
+    public static EnrichedSide From(OptionContract c, EnrichedOption e, LocalizationService loc, double? previousOi = null)
     {
+        var oiChange = c.OpenInterest is { } oiNow && previousOi is { } oiThen ? oiNow - oiThen : (double?)null;
         var ivLocal = e.IvOrigin is IvOrigin.SolvedFromMid or IvOrigin.SolvedFromLast;
         var (spread, pct, wide) = SpreadOf(c.Bid, c.Ask);
         return new EnrichedSide
@@ -549,6 +611,8 @@ public sealed class EnrichedSide
             Theta = G(e.Theta, "0.00"), Vega = G(e.Vega, "0.00"),
             IvValue = e.ImpliedVolatility, InTheMoney = e.InTheMoney, IvLocal = ivLocal,
             IvHint = ivLocal ? loc["Op_IvLocal"] : "",
+            OiChangeValue = oiChange,
+            OiChange = oiChange is { } d ? (d > 0 ? "+" : d < 0 ? "−" : "") + (d == 0 ? "0" : loc.Amount(Math.Abs(d))) : "—",
         };
     }
 

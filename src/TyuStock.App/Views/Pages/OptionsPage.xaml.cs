@@ -162,6 +162,27 @@ public partial class OptionsPage : Page
             throw new NotSupportedException();
     }
 
+    /// <summary>B6: ATM IV by days to expiry (same plot as the smile, switched by the term-structure box).</summary>
+    private void RenderTerm(Plot plot)
+    {
+        var pts = Vm.TermPoints;
+        if (pts.Count > 0)
+        {
+            var s = plot.Add.Scatter(pts.Select(p => (double)p.DaysToExpiry).ToArray(), pts.Select(p => p.Iv * 100).ToArray());
+            s.MarkerSize = 6;
+            s.LineWidth = 1.6f;
+            s.Color = Color.FromHex("#3B82F6");
+            s.LegendText = Find("Op_TermLegend");
+            plot.Legend.IsVisible = true;
+            plot.Legend.Alignment = Alignment.UpperRight;
+        }
+        plot.Axes.Left.Label.Text = Find("Op_IV") + " %";
+        plot.Axes.Bottom.Label.Text = Find("Op_TermAxis");
+        plot.Title(Find("Op_TermTitle"));
+        plot.Axes.AutoScale();
+        SmilePlot.Refresh();
+    }
+
     private void RenderSmile()
     {
         var plot = SmilePlot.Plot;
@@ -174,6 +195,11 @@ public partial class OptionsPage : Page
         var grid = dark ? new Color(255, 255, 255, 0x33) : new Color(0, 0, 0, 0x33); // E4: ScottPlot hex is RRGGBBAA, "#33FFFFFF" was opaque cyan
         _themePaint.ApplyTheme(SmilePlot, dark, Color.FromHex("#3B82F6"), Color.FromHex("#F59E0B"), text, muted, grid, bg, dataBg);
 
+        if (Vm.ShowTerm)
+        {
+            RenderTerm(plot);
+            return;
+        }
         var pts = Vm.SmilePoints;
         if (pts.Count == 0)
         {

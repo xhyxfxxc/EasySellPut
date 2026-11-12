@@ -599,4 +599,15 @@
     <sys:String x:Key="Ch_CompareLabel">{0} (rebased)</sys:String>
     <sys:String x:Key="Ch_CompareNoOverlap">{0} has no bars in common with this symbol</sys:String>
     <sys:String x:Key="Ch_CompareFailed">Could not load bars for {0}</sys:String>
+    <sys:String x:Key="Op_IvRank">IV Rank {0:0} · percentile {1:0}%</sys:String>
+    <sys:String x:Key="Op_IvRankTip">From the {1} recorded on this computer over the past {0} trading days: range {2:0.0}%–{3:0.0}%, now {4:0.0}%. IV Rank = position within the range; percentile = share of days below today</sys:String>
+    <sys:String x:Key="Op_IvRankPending">IV Rank: {0}/{1} days recorded</sys:String>
+    <sys:String x:Key="Op_IvRankPendingTip">Free sources have no IV history. The app records one reading a day on this computer when the options page is opened (or IV alerts run); IV Rank appears after 20 trading days</sys:String>
+    <sys:String x:Key="Op_OiChange">OI chg</sys:String>
+    <sys:String x:Key="Op_OiChangeTip">Change in open interest since the previous trading day recorded on this computer (empty the first time a symbol is viewed)</sys:String>
+    <sys:String x:Key="Op_Term">Term structure</sys:String>
+    <sys:String x:Key="Op_TermTip">Switch the chart below to at-the-money IV by expiration (nearest 8)</sys:String>
+    <sys:String x:Key="Op_TermLegend">ATM IV</sys:String>
+    <sys:String x:Key="Op_TermAxis">Days to expiry</sys:String>
+    <sys:String x:Key="Op_TermTitle">ATM IV term structure</sys:String>
 </ResourceDictionary>

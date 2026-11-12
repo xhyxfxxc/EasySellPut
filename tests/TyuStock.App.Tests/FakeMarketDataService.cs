@@ -106,3 +106,11 @@ public sealed class FakeMarketDataService : IMarketDataService
     public Task<IReadOnlyList<SymbolMatch>> SearchAsync(string query, int limit = 10, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<SymbolMatch>>([new SymbolMatch(query.ToUpperInvariant(), query.ToUpperInvariant() + " Inc.", "NMS", "EQUITY", "yahoo")]);
 }
+
+/// <summary>Offline IV readings for the app tests (the real source would reach CBOE over the network).</summary>
+public sealed class FakeIvSource : TyuStock.App.Services.IIvSource
+{
+    public double Iv { get; set; } = 0.25;
+    public Task<TyuStock.Core.Alerts.IvSample?> GetAsync(string symbol, DateTimeOffset now, CancellationToken ct = default) =>
+        Task.FromResult<TyuStock.Core.Alerts.IvSample?>(new(symbol, Iv, TyuStock.Core.Alerts.IvBasis.Iv30, now, "fake"));
+}

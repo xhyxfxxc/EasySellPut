@@ -599,4 +599,15 @@
     <sys:String x:Key="Ch_CompareLabel">{0}（按起点折算）</sys:String>
     <sys:String x:Key="Ch_CompareNoOverlap">{0} 与当前标的没有重叠的K线</sys:String>
     <sys:String x:Key="Ch_CompareFailed">{0} 的K线加载失败</sys:String>
+    <sys:String x:Key="Op_IvRank">IV Rank {0:0} · 百分位 {1:0}%</sys:String>
+    <sys:String x:Key="Op_IvRankTip">按本机过去 {0} 个交易日记录的 {1}：区间 {2:0.0}%–{3:0.0}%，当前 {4:0.0}%。IV Rank = 当前在区间中的位置；百分位 = 低于当前值的天数占比</sys:String>
+    <sys:String x:Key="Op_IvRankPending">IV Rank：已记录 {0}/{1} 天</sys:String>
+    <sys:String x:Key="Op_IvRankPendingTip">免费数据源不提供历史 IV。本程序每天打开期权页（或开启 IV 提醒）时在本机记录一次，满 20 个交易日后显示 IV Rank</sys:String>
+    <sys:String x:Key="Op_OiChange">OI 变化</sys:String>
+    <sys:String x:Key="Op_OiChangeTip">与本机上一次记录的交易日相比的未平仓量变化（首次查看某标的时为空）</sys:String>
+    <sys:String x:Key="Op_Term">期限结构</sys:String>
+    <sys:String x:Key="Op_TermTip">把下方图换成各到期日的平值 IV（最近 8 个到期日）</sys:String>
+    <sys:String x:Key="Op_TermLegend">平值 IV</sys:String>
+    <sys:String x:Key="Op_TermAxis">到期天数</sys:String>
+    <sys:String x:Key="Op_TermTitle">平值 IV 期限结构</sys:String>
 </ResourceDictionary>

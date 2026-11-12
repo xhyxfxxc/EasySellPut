@@ -180,9 +180,38 @@ public sealed class BarCacheTests : IDisposable
         }
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         var db = new MarketDb(path);
-        Assert.Equal(2, db.ReadSchemaVersion());
+        Assert.Equal(MarketDb.SchemaVersion, db.ReadSchemaVersion());
         var (bars, meta) = db.LoadBars("AAPL", BarInterval.Day1);
         Assert.Single(bars);
         Assert.Equal(PriceAdjustment.Unknown, meta!.Basis);               // refreshed by the next fetch
+    }
+}
+
+/// <summary>B6: open interest per contract and day, compared with the previous stored day.</summary>
+public class OpenInterestHistoryTests
+{
+    [Fact]
+    public void Previous_day_is_the_latest_stored_day_before()
+    {
+        var dir = Directory.CreateTempSubdirectory("oi-").FullName;
+        try
+        {
+            var db = new MarketDb(Path.Combine(dir, "m.db"));
+            var d1 = new DateOnly(2026, 11, 9);
+            var d2 = new DateOnly(2026, 11, 11);
+            db.SaveOpenInterest("AAPL", d1, [("C1", 100), ("C2", 50)]);
+            db.SaveOpenInterest("AAPL", d2, [("C1", 130)]);
+            db.SaveOpenInterest("AAPL", d2, [("C1", 140)]);                    // same day: replaced
+            db.SaveOpenInterest("MSFT", d1, [("C1", 999)]);
+            Assert.Empty(db.LoadPreviousOpenInterest("AAPL", d1));
+            Assert.Equal(new Dictionary<string, double> { ["C1"] = 100, ["C2"] = 50 }, db.LoadPreviousOpenInterest("AAPL", d2));
+            Assert.Equal(new Dictionary<string, double> { ["C1"] = 140 }, db.LoadPreviousOpenInterest("AAPL", d2.AddDays(1)));
+            Assert.Equal(3, db.PruneOpenInterest(d2));                             // every symbol's rows before d2
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(dir, true);
+        }
     }
 }

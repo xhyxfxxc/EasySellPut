@@ -104,6 +104,11 @@
                         Background="{DynamicResource ControlFillColorSecondaryBrush}" ToolTip="{DynamicResource Px_ModelTip}">
                     <TextBlock Style="{StaticResource Caption}" Text="{Binding ModelText}" />
                 </Border>
+                <!-- B6: IV Rank from the IV history recorded on this computer -->
+                <Border Margin="8,2,0,2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center" ToolTip="{Binding IvRankTip}"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}" Visibility="{Binding IvRankText, Converter={StaticResource NonEmptyToVis}}">
+                    <TextBlock Style="{StaticResource Caption}" Text="{Binding IvRankText}" AutomationProperties.AutomationId="OptionsIvRank" />
+                </Border>
             </WrapPanel>
 
             <WrapPanel Margin="0,0,0,8">
@@ -118,6 +123,7 @@
                 <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource Op_Columns}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Volume}" IsChecked="{Binding ShowVolume}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_OI}" IsChecked="{Binding ShowOi}" />
+                <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_OiChange}" IsChecked="{Binding ShowOiChange}" ToolTip="{DynamicResource Op_OiChangeTip}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_IV}" IsChecked="{Binding ShowIv}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Delta}" IsChecked="{Binding ShowDelta}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Gamma}" IsChecked="{Binding ShowGamma}" />
@@ -127,6 +133,8 @@
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Distance}" IsChecked="{Binding ShowDistance}" ToolTip="{DynamicResource Op_DistanceTip}" />
                 <CheckBox Style="{StaticResource ColCheck}" Margin="12,0,0,0" Content="{DynamicResource Op_Compact}" IsChecked="{Binding CompactColumns}" ToolTip="{DynamicResource Op_CompactTip}" AutomationProperties.AutomationId="OptionsCompact" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Smile}" IsChecked="{Binding ShowSmile}" />
+                <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Term}" IsChecked="{Binding ShowTerm}" ToolTip="{DynamicResource Op_TermTip}"
+                          IsEnabled="{Binding ShowSmile}" AutomationProperties.AutomationId="OptionsTerm" />
             </WrapPanel>
 
             <DockPanel LastChildFill="True" Margin="0,0,0,6">

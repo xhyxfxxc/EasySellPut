@@ -37,6 +37,7 @@ public static class AppComposition
         s.AddSingleton<IIvSource>(sp => new IvSource(
             (symbols, ct) => sp.GetRequiredService<DataServices>().Providers.OfType<TyuStock.Data.Providers.Cboe.CboeProvider>().First().GetQuotesAsync(symbols, ct),
             sp.GetRequiredService<IMarketDataService>(), sp.GetRequiredService<TyuStock.Core.Pricing.RiskFreeRateProvider>()));
+        s.AddSingleton<VolatilityInsights>();
         s.AddSingleton<IvAlertSampler>();
         s.AddSingleton<NetworkController>();
         s.AddSingleton<INetworkController>(sp => sp.GetRequiredService<NetworkController>());
