@@ -42,8 +42,22 @@ public partial class App : Application
         var window = new MainWindow();
         MainWindow = window;
         AppServices.Get<ThemeService>().Apply(settings.Theme, window);
+        if (options.Smoke)
+        {
+            // B3: real window, but off-screen, not activated and not in the taskbar, so the self-check never disturbs the desktop.
+            window.PrepareForSmoke();
+            TaskScheduler.UnobservedTaskException += (_, ev) => SmokeRunner.RecordError(ev.Exception);
+        }
         window.Show();
         AppComposition.OnStarted(AppServices.Provider);
+        if (options.Smoke)
+            Dispatcher.BeginInvoke(async () =>
+            {
+                int code;
+                try { code = await new SmokeRunner().RunAsync(window, options); }
+                catch (Exception ex) { SmokeRunner.RecordError(ex); code = 2; }
+                Shutdown(code);
+            }, DispatcherPriority.ApplicationIdle);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -59,6 +73,11 @@ public partial class App : Application
         // Always mark handled first so a layout-time XAML error cannot re-enter this
         // handler (MessageBox would pump a new dispatcher frame and overflow the stack).
         e.Handled = true;
+        if (AppServices.Provider is not null && AppServices.Get<AppLaunchOptions>().Smoke)
+        {
+            SmokeRunner.RecordError(e.Exception);   // no dialog during a self-check
+            return;
+        }
         if (_handlingUnhandled) return;
         _handlingUnhandled = true;
         try

@@ -50,6 +50,33 @@ public partial class MainWindow : FluentWindow
         Wizard.IsKeyboardFocusWithinChanged += (_, e) => { if (e.NewValue is false) CloseWizard(); };
     }
 
+    // ---------------- B3: self-check hooks ----------------
+
+    internal Type? CurrentPageType => _currentPage?.GetType();
+    internal bool WizardVisible => Wizard.Visibility == Visibility.Visible;
+
+    internal void PrepareForSmoke()
+    {
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        WindowState = WindowState.Normal;
+        Left = -32000; Top = -32000; Width = 1320; Height = 840;
+        ShowActivated = false;
+        ShowInTaskbar = false;
+        _smoke = true;
+    }
+
+    internal void NavigateForSmoke(Type page) => RootNavigation.Navigate(page);
+
+    internal void OpenWizardForSmoke(string text)
+    {
+        Wizard.Visibility = Visibility.Visible;
+        WizardBox.Text = text;
+    }
+
+    internal void CloseWizardForSmoke() => CloseWizard();
+
+    private bool _smoke;
+
     // ---------------- D2: keyboard ----------------
 
     private void OnShortcutKeyDown(object sender, KeyEventArgs e)
@@ -162,7 +189,8 @@ public partial class MainWindow : FluentWindow
         switch (CloseDecision.Decide(_settings.Current.CloseAction, _exitRequested, _options.ExitOnClose))
         {
             case CloseOutcome.Exit:
-                if (!_exitRequested) { e.Cancel = true; Dispatcher.BeginInvoke(RequestExit); return; }
+                // With OnExplicitShutdown, closing the window alone would leave the process running in the tray.
+                if (!_exitRequested && !_options.ExitOnClose) { e.Cancel = true; Dispatcher.BeginInvoke(RequestExit); return; }
                 SavePlacement();
                 return;
             case CloseOutcome.HideToTray:
@@ -253,6 +281,7 @@ public partial class MainWindow : FluentWindow
 
     private void SavePlacement()
     {
+        if (_smoke) return;
         var r = WindowState == WindowState.Normal ? new Rect(Left, Top, Width, Height) : RestoreBounds;
         _settings.Update(s => s.Window = new WindowPlacement
         {
