@@ -18,17 +18,26 @@ public sealed class AlertMonitor : IDisposable
     private readonly QuoteHub _hub;
     private readonly NotificationService _notify;
     private readonly AppLaunchOptions _options;
+    private readonly SettingsStore _settings;
     private bool _started;
     private int _batches;
 
     public event EventHandler? Updated;
+    /// <summary>F10: monitoring became interrupted or recovered, or a check skipped stale quotes.</summary>
+    public event EventHandler? HealthChanged;
 
-    public AlertMonitor(AlertStore store, QuoteHub hub, NotificationService notify, AppLaunchOptions options)
+    public MonitorHealth Health { get; }
+    public AlertCheckSummary? LastCheck { get; private set; }
+    public bool IsRunning => _started;
+
+    public AlertMonitor(AlertStore store, QuoteHub hub, NotificationService notify, AppLaunchOptions options, SettingsStore settings)
     {
         _store = store;
         _hub = hub;
         _notify = notify;
         _options = options;
+        _settings = settings;
+        Health = new MonitorHealth(settings.Current.Alerts.FailureThreshold);
     }
 
     public void Start()
@@ -67,7 +76,7 @@ public sealed class AlertMonitor : IDisposable
         {
             var quotes = await _hub.GetQuotesAsync(symbols);
             // Served from the hub's cache (no batch event fired): evaluate here so a manual re-check always runs.
-            if (_batches == before) Evaluate(quotes, DateTimeOffset.Now);
+            if (_batches == before && _started) Evaluate(quotes, DateTimeOffset.Now);
         }
         catch (Exception ex) { AppLog.Warn("alerts", "quote fetch failed: " + ex.Message); }
     }
@@ -75,8 +84,35 @@ public sealed class AlertMonitor : IDisposable
     private void OnBatch(object? sender, QuoteBatch batch)
     {
         _batches++;
-        if (!_started || batch.Error is not null || batch.Quotes.Count == 0) return;
-        Evaluate(batch.Quotes, DateTimeOffset.Now);
+        if (!_started) return;
+        OnBatchCore(batch, DateTimeOffset.Now);
+    }
+
+    /// <summary>F10: a batch that was meant to cover alert symbols but brought none of them back counts as a failed check.</summary>
+    internal void OnBatchCore(QuoteBatch batch, DateTimeOffset now)
+    {
+        var mine = _store.EnabledSymbols;
+        if (!mine.Any(batch.Covers)) return;
+        if (batch.Error is not null || !mine.Any(s => batch.Find(s) is not null))
+        {
+            var error = batch.Error?.Message ?? "no quotes for alert symbols";
+            Health.Threshold = _settings.Current.Alerts.FailureThreshold;
+            var t = Health.RecordFailure(now, error);
+            AppLog.Warn("alerts", $"check failed ({Health.ConsecutiveFailures}): {error}");
+            if (t == MonitorTransition.Interrupted)
+            {
+                AppLog.Error("alerts", $"monitoring interrupted after {Health.ConsecutiveFailures} failed checks since {Health.FailingSince:O}");
+                _notify.ShowMonitorInterrupted(Health);
+            }
+            HealthChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+        if (Health.RecordSuccess(now) == MonitorTransition.Recovered)
+        {
+            AppLog.Info("alerts", "monitoring recovered");
+            _notify.ShowMonitorRecovered();
+        }
+        Evaluate(batch.Quotes, now);
     }
 
     internal void Evaluate(IReadOnlyList<Quote> quotes, DateTimeOffset now)
@@ -87,17 +123,30 @@ public sealed class AlertMonitor : IDisposable
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
         if (bySymbol.Count == 0) return;
 
+        // F3: quotes known to be older than the limit are not evaluated at all; unknown delay is evaluated but labelled.
+        var maxDelay = _settings.Current.Alerts.MaxQuoteDelayMinutes;
+        var stale = new List<string>();
+        var unknown = new List<string>();
+        var evaluated = 0;
         var applied = new List<(PriceAlert Next, AlertHistoryEntry? History)>();
         foreach (var alert in _store.Alerts)
         {
             if (!alert.Enabled) continue;
             if (!bySymbol.TryGetValue(alert.Symbol, out var quote)) continue;
+            var (use, _) = AlertQuoteGate.Check(quote, now, maxDelay);
+            if (use == AlertQuoteUse.TooStale)
+            {
+                if (!stale.Contains(alert.Symbol)) stale.Add(alert.Symbol);
+                continue;
+            }
+            if (use == AlertQuoteUse.UsableDelayUnknown && !unknown.Contains(alert.Symbol)) unknown.Add(alert.Symbol);
+            evaluated++;
             var result = AlertEvaluator.Evaluate(alert, quote, now);
             AlertHistoryEntry? history = null;
             if (result.Fired)
             {
                 history = AlertEvaluator.HistoryFrom(alert, result, quote, now);
-                try { _notify.ShowAlertToast(alert, result); }
+                try { _notify.ShowAlertToast(alert, result, quote); }
                 catch (Exception ex) { AppLog.Warn("alerts", "toast failed: " + ex.Message); }
             }
             if (result.Fired || result.Next.HasSeenQuote != alert.HasSeenQuote
@@ -111,6 +160,10 @@ public sealed class AlertMonitor : IDisposable
 
         if (applied.Count > 0)
             _store.ApplyResults(applied);
+        var hadStale = LastCheck?.SkippedStale.Count > 0;
+        LastCheck = new AlertCheckSummary(now, evaluated, stale, unknown);
+        if (stale.Count > 0) AppLog.Info("alerts", $"skipped stale quotes (> {maxDelay} min): {string.Join(",", stale)}");
         Updated?.Invoke(this, EventArgs.Empty);
+        if (stale.Count > 0 || hadStale) HealthChanged?.Invoke(this, EventArgs.Empty);
     }
 }

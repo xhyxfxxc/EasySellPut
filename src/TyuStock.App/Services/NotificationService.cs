@@ -72,7 +72,7 @@ public sealed class NotificationService : IDisposable
         catch (Exception ex) { Log(ex); }
     }
 
-    public void ShowAlertToast(PriceAlert alert, AlertEvalResult result)
+    public void ShowAlertToast(PriceAlert alert, AlertEvalResult result, TyuStock.Core.Models.Quote? quote = null)
     {
         if (_options.NoAlerts || !result.Fired) return;
         try
@@ -80,9 +80,13 @@ public sealed class NotificationService : IDisposable
             var title = string.Format(_loc["Al_FiredToastTitle"], alert.Symbol);
             var body = FormatBody(alert, result);
             if (result.UsedExtended) body += " " + _loc["Al_UsedExtended"];
-            new ToastContentBuilder()
+            // F3: say where the price came from and how old it may be.
+            var timing = quote is null ? null : FreshnessText.SourceAndTiming(quote, _loc, DateTimeOffset.Now);
+            var toast = new ToastContentBuilder()
                 .AddText(title)
-                .AddText(body)
+                .AddText(body);
+            if (!string.IsNullOrEmpty(timing)) toast.AddText(timing);
+            toast
                 .AddArgument("action", "open")
                 .AddArgument("symbol", alert.Symbol)
                 .Show();
@@ -91,6 +95,25 @@ public sealed class NotificationService : IDisposable
         {
             Log(ex);
         }
+    }
+
+    /// <summary>F10: tray balloon when alert monitoring stops getting quotes (once per interruption).</summary>
+    public void ShowMonitorInterrupted(MonitorHealth health)
+    {
+        if (_options.NoAlerts || _tray is null) return;
+        try
+        {
+            _tray.ShowNotification(_loc["Al_MonitorDownTitle"],
+                string.Format(_loc["Al_MonitorDownBody"], health.ConsecutiveFailures, health.FailingSince?.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture) ?? ""));
+        }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    public void ShowMonitorRecovered()
+    {
+        if (_options.NoAlerts || _tray is null) return;
+        try { _tray.ShowNotification(_loc["Al_MonitorUpTitle"], _loc["Al_MonitorUpBody"]); }
+        catch (Exception ex) { Log(ex); }
     }
 
     public void Restore(Window? window = null)

@@ -486,4 +486,12 @@
     <sys:String x:Key="Op_SeedLongPut">买入看跌</sys:String>
     <sys:String x:Key="Op_SeedShortPut">卖出看跌</sys:String>
     <sys:String x:Key="St_SeedNoQuote">该合约暂无报价，权利金按 0、波动率按 30% 估算，请手动填写</sys:String>
+    <sys:String x:Key="Al_MonitorDownTitle">提醒监控中断</sys:String>
+    <sys:String x:Key="Al_MonitorDownBody">已连续 {0} 次取不到行情（自 {1} 起），提醒暂时不会触发。恢复后会再通知你。</sys:String>
+    <sys:String x:Key="Al_MonitorUpTitle">提醒监控已恢复</sys:String>
+    <sys:String x:Key="Al_MonitorUpBody">行情已恢复，提醒继续监控。</sys:String>
+    <sys:String x:Key="Al_MonitorDownBanner">已连续 {0} 次取不到行情（自 {1} 起），提醒暂时不会触发。最后错误：{2}</sys:String>
+    <sys:String x:Key="Al_StaleSkipped">以下代码的行情延迟超过 {1} 分钟，本次未参与提醒判定：{0}</sys:String>
+    <sys:String x:Key="Al_MaxDelay">行情延迟超过</sys:String>
+    <sys:String x:Key="Al_Minutes">分钟不触发提醒</sys:String>
 </ResourceDictionary>

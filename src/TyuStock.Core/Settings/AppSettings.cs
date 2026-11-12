@@ -50,6 +50,7 @@ public sealed class AppSettings
     /// <summary>Grouped watchlists. When empty at load, a default group is created from <see cref="Watchlist"/>.</summary>
     public List<WatchlistGroup> WatchlistGroups { get; set; } = [];
     public WindowPlacement? Window { get; set; }
+    public AlertSettings Alerts { get; set; } = new();
 
     public static IReadOnlyList<string> SupportedLanguages { get; } = ["zh-CN", "en-US"];
 
@@ -61,6 +62,9 @@ public sealed class AppSettings
         Network.RequestTimeoutSeconds = Math.Clamp(Network.RequestTimeoutSeconds, 3, 120);
         Network.MaxRetries = Math.Clamp(Network.MaxRetries, 0, 5);
         Network.ManualProxy ??= "";
+        Alerts ??= new AlertSettings();
+        Alerts.MaxQuoteDelayMinutes = Math.Clamp(Alerts.MaxQuoteDelayMinutes, 1, 240);
+        Alerts.FailureThreshold = Math.Clamp(Alerts.FailureThreshold, 1, 20);
         Watchlist ??= [];
         Watchlist = CleanSymbols(Watchlist);
         WatchlistGroups ??= [];
@@ -92,6 +96,15 @@ public sealed class WatchlistGroup
     public string Id { get; set; } = DefaultId;
     public string Name { get; set; } = "";
     public List<string> Symbols { get; set; } = [];
+}
+
+/// <summary>Alert monitoring guards (F3, F10).</summary>
+public sealed class AlertSettings
+{
+    /// <summary>Quotes known to be older than this (declared delay or measured lag) never trigger an alert.</summary>
+    public int MaxQuoteDelayMinutes { get; set; } = 20;
+    /// <summary>Consecutive failed checks before the user is told monitoring is interrupted.</summary>
+    public int FailureThreshold { get; set; } = 3;
 }
 
 public sealed class WindowPlacement

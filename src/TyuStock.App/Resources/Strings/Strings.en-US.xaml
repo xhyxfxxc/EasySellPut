@@ -486,4 +486,12 @@
     <sys:String x:Key="Op_SeedLongPut">Buy put</sys:String>
     <sys:String x:Key="Op_SeedShortPut">Sell put</sys:String>
     <sys:String x:Key="St_SeedNoQuote">No quote for this contract; premium 0 and IV 30% assumed — please fill them in</sys:String>
+    <sys:String x:Key="Al_MonitorDownTitle">Alert monitoring interrupted</sys:String>
+    <sys:String x:Key="Al_MonitorDownBody">No quotes for {0} checks in a row (since {1}); alerts cannot fire until quotes return. You will be notified when it recovers.</sys:String>
+    <sys:String x:Key="Al_MonitorUpTitle">Alert monitoring recovered</sys:String>
+    <sys:String x:Key="Al_MonitorUpBody">Quotes are back; alerts are being checked again.</sys:String>
+    <sys:String x:Key="Al_MonitorDownBanner">No quotes for {0} checks in a row (since {1}); alerts cannot fire. Last error: {2}</sys:String>
+    <sys:String x:Key="Al_StaleSkipped">Quotes older than {1} minutes were not used for alerts this time: {0}</sys:String>
+    <sys:String x:Key="Al_MaxDelay">Ignore quotes older than</sys:String>
+    <sys:String x:Key="Al_Minutes">minutes</sys:String>
 </ResourceDictionary>

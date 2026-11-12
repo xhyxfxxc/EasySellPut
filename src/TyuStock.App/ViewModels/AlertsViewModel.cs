@@ -74,13 +74,24 @@ public partial class AlertsViewModel : ObservableObject
     [ObservableProperty] public partial bool HasSelection { get; set; }
     [ObservableProperty] public partial bool IsEmpty { get; set; } = true;
     [ObservableProperty] public partial bool HistoryEmpty { get; set; } = true;
+    [ObservableProperty] public partial bool MonitorDown { get; set; }
+    [ObservableProperty] public partial string MonitorText { get; set; } = "";
+    [ObservableProperty] public partial bool HasStaleNote { get; set; }
+    [ObservableProperty] public partial string StaleNote { get; set; } = "";
+    [ObservableProperty] public partial int MaxDelayMinutes { get; set; }
+    public IReadOnlyList<int> MaxDelayChoices { get; } = [5, 10, 15, 20, 30, 60];
 
-    public AlertsViewModel(AlertStore store, WatchlistStore watchlist, LocalizationService loc, AlertMonitor monitor)
+    private readonly SettingsStore _settings;
+
+    public AlertsViewModel(AlertStore store, WatchlistStore watchlist, LocalizationService loc, AlertMonitor monitor, SettingsStore settings)
     {
         _store = store;
         _watchlist = watchlist;
         _loc = loc;
         _monitor = monitor;
+        _settings = settings;
+        MaxDelayMinutes = settings.Current.Alerts.MaxQuoteDelayMinutes;
+        _monitor.HealthChanged += (_, _) => RefreshMonitorState();
         RebuildOptions();
         RebuildWatchSymbols();
         Reload();
@@ -100,7 +111,31 @@ public partial class AlertsViewModel : ObservableObject
             SelectedKind = KindOptions.FirstOrDefault(k => k.Kind == kind) ?? KindOptions.FirstOrDefault();
             SelectedRepeat = RepeatOptions.FirstOrDefault(r => r.Mode == repeat) ?? RepeatOptions.FirstOrDefault();
             Reload();
+            RefreshMonitorState();
         };
+        RefreshMonitorState();
+    }
+
+    partial void OnMaxDelayMinutesChanged(int value)
+    {
+        if (value <= 0 || _settings.Current.Alerts.MaxQuoteDelayMinutes == value) return;
+        _settings.Update(s => s.Alerts.MaxQuoteDelayMinutes = value);
+    }
+
+    /// <summary>F10 banner and F3 note, from the monitor's health and last check.</summary>
+    public void RefreshMonitorState()
+    {
+        var h = _monitor.Health;
+        MonitorDown = h.Interrupted;
+        MonitorText = h.Interrupted
+            ? string.Format(_loc["Al_MonitorDownBanner"], h.ConsecutiveFailures,
+                h.FailingSince?.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture) ?? "", h.LastError ?? "")
+            : "";
+        var stale = _monitor.LastCheck?.SkippedStale ?? [];
+        HasStaleNote = stale.Count > 0;
+        StaleNote = stale.Count > 0
+            ? string.Format(_loc["Al_StaleSkipped"], string.Join(", ", stale), _settings.Current.Alerts.MaxQuoteDelayMinutes)
+            : "";
     }
 
     public void PrepareForSymbol(string? symbol)
