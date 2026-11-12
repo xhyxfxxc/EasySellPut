@@ -13,6 +13,7 @@
     <PackageReference Include="WPF-UI" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="ScottPlot.WPF" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TyuStock.Core\TyuStock.Core.csproj" />
