@@ -24,6 +24,8 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial string EffectiveProxy { get; set; } = "";
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsFixedRate))] public partial int RateModeIndex { get; set; }
     [ObservableProperty] public partial string FixedRateText { get; set; } = "";
+    /// <summary>D4: 0 ask, 1 minimize to tray, 2 exit.</summary>
+    [ObservableProperty] public partial int CloseActionIndex { get; set; }
     [ObservableProperty] public partial string FixedRateError { get; set; } = "";
 
     public bool IsFixedRate => RateModeIndex == 1;
@@ -44,6 +46,7 @@ public partial class SettingsViewModel : ObservableObject
         ManualProxy = s.Network.ManualProxy;
         DataDirectory = dataDir.Path;
         EffectiveProxy = _network?.EffectiveDescription ?? "—";
+        CloseActionIndex = (int)s.CloseAction;
         RateModeIndex = s.Pricing.RateMode == RiskFreeRateMode.Fixed ? 1 : 0;
         FixedRateText = s.Pricing.FixedRatePercent.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
         _ready = true;
@@ -84,6 +87,12 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (!_ready) return;
         _store.Update(s => s.Network.ManualProxy = value.Trim());
+    }
+
+    partial void OnCloseActionIndexChanged(int value)
+    {
+        if (!_ready) return;
+        _store.Update(s => s.CloseAction = (CloseAction)Math.Clamp(value, 0, 2));
     }
 
     partial void OnRateModeIndexChanged(int value)

@@ -81,6 +81,21 @@
                 <ui:Button Appearance="Primary" Content="{DynamicResource Set_ProxyApply}" Command="{Binding ApplyProxyCommand}" MinWidth="140" />
             </ui:CardControl>
 
+            <!-- Close button (D4) -->
+            <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Dismiss24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{DynamicResource Set_CloseAction}" />
+                        <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Set_CloseActionDesc}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox MinWidth="220" SelectedIndex="{Binding CloseActionIndex}" AutomationProperties.AutomationId="SettingsCloseAction">
+                    <ComboBoxItem Content="{DynamicResource Set_CloseAsk}" />
+                    <ComboBoxItem Content="{DynamicResource Close_ToTray}" />
+                    <ComboBoxItem Content="{DynamicResource Close_Exit}" />
+                </ComboBox>
+            </ui:CardControl>
+
             <!-- Keyboard (D2) -->
             <TextBlock Style="{StaticResource SectionTitle}" Text="{DynamicResource Set_Shortcuts}" />
             <ui:CardControl Margin="0,0,0,4" Icon="{ui:SymbolIcon Keyboard12324}">

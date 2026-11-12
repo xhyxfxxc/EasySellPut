@@ -527,4 +527,14 @@
     <sys:String x:Key="Set_Shortcuts">快捷键</sys:String>
     <sys:String x:Key="Set_ShortcutsTitle">在任意页面可用</sys:String>
     <sys:String x:Key="Set_ShortcutsDesc">Ctrl+1…9 依次切换概览、自选、K 线、期权、策略、新闻、提醒、数据源、设置；F5 刷新当前页；不在输入框时直接打字会弹出键盘精灵；Esc 关闭键盘精灵和下拉列表</sys:String>
+    <sys:String x:Key="Close_AskTitle">关闭窗口</sys:String>
+    <sys:String x:Key="Close_AskBody">关闭后要让程序继续在托盘里运行（价格和 IV 提醒继续工作），还是完全退出？以后可以在“设置”里修改。</sys:String>
+    <sys:String x:Key="Close_ToTray">最小化到托盘</sys:String>
+    <sys:String x:Key="Close_Exit">退出程序</sys:String>
+    <sys:String x:Key="Close_Cancel">取消</sys:String>
+    <sys:String x:Key="Close_HiddenTitle">仍在后台运行</sys:String>
+    <sys:String x:Key="Close_HiddenBody">程序在托盘里继续运行，提醒照常工作。右键托盘图标可以退出。</sys:String>
+    <sys:String x:Key="Set_CloseAction">关闭按钮</sys:String>
+    <sys:String x:Key="Set_CloseActionDesc">点窗口右上角的关闭按钮时</sys:String>
+    <sys:String x:Key="Set_CloseAsk">每次询问</sys:String>
 </ResourceDictionary>

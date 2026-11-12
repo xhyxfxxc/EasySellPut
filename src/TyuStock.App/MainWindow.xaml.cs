@@ -155,15 +155,57 @@ public partial class MainWindow : FluentWindow
             HideToTray();
     }
 
+    private bool _asking;
+
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (_exitRequested || _options.ExitOnClose)
+        switch (CloseDecision.Decide(_settings.Current.CloseAction, _exitRequested, _options.ExitOnClose))
         {
-            SavePlacement();
-            return;
+            case CloseOutcome.Exit:
+                if (!_exitRequested) { e.Cancel = true; Dispatcher.BeginInvoke(RequestExit); return; }
+                SavePlacement();
+                return;
+            case CloseOutcome.HideToTray:
+                e.Cancel = true;
+                HideToTray();
+                _notify.ShowHiddenToTray();
+                return;
+            default:
+                e.Cancel = true;
+                if (!_asking) Dispatcher.BeginInvoke(AskCloseActionAsync);
+                return;
         }
-        e.Cancel = true;
-        HideToTray();
+    }
+
+    /// <summary>D4: first close — ask once, remember the answer (changeable in Settings).</summary>
+    private async Task AskCloseActionAsync()
+    {
+        _asking = true;
+        try
+        {
+            var box = new Wpf.Ui.Controls.MessageBox
+            {
+                Title = _loc["Close_AskTitle"],
+                Content = new System.Windows.Controls.TextBlock { Text = _loc["Close_AskBody"], TextWrapping = TextWrapping.Wrap, MaxWidth = 420, FontSize = 14 },
+                PrimaryButtonText = _loc["Close_ToTray"],
+                SecondaryButtonText = _loc["Close_Exit"],
+                CloseButtonText = _loc["Close_Cancel"],
+                IsSecondaryButtonEnabled = true,
+                Owner = this,
+            };
+            var r = await box.ShowDialogAsync();
+            var choice = r switch
+            {
+                Wpf.Ui.Controls.MessageBoxResult.Primary => CloseAction.MinimizeToTray,
+                Wpf.Ui.Controls.MessageBoxResult.Secondary => CloseAction.Exit,
+                _ => CloseAction.Ask,
+            };
+            if (choice == CloseAction.Ask) return;            // cancelled: keep the window, ask again next time
+            _settings.Update(s => s.CloseAction = choice);
+            if (choice == CloseAction.Exit) RequestExit();
+            else { HideToTray(); _notify.ShowHiddenToTray(); }
+        }
+        finally { _asking = false; }
     }
 
     private void HideToTray()

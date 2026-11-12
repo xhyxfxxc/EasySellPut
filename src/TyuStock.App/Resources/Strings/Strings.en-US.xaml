@@ -527,4 +527,14 @@
     <sys:String x:Key="Set_Shortcuts">Keyboard shortcuts</sys:String>
     <sys:String x:Key="Set_ShortcutsTitle">Available on every page</sys:String>
     <sys:String x:Key="Set_ShortcutsDesc">Ctrl+1…9 switch to Overview, Watchlist, Charts, Options, Strategy, News, Alerts, Data sources and Settings; F5 refreshes the current page; typing outside a text box opens the keyboard wizard; Esc closes the wizard and drop-downs</sys:String>
+    <sys:String x:Key="Close_AskTitle">Close window</sys:String>
+    <sys:String x:Key="Close_AskBody">Keep running in the system tray after closing (price and IV alerts keep working), or exit completely? You can change this later in Settings.</sys:String>
+    <sys:String x:Key="Close_ToTray">Minimize to tray</sys:String>
+    <sys:String x:Key="Close_Exit">Exit</sys:String>
+    <sys:String x:Key="Close_Cancel">Cancel</sys:String>
+    <sys:String x:Key="Close_HiddenTitle">Still running</sys:String>
+    <sys:String x:Key="Close_HiddenBody">The app keeps running in the tray and alerts keep working. Right-click the tray icon to exit.</sys:String>
+    <sys:String x:Key="Set_CloseAction">Close button</sys:String>
+    <sys:String x:Key="Set_CloseActionDesc">When the window close button is clicked</sys:String>
+    <sys:String x:Key="Set_CloseAsk">Ask</sys:String>
 </ResourceDictionary>

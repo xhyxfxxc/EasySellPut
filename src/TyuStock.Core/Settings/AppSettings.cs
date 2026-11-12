@@ -52,6 +52,8 @@ public sealed class AppSettings
     public WindowPlacement? Window { get; set; }
     public AlertSettings Alerts { get; set; } = new();
     public PricingSettings Pricing { get; set; } = new();
+    /// <summary>D4: what the window's close button does. <see cref="CloseAction.Ask"/> until the user has chosen.</summary>
+    public CloseAction CloseAction { get; set; } = CloseAction.Ask;
 
     public static IReadOnlyList<string> SupportedLanguages { get; } = ["zh-CN", "en-US"];
 
@@ -67,6 +69,7 @@ public sealed class AppSettings
         if (!double.IsFinite(Pricing.FixedRatePercent)) Pricing.FixedRatePercent = 4.0;
         Pricing.FixedRatePercent = Math.Clamp(Pricing.FixedRatePercent, -1, 20);
         if (!Enum.IsDefined(Pricing.RateMode)) Pricing.RateMode = RiskFreeRateMode.Treasury13Week;
+        if (!Enum.IsDefined(CloseAction)) CloseAction = CloseAction.Ask;
         Alerts ??= new AlertSettings();
         Alerts.MaxQuoteDelayMinutes = Math.Clamp(Alerts.MaxQuoteDelayMinutes, 1, 240);
         Alerts.FailureThreshold = Math.Clamp(Alerts.FailureThreshold, 1, 20);
@@ -130,4 +133,23 @@ public sealed class WindowPlacement
     public double Width { get; set; }
     public double Height { get; set; }
     public bool Maximized { get; set; }
+}
+
+/// <summary>D4: close-button behaviour.</summary>
+public enum CloseAction { Ask, MinimizeToTray, Exit }
+
+/// <summary>D4: what actually happens when the window is asked to close.</summary>
+public enum CloseOutcome { Exit, HideToTray, Ask }
+
+public static class CloseDecision
+{
+    /// <param name="exitRequested">Exit from the tray menu or after the user answered "exit".</param>
+    /// <param name="exitOnClose">The <c>--exit-on-close</c> launch option (tests, verification runs).</param>
+    public static CloseOutcome Decide(CloseAction setting, bool exitRequested, bool exitOnClose) =>
+        exitRequested || exitOnClose ? CloseOutcome.Exit : setting switch
+        {
+            CloseAction.Exit => CloseOutcome.Exit,
+            CloseAction.MinimizeToTray => CloseOutcome.HideToTray,
+            _ => CloseOutcome.Ask,
+        };
 }

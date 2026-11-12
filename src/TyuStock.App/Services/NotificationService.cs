@@ -124,6 +124,17 @@ public sealed class NotificationService : IDisposable
         return text;
     }
 
+    private bool _hiddenHintShown;
+
+    /// <summary>D4: once per session, say that the app keeps running (and alerts keep working) in the tray.</summary>
+    public void ShowHiddenToTray()
+    {
+        if (_hiddenHintShown || _options.NoAlerts || _tray is null) return;
+        _hiddenHintShown = true;
+        try { _tray.ShowNotification(_loc["Close_HiddenTitle"], _loc["Close_HiddenBody"]); }
+        catch (Exception ex) { Log(ex); }
+    }
+
     /// <summary>F10: tray balloon when alert monitoring stops getting quotes (once per interruption).</summary>
     public void ShowMonitorInterrupted(MonitorHealth health)
     {

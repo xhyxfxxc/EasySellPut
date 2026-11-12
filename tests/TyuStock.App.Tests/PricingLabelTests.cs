@@ -48,3 +48,21 @@ public class PricingLabelTests
         });
     }
 }
+
+/// <summary>D4: the settings page stores the close-button choice.</summary>
+public class CloseActionSettingTests
+{
+    [Fact]
+    public void Settings_close_action_is_persisted()
+    {
+        WpfHost.Run(() =>
+        {
+            var vm = AppServices.Get<SettingsViewModel>();
+            var store = AppServices.Get<SettingsStore>();
+            vm.CloseActionIndex = 2;
+            Assert.Equal(CloseAction.Exit, store.Current.CloseAction);
+            vm.CloseActionIndex = 0;
+            Assert.Equal(CloseAction.Ask, store.Current.CloseAction);
+        });
+    }
+}
