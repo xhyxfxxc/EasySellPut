@@ -114,3 +114,17 @@ public sealed class FakeIvSource : TyuStock.App.Services.IIvSource
     public Task<TyuStock.Core.Alerts.IvSample?> GetAsync(string symbol, DateTimeOffset now, CancellationToken ct = default) =>
         Task.FromResult<TyuStock.Core.Alerts.IvSample?>(new(symbol, Iv, TyuStock.Core.Alerts.IvBasis.Iv30, now, "fake"));
 }
+
+/// <summary>D7: proxy detection result under test control; never touches the real network stack.</summary>
+public sealed class FakeNetwork : TyuStock.App.Services.INetworkController
+{
+    public bool NoProxyDetected { get; set; }
+    public int Reconfigured { get; private set; }
+    public string EffectiveDescription => NoProxyDetected ? "direct" : "127.0.0.1:7890";
+
+    public Task<string> ReconfigureAsync()
+    {
+        Reconfigured++;
+        return Task.FromResult(EffectiveDescription);
+    }
+}

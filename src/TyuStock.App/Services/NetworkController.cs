@@ -22,6 +22,8 @@ public sealed class NetworkController : INetworkController
 
     public string EffectiveDescription => Describe(_data.Gateway.Proxy);
 
+    public bool NoProxyDetected => _data.Gateway.Proxy is { Mode: ProxyMode.AutoDetect, ProxyUri: null };
+
     public async Task<string> ReconfigureAsync()
     {
         await _data.Gateway.ReconfigureAsync(_store.Current.Network).ConfigureAwait(true);

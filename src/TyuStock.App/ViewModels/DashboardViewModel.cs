@@ -24,6 +24,8 @@ public partial class DashboardViewModel : ObservableObject
     private readonly QuoteHub _hub;
     private readonly LocalizationService _loc;
     private readonly NavigationHub _nav;
+    private readonly INetworkController _network;
+    private readonly SettingsStore _settings;
     private bool _active;
     private CancellationTokenSource? _cts;
     private DateTimeOffset? _lastUpdate;
@@ -34,12 +36,21 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial bool IsBusy { get; set; }
     /// <summary>D8: every source failed on the last attempt — show the InfoBar.</summary>
     [ObservableProperty] public partial bool AllSourcesFailed { get; set; }
+    /// <summary>D7: all sources failed and no local proxy was found — the InfoBar explains the proxy and offers re-detection.</summary>
+    [ObservableProperty] public partial bool ProxyMissing { get; set; }
+    [ObservableProperty] public partial string FailureBody { get; set; } = "";
+    /// <summary>D7: getting-started card (network, watchlist, options) until the user closes it.</summary>
+    [ObservableProperty] public partial bool ShowGuide { get; set; }
+    [ObservableProperty] public partial string GuideNetworkText { get; set; } = "";
 
-    public DashboardViewModel(WatchlistStore watchlist, QuoteHub hub, LocalizationService loc, NavigationHub nav)
+    public DashboardViewModel(WatchlistStore watchlist, QuoteHub hub, LocalizationService loc, NavigationHub nav,
+        INetworkController network, SettingsStore settings)
     {
-        _watchlist = watchlist; _hub = hub; _loc = loc; _nav = nav;
+        _watchlist = watchlist; _hub = hub; _loc = loc; _nav = nav; _network = network; _settings = settings;
+        ShowGuide = !settings.Current.GuideDismissed;
+        DescribeNetwork();
         RebuildCards();
-        _loc.LanguageChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); UpdateStatus(); };
+        _loc.LanguageChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); UpdateStatus(); DescribeNetwork(); };
         ThemeService.ColorsChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); }; // E4: theme tones
         _watchlist.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(() => { RebuildCards(); if (_active) { Resubscribe(); _ = RefreshAsync(); } });
     }
@@ -96,6 +107,7 @@ public partial class DashboardViewModel : ObservableObject
     {
         _lastError = ErrorText(ex);
         AllSourcesFailed = ex is AllSourcesFailedException;
+        DescribeNetwork();
         var now = DateTimeOffset.Now;
         foreach (var c in Quotes) c.RefreshStale(_loc, now);
         UpdateStatus();
@@ -104,12 +116,40 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void OpenDataSources() => _nav.Go(typeof(Views.Pages.DataSourcesPage));
 
+    [RelayCommand] private void OpenWatchlist() => _nav.Go(typeof(Views.Pages.WatchlistPage));
+    [RelayCommand] private void OpenOptions() => _nav.Go(typeof(Views.Pages.OptionsPage));
+    [RelayCommand] private void OpenSettings() => _nav.Go(typeof(Views.Pages.SettingsPage));
+
+    [RelayCommand]
+    private void DismissGuide()
+    {
+        ShowGuide = false;
+        _settings.Update(s => s.GuideDismissed = true);
+    }
+
+    /// <summary>D7: re-run proxy detection (e.g. after starting Clash) and fetch again.</summary>
+    [RelayCommand]
+    private async Task RedetectProxyAsync()
+    {
+        await _network.ReconfigureAsync();
+        DescribeNetwork();
+        await RefreshAsync();
+    }
+
+    private void DescribeNetwork()
+    {
+        var none = _network.NoProxyDetected;
+        GuideNetworkText = none ? _loc["Dash_GuideNetNone"] : string.Format(_loc["Dash_GuideNetOk"], _network.EffectiveDescription);
+        ProxyMissing = AllSourcesFailed && none;
+        FailureBody = _loc[ProxyMissing ? "Dash_NoProxyBody" : "Dash_AllFailedBody"];
+    }
+
     private void Apply(IReadOnlyList<Quote> quotes)
     {
         var map = quotes.GroupBy(q => q.Symbol, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
         foreach (var card in Quotes)
             if (map.TryGetValue(card.Symbol, out var q)) card.Update(q, _loc);
-        if (map.Count > 0) { _lastUpdate = DateTimeOffset.Now; _lastError = null; AllSourcesFailed = false; }
+        if (map.Count > 0) { _lastUpdate = DateTimeOffset.Now; _lastError = null; AllSourcesFailed = false; DescribeNetwork(); }
         UpdateStatus();
     }
 

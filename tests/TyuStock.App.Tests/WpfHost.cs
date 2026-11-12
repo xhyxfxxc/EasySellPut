@@ -18,6 +18,7 @@ public static class WpfHost
     private static readonly Lazy<Dispatcher> Ui = new(Start, LazyThreadSafetyMode.ExecutionAndPublication);
     public static FakeMarketDataService Data { get; } = new();
     public static FakeIvSource Iv { get; } = new();
+    public static FakeNetwork Network { get; } = new();
     public static string DataDir { get; } = Path.Combine(Path.GetTempPath(), "meili-app-tests-" + Environment.ProcessId);
 
     public static Dispatcher Dispatcher => Ui.Value;
@@ -65,6 +66,7 @@ public static class WpfHost
         AppComposition.Register(services, dataDir);
         services.AddSingleton<IMarketDataService>(Data);
         services.AddSingleton<IIvSource>(Iv);
+        services.AddSingleton<INetworkController>(Network);
         AppServices.Provider = services.BuildServiceProvider();
         var settings = AppServices.Get<SettingsStore>().Load();
         AppServices.Get<LocalizationService>().Apply(settings.Language);

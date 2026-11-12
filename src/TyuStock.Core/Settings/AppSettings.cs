@@ -49,6 +49,8 @@ public sealed class AppSettings
     /// (Chinese → red up, English → green up, the US convention).
     /// </summary>
     public bool UpDownColorsChosen { get; set; }
+    /// <summary>D7: the user closed the dashboard's getting-started card.</summary>
+    public bool GuideDismissed { get; set; }
 
     /// <summary>E1: colours to use for <paramref name="language"/> (default: the saved language).</summary>
     public UpDownColorMode EffectiveUpDownColors(string? language = null) =>

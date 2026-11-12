@@ -618,4 +618,18 @@
     <sys:String x:Key="St_SavedOk">Saved "{0}"</sys:String>
     <sys:String x:Key="St_SavedBad">Cannot load "{0}": {1}</sys:String>
     <sys:String x:Key="Wl_AddedAlsoIn">Added {0} (also in: {1})</sys:String>
+    <sys:String x:Key="Dash_GuideTitle">Get started in 3 steps</sys:String>
+    <sys:String x:Key="Dash_GuideDismiss">Got it, hide this</sys:String>
+    <sys:String x:Key="Dash_Guide1Title">1. Check the network</sys:String>
+    <sys:String x:Key="Dash_GuideNetNone">No local proxy found. Overseas sources (Yahoo, Nasdaq, CBOE) usually need one from mainland China: start Clash or a similar tool (common ports 7890 / 7897), then click Re-detect. Sina works directly but only has basic quotes.</sys:String>
+    <sys:String x:Key="Dash_GuideNetOk">Network: {0}. The Data Sources page shows whether each source is reachable.</sys:String>
+    <sys:String x:Key="Dash_Redetect">Re-detect proxy</sys:String>
+    <sys:String x:Key="Dash_Guide2Title">2. Build your watchlist</sys:String>
+    <sys:String x:Key="Dash_Guide2Body">Add symbols on the Watchlist page. You can create groups, and a symbol can be in more than one.</sys:String>
+    <sys:String x:Key="Dash_Guide2Btn">Open watchlist</sys:String>
+    <sys:String x:Key="Dash_Guide3Title">3. Options and strategies</sys:String>
+    <sys:String x:Key="Dash_Guide3Body">Pick an expiration on the Options page to see the T-table. On the Strategy page, pick a template or build legs to see P/L, probability of profit and margin.</sys:String>
+    <sys:String x:Key="Dash_Guide3Btn">Open options</sys:String>
+    <sys:String x:Key="Dash_NoProxyBody">No data source is reachable and no local proxy was found. Overseas sources usually need a proxy from mainland China: start Clash or a similar tool and click Re-detect proxy, or enter a proxy in Settings. Prices below are the last ones received.</sys:String>
+    <sys:String x:Key="Dash_OpenSettings">Open settings</sys:String>
 </ResourceDictionary>

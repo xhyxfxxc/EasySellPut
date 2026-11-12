@@ -23,6 +23,41 @@
                 </Grid>
             </ui:Card>
 
+            <!-- D7: getting started (network/proxy, watchlist, options) until dismissed -->
+            <ui:Card Padding="20" Margin="0,12,0,0" Visibility="{Binding ShowGuide, Converter={StaticResource BoolToVis}}"
+                     AutomationProperties.AutomationId="DashGuide">
+                <StackPanel>
+                <DockPanel Margin="0,0,0,12" LastChildFill="False">
+                    <TextBlock DockPanel.Dock="Left" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" Text="{DynamicResource Dash_GuideTitle}" />
+                    <ui:Button DockPanel.Dock="Right" Appearance="Transparent" Padding="10,4" Command="{Binding DismissGuideCommand}" Content="{DynamicResource Dash_GuideDismiss}" />
+                </DockPanel>
+                <UniformGrid Columns="3">
+                    <StackPanel Margin="0,0,16,0" AutomationProperties.AutomationId="GuideNetwork">
+                        <TextBlock Style="{StaticResource CardTitle}" FontSize="15" Text="{DynamicResource Dash_Guide1Title}" />
+                        <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,8" TextWrapping="Wrap" Text="{Binding GuideNetworkText}" />
+                        <WrapPanel>
+                            <ui:Button Appearance="Secondary" Padding="10,4" Margin="0,0,8,4" Command="{Binding RedetectProxyCommand}" Content="{DynamicResource Dash_Redetect}" />
+                            <ui:Button Appearance="Secondary" Padding="10,4" Margin="0,0,8,4" Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0" AutomationProperties.AutomationId="GuideWatchlist">
+                        <TextBlock Style="{StaticResource CardTitle}" FontSize="15" Text="{DynamicResource Dash_Guide2Title}" />
+                        <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,8" TextWrapping="Wrap" Text="{DynamicResource Dash_Guide2Body}" />
+                        <WrapPanel>
+                            <ui:Button Appearance="Secondary" Padding="10,4" Margin="0,0,8,4" Command="{Binding OpenWatchlistCommand}" Content="{DynamicResource Dash_Guide2Btn}" />
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,0" AutomationProperties.AutomationId="GuideOptions">
+                        <TextBlock Style="{StaticResource CardTitle}" FontSize="15" Text="{DynamicResource Dash_Guide3Title}" />
+                        <TextBlock Style="{StaticResource Secondary}" Margin="0,6,0,8" TextWrapping="Wrap" Text="{DynamicResource Dash_Guide3Body}" />
+                        <WrapPanel>
+                            <ui:Button Appearance="Secondary" Padding="10,4" Margin="0,0,8,4" Command="{Binding OpenOptionsCommand}" Content="{DynamicResource Dash_Guide3Btn}" />
+                        </WrapPanel>
+                    </StackPanel>
+                </UniformGrid>
+                </StackPanel>
+            </ui:Card>
+
             <!-- Market overview (quotes via failover) -->
             <DockPanel Margin="0,24,0,8" LastChildFill="False">
                 <TextBlock DockPanel.Dock="Left" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" Text="{DynamicResource Dash_Market}" />
@@ -35,10 +70,16 @@
                 <TextBlock DockPanel.Dock="Right" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,12,0" Text="{Binding StatusText}" />
             </DockPanel>
             <!-- D8: every source failed — prices below are the last ones received -->
-            <ui:InfoBar Title="{DynamicResource Dash_AllFailedTitle}" Message="{DynamicResource Dash_AllFailedBody}"
+            <ui:InfoBar Title="{DynamicResource Dash_AllFailedTitle}" Message="{Binding FailureBody}"
                         IsOpen="{Binding AllSourcesFailed}" IsClosable="False" Severity="Error" Margin="0,0,0,12"
                         AutomationProperties.AutomationId="DashAllFailed">
-                <ui:Button Appearance="Secondary" Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" Padding="10,4" />
+                <WrapPanel>
+                    <ui:Button Appearance="Secondary" Margin="0,0,8,0" Command="{Binding RedetectProxyCommand}" Content="{DynamicResource Dash_Redetect}" Padding="10,4"
+                               Visibility="{Binding ProxyMissing, Converter={StaticResource BoolToVis}}" />
+                    <ui:Button Appearance="Secondary" Margin="0,0,8,0" Command="{Binding OpenSettingsCommand}" Content="{DynamicResource Dash_OpenSettings}" Padding="10,4"
+                               Visibility="{Binding ProxyMissing, Converter={StaticResource BoolToVis}}" />
+                    <ui:Button Appearance="Secondary" Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" Padding="10,4" />
+                </WrapPanel>
             </ui:InfoBar>
             <ItemsControl ItemsSource="{Binding Quotes}">
                 <ItemsControl.ItemsPanel>

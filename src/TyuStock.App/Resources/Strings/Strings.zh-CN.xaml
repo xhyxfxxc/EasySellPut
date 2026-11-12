@@ -618,4 +618,18 @@
     <sys:String x:Key="St_SavedOk">已保存「{0}」</sys:String>
     <sys:String x:Key="St_SavedBad">「{0}」无法载入：{1}</sys:String>
     <sys:String x:Key="Wl_AddedAlsoIn">已添加 {0}（它也在分组：{1}）</sys:String>
+    <sys:String x:Key="Dash_GuideTitle">快速上手（3 步）</sys:String>
+    <sys:String x:Key="Dash_GuideDismiss">知道了，不再显示</sys:String>
+    <sys:String x:Key="Dash_Guide1Title">① 确认网络</sys:String>
+    <sys:String x:Key="Dash_GuideNetNone">未检测到本机代理。Yahoo、Nasdaq、CBOE 等海外数据源在中国大陆通常需要代理：请先启动 Clash 等工具（常用端口 7890 / 7897），再点“重新检测”。新浪源可以直连，但只有基础行情。</sys:String>
+    <sys:String x:Key="Dash_GuideNetOk">当前网络：{0}。“数据源状态”页可查看每个数据源是否连通。</sys:String>
+    <sys:String x:Key="Dash_Redetect">重新检测代理</sys:String>
+    <sys:String x:Key="Dash_Guide2Title">② 建自选股</sys:String>
+    <sys:String x:Key="Dash_Guide2Body">在“自选股”页输入代码添加；可以建多个分组，同一代码可放进多个分组。</sys:String>
+    <sys:String x:Key="Dash_Guide2Btn">打开自选股</sys:String>
+    <sys:String x:Key="Dash_Guide3Title">③ 看期权、搭策略</sys:String>
+    <sys:String x:Key="Dash_Guide3Body">在“期权”页选到期日查看 T 型表；在“策略”页选模板或自建多腿，查看盈亏、盈利概率和保证金。</sys:String>
+    <sys:String x:Key="Dash_Guide3Btn">打开期权</sys:String>
+    <sys:String x:Key="Dash_NoProxyBody">所有数据源都连不上，且未检测到本机代理。海外数据源在中国大陆通常需要代理：请启动 Clash 等工具后点“重新检测代理”，或在“设置”里手动填写代理地址。下面是最后一次成功获取的价格。</sys:String>
+    <sys:String x:Key="Dash_OpenSettings">打开设置</sys:String>
 </ResourceDictionary>
