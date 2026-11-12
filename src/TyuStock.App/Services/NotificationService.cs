@@ -31,7 +31,11 @@ public sealed class NotificationService : IDisposable
         _dataDir = dataDir;
         _nav = nav;
         _loc.LanguageChanged += (_, _) => UpdateTooltip();
-        try { ToastNotificationManagerCompat.OnActivated += OnToastActivated; } catch (Exception ex) { Log(ex); }
+        // --no-alerts (UI checks, tests) must not touch the toast COM/AUMID registration at all.
+        if (!_options.NoAlerts)
+        {
+            try { ToastNotificationManagerCompat.OnActivated += OnToastActivated; } catch (Exception ex) { Log(ex); }
+        }
     }
 
     public void Attach(Window window)
@@ -130,7 +134,10 @@ public sealed class NotificationService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        try { ToastNotificationManagerCompat.OnActivated -= OnToastActivated; } catch { }
+        if (!_options.NoAlerts)
+        {
+            try { ToastNotificationManagerCompat.OnActivated -= OnToastActivated; } catch { }
+        }
         try { _tray?.Dispose(); } catch { }
         _tray = null;
     }

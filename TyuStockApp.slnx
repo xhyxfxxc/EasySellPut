@@ -9,5 +9,6 @@
     <Project Path="tests/TyuStock.Core.Tests/TyuStock.Core.Tests.csproj" />
     <Project Path="tests/TyuStock.Data.Tests/TyuStock.Data.Tests.csproj" />
     <Project Path="tests/TyuStock.Analytics.Tests/TyuStock.Analytics.Tests.csproj" />
+    <Project Path="tests/TyuStock.App.Tests/TyuStock.App.Tests.csproj" />
   </Folder>
 </Solution>
