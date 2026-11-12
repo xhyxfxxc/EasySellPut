@@ -449,4 +449,21 @@
     <sys:String x:Key="Tray_Show">Open main window</sys:String>
     <sys:String x:Key="Tray_Exit">Exit</sys:String>
     <sys:String x:Key="Tray_Minimized">Minimized to the tray. Right-click the tray icon to exit.</sys:String>
+
+    <sys:String x:Key="Ex_DialogTitle">Export</sys:String>
+    <sys:String x:Key="Ex_Filter">Excel workbook (*.xlsx)|*.xlsx|CSV file (*.csv)|*.csv</sys:String>
+    <sys:String x:Key="Ex_Saved">Exported to {0}</sys:String>
+    <sys:String x:Key="Ex_Failed">Export failed: {0}</sys:String>
+    <sys:String x:Key="Ex_NoData">There is no data to export yet</sys:String>
+    <sys:String x:Key="Ex_Session">Session</sys:String>
+    <sys:String x:Key="Ex_Time">Time</sys:String>
+    <sys:String x:Key="Ex_Field">Field</sys:String>
+    <sys:String x:Key="Ex_Value">Value</sys:String>
+    <sys:String x:Key="Ex_Publisher">Publisher</sys:String>
+    <sys:String x:Key="Ex_Url">Link</sys:String>
+    <sys:String x:Key="Ex_Headline">Title</sys:String>
+    <sys:String x:Key="Wl_Export">Export</sys:String>
+    <sys:String x:Key="Ch_Export">Export</sys:String>
+    <sys:String x:Key="Op_Export">Export</sys:String>
+    <sys:String x:Key="Nf_Export">Export</sys:String>
 </ResourceDictionary>

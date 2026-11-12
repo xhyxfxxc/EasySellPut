@@ -74,13 +74,20 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </StackPanel>
-        </DataTemplate>
+        </DataTemplate>
+
     </Page.Resources>
     <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="32,20,32,8">
             <TextBlock Style="{StaticResource PageTitle}" Text="{DynamicResource Nf_Title}" />
             <TextBlock Style="{StaticResource Secondary}" Text="{DynamicResource Nf_Desc}" Margin="0,0,0,12" />
             <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                <ui:Button DockPanel.Dock="Right" Appearance="Secondary" Padding="12,6" Margin="8,0,0,0" Command="{Binding ExportCommand}" ToolTip="{DynamicResource Nf_Export}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="16" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Nf_Export}" FontSize="14" />
+                    </StackPanel>
+                </ui:Button>
                 <ui:Button DockPanel.Dock="Right" Appearance="Secondary" Padding="12,6" Margin="8,0,0,0" Command="{Binding RefreshCommand}">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="ArrowClockwise24" FontSize="16" Margin="0,0,6,0" />

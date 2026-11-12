@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using TyuStock.Analytics;
 using TyuStock.App.Services;
 using TyuStock.Core.Abstractions;
+using TyuStock.Core.Export;
 using TyuStock.Core.Models;
 using TyuStock.Core.Settings;
 using TyuStock.Core.Time;
@@ -101,6 +102,42 @@ public partial class OptionsViewModel : ObservableObject
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(refreshOnly: true);
+
+    [RelayCommand]
+    private void Export()
+    {
+        if (Rows.Count == 0)
+        {
+            StatusText = _loc["Ex_NoData"];
+            return;
+        }
+        var exp = SelectedExpiration?.Date.ToString("yyyy-MM-dd") ?? "chain";
+        var headers = new[]
+        {
+            _loc["Op_Strike"],
+            "Call " + _loc["Op_Bid"], "Call " + _loc["Op_Ask"], "Call " + _loc["Op_Last"],
+            "Call " + _loc["Op_Volume"], "Call " + _loc["Op_OI"], "Call " + _loc["Op_IV"],
+            "Call " + _loc["Op_Delta"], "Call " + _loc["Op_Gamma"], "Call " + _loc["Op_Theta"], "Call " + _loc["Op_Vega"],
+            "Put " + _loc["Op_Bid"], "Put " + _loc["Op_Ask"], "Put " + _loc["Op_Last"],
+            "Put " + _loc["Op_Volume"], "Put " + _loc["Op_OI"], "Put " + _loc["Op_IV"],
+            "Put " + _loc["Op_Delta"], "Put " + _loc["Op_Gamma"], "Put " + _loc["Op_Theta"], "Put " + _loc["Op_Vega"],
+        };
+        var table = new ExportTable
+        {
+            Name = $"{SymbolText}-{exp}",
+            Headers = headers,
+            Rows = Rows.Select(r => (IReadOnlyList<string>)
+            [
+                r.StrikeText,
+                r.Call?.Bid ?? "", r.Call?.Ask ?? "", r.Call?.Last ?? "", r.Call?.Volume ?? "", r.Call?.Oi ?? "", r.Call?.Iv ?? "",
+                r.Call?.Delta ?? "", r.Call?.Gamma ?? "", r.Call?.Theta ?? "", r.Call?.Vega ?? "",
+                r.Put?.Bid ?? "", r.Put?.Ask ?? "", r.Put?.Last ?? "", r.Put?.Volume ?? "", r.Put?.Oi ?? "", r.Put?.Iv ?? "",
+                r.Put?.Delta ?? "", r.Put?.Gamma ?? "", r.Put?.Theta ?? "", r.Put?.Vega ?? "",
+            ]).ToList(),
+        };
+        var msg = ExportUi.Save($"{SymbolText}-{exp}", [table], _loc);
+        if (msg is not null) StatusText = msg;
+    }
 
     [RelayCommand]
     private void SelectWindow(StrikeWindowKind kind)

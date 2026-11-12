@@ -449,4 +449,21 @@
     <sys:String x:Key="Tray_Show">打开主窗口</sys:String>
     <sys:String x:Key="Tray_Exit">退出</sys:String>
     <sys:String x:Key="Tray_Minimized">已最小化到托盘。要退出程序，请右键点击托盘图标。</sys:String>
+
+    <sys:String x:Key="Ex_DialogTitle">导出</sys:String>
+    <sys:String x:Key="Ex_Filter">Excel 工作簿 (*.xlsx)|*.xlsx|CSV 文件 (*.csv)|*.csv</sys:String>
+    <sys:String x:Key="Ex_Saved">已导出到 {0}</sys:String>
+    <sys:String x:Key="Ex_Failed">导出失败：{0}</sys:String>
+    <sys:String x:Key="Ex_NoData">当前没有可导出的数据</sys:String>
+    <sys:String x:Key="Ex_Session">时段</sys:String>
+    <sys:String x:Key="Ex_Time">时间</sys:String>
+    <sys:String x:Key="Ex_Field">项目</sys:String>
+    <sys:String x:Key="Ex_Value">数值</sys:String>
+    <sys:String x:Key="Ex_Publisher">来源媒体</sys:String>
+    <sys:String x:Key="Ex_Url">链接</sys:String>
+    <sys:String x:Key="Ex_Headline">标题</sys:String>
+    <sys:String x:Key="Wl_Export">导出</sys:String>
+    <sys:String x:Key="Ch_Export">导出</sys:String>
+    <sys:String x:Key="Op_Export">导出</sys:String>
+    <sys:String x:Key="Nf_Export">导出</sys:String>
 </ResourceDictionary>

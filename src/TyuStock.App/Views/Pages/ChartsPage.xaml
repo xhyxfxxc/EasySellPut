@@ -41,6 +41,12 @@
             <TextBlock Style="{StaticResource Secondary}" Text="{DynamicResource Ch_Desc}" Margin="0,0,0,12" />
 
             <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                <ui:Button DockPanel.Dock="Right" Appearance="Secondary" Padding="12,6" Margin="8,0,0,0" Command="{Binding ExportCommand}" ToolTip="{DynamicResource Ch_Export}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="16" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Ch_Export}" FontSize="14" />
+                    </StackPanel>
+                </ui:Button>
                 <ui:Button DockPanel.Dock="Right" Appearance="Secondary" Padding="12,6" Margin="8,0,0,0" Command="{Binding RefreshCommand}">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="ArrowClockwise24" FontSize="16" Margin="0,0,6,0" />

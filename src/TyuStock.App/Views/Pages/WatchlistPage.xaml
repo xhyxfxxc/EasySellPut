@@ -97,6 +97,13 @@
             <!-- Search + actions -->
             <DockPanel Margin="0,0,0,8" LastChildFill="True">
                 <ui:Button DockPanel.Dock="Right" Appearance="Secondary" Padding="12,6" Margin="8,0,0,0"
+                           Command="{Binding ExportCommand}" ToolTip="{DynamicResource Wl_Export}">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="16" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Wl_Export}" FontSize="14" />
+                    </StackPanel>
+                </ui:Button>
+                <ui:Button DockPanel.Dock="Right" Appearance="Secondary" Padding="12,6" Margin="8,0,0,0"
                            Command="{Binding RefreshCommand}" ToolTip="{DynamicResource Wl_Refresh}">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="ArrowClockwise24" FontSize="16" Margin="0,0,6,0" />
@@ -201,7 +208,7 @@
                     <MenuItem Header="{DynamicResource Wl_Remove}" Command="{Binding RemoveSelectedCommand}" />
                     <Separator />
                     <MenuItem Header="{DynamicResource Wl_SetAlert}" Command="{Binding SetAlertCommand}" />
-                    <MenuItem Header="{DynamicResource Wl_ExportSoon}" Command="{Binding ExportSoonCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_Export}" Command="{Binding ExportCommand}" />
                 </ContextMenu>
             </ListView.ContextMenu>
             <ListView.View>

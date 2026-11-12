@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using TyuStock.Analytics;
 using TyuStock.App.Services;
 using TyuStock.Core.Abstractions;
+using TyuStock.Core.Export;
 using TyuStock.Core.Models;
 using TyuStock.Core.Settings;
 using TyuStock.Core.Time;
@@ -142,6 +143,20 @@ public partial class ChartsViewModel : ObservableObject
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(refreshOnly: true);
+
+    [RelayCommand]
+    private void Export()
+    {
+        if (Series is null || Series.Bars.Count == 0)
+        {
+            StatusText = _loc["Ex_NoData"];
+            return;
+        }
+        var headers = new[] { _loc["Ex_Time"], "Open", "High", "Low", "Close", _loc["Ch_Volume"] };
+        var table = MarketExport.Bars($"{SymbolText}-{Range}", headers, Series);
+        var msg = ExportUi.Save($"{SymbolText}-{Range}", [table], _loc);
+        if (msg is not null) StatusText = msg;
+    }
 
     partial void OnShowMaChanged(bool value) => PlotChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowEmaChanged(bool value) => PlotChanged?.Invoke(this, EventArgs.Empty);

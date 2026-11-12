@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TyuStock.App.Services;
 using TyuStock.Core.Abstractions;
+using TyuStock.Core.Export;
 using TyuStock.Core.Models;
 using TyuStock.Core.Settings;
 using TyuStock.Core.Time;
@@ -92,6 +93,41 @@ public partial class NewsViewModel : ObservableObject
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(refreshOnly: true);
+
+    [RelayCommand]
+    private void Export()
+    {
+        var tables = new List<ExportTable>();
+        if (Stats.Count > 0)
+            tables.Add(new ExportTable
+            {
+                Name = _loc["Nf_Stats"],
+                Headers = [_loc["Ex_Field"], _loc["Ex_Value"]],
+                Rows = Stats.Select(s => (IReadOnlyList<string>)[s.Label, s.Value]).ToList(),
+            });
+        foreach (var block in new[] { Income, Balance, CashFlow })
+        {
+            if (!block.HasData) continue;
+            var headers = new List<string> { _loc["Nf_Item"] };
+            foreach (var h in new[] { block.H0, block.H1, block.H2, block.H3 })
+                if (!string.IsNullOrWhiteSpace(h)) headers.Add(h);
+            tables.Add(new ExportTable
+            {
+                Name = string.IsNullOrWhiteSpace(block.Title) ? "statement" : block.Title,
+                Headers = headers,
+                Rows = block.Rows.Select(r => (IReadOnlyList<string>)new[] { r.Label, r.V0, r.V1, r.V2, r.V3 }.Take(headers.Count).ToArray()).ToList(),
+            });
+        }
+        if (News.Count > 0)
+            tables.Add(new ExportTable
+            {
+                Name = _loc["Nf_News"],
+                Headers = [_loc["Ex_Headline"], _loc["Ex_Publisher"], _loc["Ex_Time"], _loc["Ex_Url"]],
+                Rows = News.Select(n => (IReadOnlyList<string>)[n.Title, n.Publisher, n.TimeText, n.Url]).ToList(),
+            });
+        var msg = ExportUi.Save(string.IsNullOrWhiteSpace(SymbolText) ? "fundamentals" : SymbolText + "-fundamentals", tables, _loc);
+        if (msg is not null) StatusText = msg;
+    }
 
     [RelayCommand]
     private void SelectAnnual(bool annual)

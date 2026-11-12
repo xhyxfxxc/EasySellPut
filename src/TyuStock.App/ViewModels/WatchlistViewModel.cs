@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TyuStock.App.Services;
 using TyuStock.Core.Abstractions;
+using TyuStock.Core.Export;
 using TyuStock.Core.Models;
 using TyuStock.Core.Settings;
 using TyuStock.Core.Time;
@@ -372,7 +373,24 @@ public partial class WatchlistViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ExportSoon() => SetHint("Wl_ExportSoon");
+    private void Export()
+    {
+        var quotes = Rows.Select(r => r.Quote).OfType<Quote>().ToList();
+        if (quotes.Count == 0)
+        {
+            SetHint("Ex_NoData");
+            return;
+        }
+        var headers = new[]
+        {
+            _loc["Wl_ColSymbol"], _loc["Wl_ColName"], _loc["Wl_ColPrice"], _loc["Wl_ColChange"],
+            _loc["Wl_ColChangePct"], _loc["Wl_ColVolume"], _loc["Wl_LastUpdated"], _loc["Wl_ColSource"],
+            _loc["Op_Bid"], _loc["Op_Ask"], _loc["Wl_ColExt"], _loc["Wl_ColChangePct"], _loc["Ex_Session"],
+        };
+        var table = MarketExport.Quotes(SelectedGroupTitle, headers, quotes);
+        var msg = ExportUi.Save($"watchlist-{SelectedGroupTitle}", [table], _loc);
+        if (msg is not null) { _statusHint = msg; UpdateStatus(); }
+    }
 
     public void HideSuggestions()
     {
@@ -415,6 +433,7 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
     private Quote? _quote;
     private double? _lastPrice;
     public string Symbol { get; } = symbol;
+    public Quote? Quote => _quote;
     [ObservableProperty] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial string PriceText { get; set; } = "—";
     [ObservableProperty] public partial string ChangeText { get; set; } = "—";
