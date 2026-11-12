@@ -69,6 +69,33 @@ public static class NumberDisplay
 {
     public const string Empty = "\u2014";
 
+    /// <summary>
+    /// G2: one format for volumes, open interest, market caps and statement amounts. Chinese uses 万/亿/万亿 (10⁴/10⁸/10¹²),
+    /// English K/M/B/T; always two decimals once scaled so columns line up, plain thousands-separated integers below
+    /// 10,000, and two decimals for small fractional values.
+    /// </summary>
+    public static string Amount(double? value, bool chinese, string empty = Empty)
+    {
+        if (value is not { } x || !double.IsFinite(x)) return empty;
+        var inv = CultureInfo.InvariantCulture;
+        var sign = x < 0 ? "-" : "";
+        var a = Math.Abs(x);
+        if (chinese)
+        {
+            if (a >= 1e12) return sign + (a / 1e12).ToString("0.00", inv) + "万亿";
+            if (a >= 1e8) return sign + (a / 1e8).ToString("0.00", inv) + "亿";
+            if (a >= 1e4) return sign + (a / 1e4).ToString("0.00", inv) + "万";
+        }
+        else
+        {
+            if (a >= 1e12) return sign + (a / 1e12).ToString("0.00", inv) + "T";
+            if (a >= 1e9) return sign + (a / 1e9).ToString("0.00", inv) + "B";
+            if (a >= 1e6) return sign + (a / 1e6).ToString("0.00", inv) + "M";
+            if (a >= 1e4) return sign + (a / 1e3).ToString("0.00", inv) + "K";
+        }
+        return Math.Abs(a - Math.Round(a)) < 1e-9 ? sign + Math.Round(a).ToString("N0", inv) : x.ToString("0.00", inv);
+    }
+
     public static string Compact(double? value, string empty = Empty)
     {
         if (value is not { } x || !double.IsFinite(x)) return empty;

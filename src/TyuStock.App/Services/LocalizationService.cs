@@ -13,6 +13,13 @@ public sealed class LocalizationService
     public string Language { get; private set; } = "zh-CN";
     public event EventHandler? LanguageChanged;
 
+    /// <summary>G2: true for the Chinese UI (万/亿 amounts).</summary>
+    public bool IsChinese => Language.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>G2: volume / amount in the current language's units.</summary>
+    public string Amount(double? value, string empty = TyuStock.Core.Models.NumberDisplay.Empty) =>
+        TyuStock.Core.Models.NumberDisplay.Amount(value, IsChinese, empty);
+
     public void Apply(string language)
     {
         if (language is not ("zh-CN" or "en-US")) language = "zh-CN";

@@ -539,7 +539,7 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
         ExtText = q.ExtendedPrice is { } ep
             ? $"{loc[q.MarketState == MarketState.PreMarket ? "Quote_Pre" : "Quote_Post"]}  {NumberDisplay.Price(ep)}  {(q.ExtendedChangePercent ?? 0).ToString("+0.00;-0.00;0.00", inv)}%"
             : "";
-        VolumeText = FormatVolume(q.Volume);
+        VolumeText = q.Volume is > 0 ? loc.Amount(q.Volume) : "—";
         var now = DateTimeOffset.Now;
         SourceText = FreshnessText.SourceAndTiming(q, loc, now);
         TimingTip = FreshnessText.Tooltip(q, loc, now);
@@ -547,13 +547,4 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
         RefreshStale(loc, now);
     }
 
-    private static string FormatVolume(double? volume)
-    {
-        if (volume is not { } v || v <= 0) return "—";
-        var inv = CultureInfo.InvariantCulture;
-        if (v >= 1_000_000_000) return (v / 1_000_000_000).ToString("0.00", inv) + "B";
-        if (v >= 1_000_000) return (v / 1_000_000).ToString("0.00", inv) + "M";
-        if (v >= 10_000) return (v / 1_000).ToString("0.0", inv) + "K";
-        return v.ToString("N0", inv);
-    }
 }

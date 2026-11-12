@@ -360,7 +360,7 @@ public partial class ChartsViewModel : ObservableObject
         var b = Series.Bars[index];
         var et = MarketClock.ToEastern(b.Time);
         var head = string.Format(_loc["Ch_Crosshair"],
-            F(b.Open), F(b.High), F(b.Low), F(b.Close), Vol(b.Volume));
+            F(b.Open), F(b.High), F(b.Low), F(b.Close), _loc.Amount(b.Volume));
         var ma = Def(Snapshot.Sma[index]);
         var ema = Def(Snapshot.Ema[index]);
         CrosshairText = $"{et:yyyy-MM-dd HH:mm}   " + string.Format(_loc["Ch_CrosshairMore"], head, ma, ema)
@@ -368,6 +368,5 @@ public partial class ChartsViewModel : ObservableObject
 
         string F(double x) => NumberDisplay.Price(x);
         string Def(double x) => double.IsFinite(x) ? F(x) : "—";
-        static string Vol(double v) => v >= 1_000_000 ? (v / 1_000_000).ToString("0.00", CultureInfo.InvariantCulture) + "M" : v.ToString("N0", CultureInfo.InvariantCulture);
     }
 }

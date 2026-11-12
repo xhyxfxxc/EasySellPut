@@ -90,6 +90,7 @@ public partial class OptionsViewModel : ObservableObject
             RelabelExpirations();
             UpdateStatus();
             TableChanged?.Invoke(this, EventArgs.Empty);
+            if (_active && Rows.Count > 0) _ = LoadAsync(refreshOnly: true); // G2: volume/OI units follow the language
         };
     }
 
@@ -179,9 +180,9 @@ public partial class OptionsViewModel : ObservableObject
             Rows = Rows.Select(r => (IReadOnlyList<string>)
             [
                 r.StrikeText,
-                r.Call?.Bid ?? "", r.Call?.Ask ?? "", r.Call?.Last ?? "", r.Call?.Volume ?? "", r.Call?.Oi ?? "", r.Call?.Iv ?? "",
+                r.Call?.Bid ?? "", r.Call?.Ask ?? "", r.Call?.Last ?? "", EnrichedSide.Raw(r.Call?.VolumeValue), EnrichedSide.Raw(r.Call?.OiValue), r.Call?.Iv ?? "",
                 r.Call?.Delta ?? "", r.Call?.Gamma ?? "", r.Call?.Theta ?? "", r.Call?.Vega ?? "",
-                r.Put?.Bid ?? "", r.Put?.Ask ?? "", r.Put?.Last ?? "", r.Put?.Volume ?? "", r.Put?.Oi ?? "", r.Put?.Iv ?? "",
+                r.Put?.Bid ?? "", r.Put?.Ask ?? "", r.Put?.Last ?? "", EnrichedSide.Raw(r.Put?.VolumeValue), EnrichedSide.Raw(r.Put?.OiValue), r.Put?.Iv ?? "",
                 r.Put?.Delta ?? "", r.Put?.Gamma ?? "", r.Put?.Theta ?? "", r.Put?.Vega ?? "",
             ]).ToList(),
             Metadata = ExportUi.Metadata(_loc, _lastChain, _rate, Headline),
@@ -449,6 +450,9 @@ public sealed class EnrichedSide
     public string Theta { get; init; } = "—";
     public string Vega { get; init; } = "—";
     public double? IvValue { get; init; }
+    /// <summary>G2: raw numbers for export (the display text uses 万/K units).</summary>
+    public double? VolumeValue { get; init; }
+    public double? OiValue { get; init; }
     public bool InTheMoney { get; init; }
     public bool IvLocal { get; init; }
     public string IvHint { get; init; } = "";
@@ -459,7 +463,7 @@ public sealed class EnrichedSide
         return new EnrichedSide
         {
             Bid = Px(c.Bid), Ask = Px(c.Ask), Last = Px(c.Last),
-            Volume = Qty(c.Volume), Oi = Qty(c.OpenInterest),
+            Volume = Qty(c.Volume, loc), Oi = Qty(c.OpenInterest, loc), VolumeValue = c.Volume, OiValue = c.OpenInterest,
             Iv = e.ImpliedVolatility is { } iv ? (iv * 100).ToString("0.0", CultureInfo.InvariantCulture) + "%" : "—",
             Delta = G(e.Delta, "0.000"), Gamma = G(e.Gamma, "0.0000"),
             Theta = G(e.Theta, "0.00"), Vega = G(e.Vega, "0.00"),
@@ -469,6 +473,7 @@ public sealed class EnrichedSide
     }
 
     private static string Px(double? v) => v is { } x && x > 0 ? NumberDisplay.Price(x) : "—";
-    private static string Qty(double? v) => v is { } x && x > 0 ? x.ToString("N0", CultureInfo.InvariantCulture) : "—";
+    private static string Qty(double? v, LocalizationService loc) => v is { } x && x > 0 ? loc.Amount(x) : "—";
+    internal static string Raw(double? v) => v is { } x && double.IsFinite(x) ? x.ToString("0", CultureInfo.InvariantCulture) : "";
     private static string G(double? v, string fmt) => v is { } x && double.IsFinite(x) ? x.ToString(fmt, CultureInfo.InvariantCulture) : "—";
 }

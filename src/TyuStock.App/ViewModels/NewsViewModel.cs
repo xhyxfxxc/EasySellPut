@@ -275,7 +275,7 @@ public partial class NewsViewModel : ObservableObject
         var cap = fund?.MarketCap ?? quote?.MarketCap;
         var hi = fund?.FiftyTwoWeekHigh ?? quote?.FiftyTwoWeekHigh;
         var lo = fund?.FiftyTwoWeekLow ?? quote?.FiftyTwoWeekLow;
-        Add("Nf_MarketCap", NumberDisplay.Compact(cap));
+        Add("Nf_MarketCap", _loc.Amount(cap));
         Add("Nf_PE", NumberDisplay.Ratio(fund?.TrailingPE));
         Add("Nf_ForwardPE", NumberDisplay.Ratio(fund?.ForwardPE));
         Add("Nf_EPS", NumberDisplay.Price(fund?.Eps));
@@ -290,11 +290,11 @@ public partial class NewsViewModel : ObservableObject
         }
         Add("Nf_Range52", NumberDisplay.Range(lo, hi));
         Add("Nf_Beta", NumberDisplay.Ratio(fund?.Beta));
-        Add("Nf_AvgVolume", NumberDisplay.Compact(fund?.AverageVolume ?? quote?.Volume));
-        Add("Nf_Shares", NumberDisplay.Compact(fund?.SharesOutstanding));
+        Add("Nf_AvgVolume", _loc.Amount(fund?.AverageVolume ?? quote?.Volume));
+        Add("Nf_Shares", _loc.Amount(fund?.SharesOutstanding));
         Add("Nf_PB", NumberDisplay.Ratio(fund?.PriceToBook));
         Add("Nf_ProfitMargin", NumberDisplay.Percent(fund?.ProfitMargin is { } pm ? (Math.Abs(pm) <= 1 ? pm : pm / 100) : null));
-        Add("Nf_Revenue", NumberDisplay.Compact(fund?.Revenue));
+        Add("Nf_Revenue", _loc.Amount(fund?.Revenue));
         Add("Nf_Target", NumberDisplay.Price(fund?.TargetPrice));
         Add("Nf_Earnings", fund?.NextEarningsDate is { } ed ? ed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "");
         Add("Nf_ExDiv", fund?.ExDividendDate is { } xd ? xd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "");
@@ -329,10 +329,10 @@ public partial class NewsViewModel : ObservableObject
     private static string Head(StatementTable table, int i)
         => i < table.Periods.Count ? table.Periods[i].ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "";
 
-    private static string Cell(StatementRow row, int i, string item)
+    private string Cell(StatementRow row, int i, string item)
     {
         if (i >= row.Values.Count || row.Values[i] is not { } v) return "";
-        return item == FinancialItems.DilutedEps ? NumberDisplay.Price(v) : NumberDisplay.Compact(v);
+        return item == FinancialItems.DilutedEps ? NumberDisplay.Price(v) : _loc.Amount(v);
     }
 
     private string ItemLabel(string item) => item switch
