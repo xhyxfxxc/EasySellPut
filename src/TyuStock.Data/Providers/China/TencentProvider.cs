@@ -95,7 +95,8 @@ public sealed partial class TencentProvider(HttpGateway http, ResponseCache cach
             .Select(a => Bar.FromSource(Eastern.Parse(a[0])!.Value, JsonX.ParseNumber(a[1]), JsonX.ParseNumber(a[3]),
                 JsonX.ParseNumber(a[4]), JsonX.ParseNumber(a[2])!.Value, JsonX.ParseNumber(a[5])))
             .ToList();
-        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "tencent", AsOf = bars.LastOrDefault()?.Time };
+        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "tencent", AsOf = bars.LastOrDefault()?.Time,
+            Adjustment = PriceAdjustment.SplitDividend }; // F7: qfq = 前复权 (splits and dividends)
     }
 
     /// <summary>"HHmm price cumulativeVolume" points for the latest session.</summary>
@@ -114,6 +115,6 @@ public sealed partial class TencentProvider(HttpGateway http, ResponseCache cach
             bars.Add(Bar.CloseOnly(TyuStock.Core.Time.MarketClock.FromEastern(t), px, Math.Max(0, cum - prevVol)));
             prevVol = cum;
         }
-        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "tencent", AsOf = bars.LastOrDefault()?.Time };
+        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "tencent", AsOf = bars.LastOrDefault()?.Time, Adjustment = PriceAdjustment.Split }; // today's minutes: nothing to adjust
     }
 }

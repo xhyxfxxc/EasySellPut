@@ -7,17 +7,19 @@ namespace TyuStock.Data.Cache;
 /// <summary>Metadata stored with a cached bar series.</summary>
 /// <param name="CoveredFrom">Start the full download asked for; null means the provider's default history window.</param>
 public sealed record BarCacheMeta(string Source, DateTimeOffset FetchedAt, DateTimeOffset? AsOf, int? DelayMinutes, bool IsRealtime,
-    DateTimeOffset? CoveredFrom = null);
+    DateTimeOffset? CoveredFrom = null, PriceAdjustment Basis = PriceAdjustment.Unknown);
 
 /// <summary>
 /// B2: local SQLite store (<c>cache/market.db</c> in the data folder) for K-line history and, later, IV samples (B1).
-/// Bars are keyed by (symbol, interval, adjust, time); <c>adjust</c> is "" until F7 distinguishes adjusted series.
+/// Bars are keyed by (symbol, interval, adjust, time). F7: <c>adjust</c> is the requested mode
+/// (<see cref="AdjustModeExtensions.CacheKey"/>: "" = split-adjusted, "total" = splits + dividends) and
+/// <c>bar_meta.basis</c> records what the source actually delivered (schema v2).
 /// Missing O/H/L (F2) are stored as NULL, never as a made-up value. Every call opens a pooled connection, so the
 /// class is safe to share across threads.
 /// </summary>
 public sealed class MarketDb
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
     private readonly string _cs;
 
     public MarketDb(string path)
@@ -59,10 +61,18 @@ public sealed class MarketDb
                 PRIMARY KEY (symbol, t, kind)) WITHOUT ROWID;
             """;
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "SELECT COUNT(*) FROM schema_version";
+        // v2 (F7): adjustment basis of each cached series. Old rows read as Unknown and get refreshed by the next fetch.
+        cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('bar_meta') WHERE name='basis'";
         if (Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture) == 0)
         {
-            cmd.CommandText = $"INSERT INTO schema_version (v) VALUES ({SchemaVersion})";
+            cmd.CommandText = "ALTER TABLE bar_meta ADD COLUMN basis TEXT NOT NULL DEFAULT ''";
+            cmd.ExecuteNonQuery();
+        }
+        cmd.CommandText = "SELECT COALESCE(MAX(v), 0) FROM schema_version";
+        var v = Convert.ToInt64(cmd.ExecuteScalar(), CultureInfo.InvariantCulture);
+        if (v < SchemaVersion)
+        {
+            cmd.CommandText = v == 0 ? $"INSERT INTO schema_version (v) VALUES ({SchemaVersion})" : $"UPDATE schema_version SET v = {SchemaVersion}";
             cmd.ExecuteNonQuery();
         }
     }
@@ -83,7 +93,7 @@ public sealed class MarketDb
         BarCacheMeta? meta = null;
         using (var m = c.CreateCommand())
         {
-            m.CommandText = "SELECT source, fetched_at, as_of, delay_minutes, realtime, covered_from FROM bar_meta WHERE symbol=$s AND interval=$i AND adjust=$a";
+            m.CommandText = "SELECT source, fetched_at, as_of, delay_minutes, realtime, covered_from, basis FROM bar_meta WHERE symbol=$s AND interval=$i AND adjust=$a";
             m.Parameters.AddWithValue("$s", symbol);
             m.Parameters.AddWithValue("$i", Key(interval));
             m.Parameters.AddWithValue("$a", adjust);
@@ -92,7 +102,8 @@ public sealed class MarketDb
                 meta = new BarCacheMeta(r.GetString(0), DateTimeOffset.FromUnixTimeSeconds(r.GetInt64(1)),
                     r.IsDBNull(2) ? null : DateTimeOffset.FromUnixTimeSeconds(r.GetInt64(2)),
                     r.IsDBNull(3) ? null : r.GetInt32(3), r.GetInt64(4) != 0,
-                    r.IsDBNull(5) ? null : DateTimeOffset.FromUnixTimeSeconds(r.GetInt64(5)));
+                    r.IsDBNull(5) ? null : DateTimeOffset.FromUnixTimeSeconds(r.GetInt64(5)),
+                    Enum.TryParse<PriceAdjustment>(r.GetString(6), out var basis) ? basis : PriceAdjustment.Unknown);
         }
         if (meta is null) return ([], null);
         var bars = new List<Bar>();
@@ -150,7 +161,7 @@ public sealed class MarketDb
         using (var m = c.CreateCommand())
         {
             m.Transaction = tx;
-            m.CommandText = "INSERT OR REPLACE INTO bar_meta (symbol, interval, adjust, source, fetched_at, as_of, delay_minutes, realtime, covered_from) VALUES ($s,$i,$a,$src,$f,$as,$d,$r,$cf)";
+            m.CommandText = "INSERT OR REPLACE INTO bar_meta (symbol, interval, adjust, source, fetched_at, as_of, delay_minutes, realtime, covered_from, basis) VALUES ($s,$i,$a,$src,$f,$as,$d,$r,$cf,$b)";
             m.Parameters.AddWithValue("$s", symbol);
             m.Parameters.AddWithValue("$i", Key(interval));
             m.Parameters.AddWithValue("$a", adjust);
@@ -160,6 +171,7 @@ public sealed class MarketDb
             m.Parameters.AddWithValue("$d", meta.DelayMinutes is { } d ? d : DBNull.Value);
             m.Parameters.AddWithValue("$r", meta.IsRealtime ? 1 : 0);
             m.Parameters.AddWithValue("$cf", meta.CoveredFrom is { } cf ? cf.ToUnixTimeSeconds() : DBNull.Value);
+            m.Parameters.AddWithValue("$b", meta.Basis.ToString());
             m.ExecuteNonQuery();
         }
         tx.Commit();

@@ -54,6 +54,15 @@ public static class FreshnessText
         return string.Join(" · ", parts);
     }
 
+    /// <summary>F7: localized adjustment basis, e.g. "拆股调整 · 不含分红".</summary>
+    public static string Adjustment(PriceAdjustment a, LocalizationService loc) => a switch
+    {
+        PriceAdjustment.Split => loc["Ch_AdjSplit"],
+        PriceAdjustment.SplitDividend => loc["Ch_AdjTotal"],
+        PriceAdjustment.None => loc["Ch_AdjNone"],
+        _ => loc["Ch_AdjUnknown"],
+    };
+
     /// <summary>D8: "stale" explanation for a price, or null when the price is current.</summary>
     public static string? Stale(SourcedData d, LocalizationService loc, DateTimeOffset now) => QuoteStaleness.Check(d, now) switch
     {

@@ -91,6 +91,7 @@ public sealed class EastmoneyProvider(HttpGateway http, ResponseCache cache) : P
             .Select(f => Bar.FromSource(Eastern.Parse(f[0])!.Value, JsonX.ParseNumber(f[1]), JsonX.ParseNumber(f[3]),
                 JsonX.ParseNumber(f[4]), JsonX.ParseNumber(f[2])!.Value, JsonX.ParseNumber(f[5])))
             .ToList();
-        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "eastmoney", AsOf = bars.LastOrDefault()?.Time };
+        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "eastmoney", AsOf = bars.LastOrDefault()?.Time,
+            Adjustment = PriceAdjustment.SplitDividend }; // F7: fqt=1 = 前复权
     }
 }

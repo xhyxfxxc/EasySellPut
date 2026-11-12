@@ -84,7 +84,17 @@
                 <CheckBox Style="{StaticResource IndCheck}" Content="{DynamicResource Ch_MACD}" IsChecked="{Binding ShowMacd}" />
                 <CheckBox Style="{StaticResource IndCheck}" Content="{DynamicResource Ch_RSI}" IsChecked="{Binding ShowRsi}" />
                 <CheckBox Style="{StaticResource IndCheck}" Content="{DynamicResource Ch_KDJ}" IsChecked="{Binding ShowKdj}" />
+                <!-- F7: adjustment basis -->
+                <Border Width="1" Height="18" Margin="4,0,12,0" VerticalAlignment="Center" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <CheckBox Style="{StaticResource IndCheck}" Content="{DynamicResource Ch_AdjToggle}" IsChecked="{Binding DividendAdjusted}"
+                          ToolTip="{DynamicResource Ch_AdjToggleTip}" AutomationProperties.AutomationId="ChartsDividendAdjusted" />
+                <Border CornerRadius="4" Padding="8,2" VerticalAlignment="Center" Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        ToolTip="{DynamicResource Ch_AdjToggleTip}" Visibility="{Binding AdjustText, Converter={StaticResource NonEmptyToVis}}">
+                    <TextBlock Style="{StaticResource Caption}" Text="{Binding AdjustText}" />
+                </Border>
             </WrapPanel>
+            <TextBlock Text="{Binding AdjustWarning}" FontSize="12" Margin="0,0,0,6" TextWrapping="Wrap" Foreground="{StaticResource DegradedBrush}"
+                       Visibility="{Binding AdjustWarning, Converter={StaticResource NonEmptyToVis}}" AutomationProperties.AutomationId="ChartsAdjustWarning" />
 
             <DockPanel LastChildFill="True">
                 <ui:ProgressRing DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,8,0" IsIndeterminate="True"

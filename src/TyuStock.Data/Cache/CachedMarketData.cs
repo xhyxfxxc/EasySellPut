@@ -42,7 +42,7 @@ public sealed class CachedMarketData : IMarketDataService
     {
         if (request.To is not null) return await _inner.GetBarsAsync(request, ct);
         var symbol = request.Symbol.Trim().ToUpperInvariant();
-        var gate = _locks.GetOrAdd($"{symbol}|{request.Interval}", _ => new SemaphoreSlim(1, 1));
+        var gate = _locks.GetOrAdd($"{symbol}|{request.Interval}|{request.Adjust}", _ => new SemaphoreSlim(1, 1));
         await gate.WaitAsync(ct);
         try { return await GetCoreAsync(request with { Symbol = symbol }, ct); }
         finally { gate.Release(); }
@@ -51,7 +51,7 @@ public sealed class CachedMarketData : IMarketDataService
     private async Task<BarSeries> GetCoreAsync(BarRequest request, CancellationToken ct)
     {
         (IReadOnlyList<Bar> Bars, BarCacheMeta? Meta) cached;
-        try { cached = _db.LoadBars(request.Symbol, request.Interval); }
+        try { cached = _db.LoadBars(request.Symbol, request.Interval, request.Adjust.CacheKey()); }
         catch (Exception ex)
         {
             AppLog.Warn("cache", $"read failed, bypassing: {ex.Message}");
@@ -78,6 +78,9 @@ public sealed class CachedMarketData : IMarketDataService
 
         if (!string.Equals(tail.Source, cached.Meta!.Source, StringComparison.OrdinalIgnoreCase))
             return await FullAsync(request, cached, ct, $"source changed {cached.Meta.Source}→{tail.Source}");
+        // F7: never splice bars of different adjustment bases (e.g. a pre-F7 cache, or a source that changed its basis).
+        if (tail.Adjustment != cached.Meta.Basis)
+            return await FullAsync(request, cached, ct, $"adjustment changed {cached.Meta.Basis}→{tail.Adjustment}");
         var (merged, outcome) = BarMerge.Merge(cached.Bars, tail.Bars);
         if (outcome is BarMergeOutcome.Diverged or BarMergeOutcome.Gap)
             return await FullAsync(request, cached, ct, outcome.ToString());
@@ -110,7 +113,8 @@ public sealed class CachedMarketData : IMarketDataService
         try
         {
             _db.SaveBars(request.Symbol, request.Interval, bars,
-                new BarCacheMeta(from.Source ?? "", from.FetchedAt ?? Now(), from.AsOf, from.DelayMinutes, from.IsRealtime, coveredFrom));
+                new BarCacheMeta(from.Source ?? "", from.FetchedAt ?? Now(), from.AsOf, from.DelayMinutes, from.IsRealtime, coveredFrom, from.Adjustment),
+                request.Adjust.CacheKey());
         }
         catch (Exception ex) { AppLog.Warn("cache", $"write failed: {ex.Message}"); }
     }
@@ -127,7 +131,7 @@ public sealed class CachedMarketData : IMarketDataService
             Symbol = request.Symbol, Interval = request.Interval,
             Bars = request.From is { } f ? bars.Where(b => b.Time >= f).ToList() : bars,
             Source = meta.Source, AsOf = meta.AsOf, FetchedAt = meta.FetchedAt, DelayMinutes = meta.DelayMinutes,
-            IsRealtime = false, OfflineCache = true,
+            IsRealtime = false, OfflineCache = true, Adjustment = meta.Basis,
         };
 
     // ---------------- pass-through ----------------

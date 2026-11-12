@@ -106,7 +106,7 @@ public sealed class CboeProvider(HttpGateway http, ResponseCache cache) : Provid
             bars.Add(Bar.FromSource(t.AddMinutes(-1), p.Num("open"), p.Num("high"), p.Num("low"), close,
                 x.Path("volume", "stock_volume").Num()));
         }
-        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "cboe", AsOf = Utc(root.Str("timestamp")), DelayMinutes = 15 };
+        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "cboe", AsOf = Utc(root.Str("timestamp")), DelayMinutes = 15, Adjustment = PriceAdjustment.Split };
     }
 
     // ---------------- options: one request returns the whole chain ----------------

@@ -170,15 +170,20 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
         var pre = r.Interval.IsIntraday() ? "&includePrePost=true" : "";
         var url = $"{Q1}/v8/finance/chart/{Enc(ToYahoo(r.Symbol))}?interval={iv}&{span}{pre}&events=div%2Csplits";
         using var doc = await GetJsonAsync(url, ct).ConfigureAwait(false);
-        var series = ParseChart(doc.RootElement, Norm(r.Symbol), r.Interval);
+        var series = ParseChart(doc.RootElement, Norm(r.Symbol), r.Interval, r.Adjust);
         if (series.Bars.Count == 0) throw NoData($"no bars for {r.Symbol}");
         return series;
     }
 
-    internal static BarSeries ParseChart(JsonElement root, string symbol, BarInterval interval)
+    /// <remarks>
+    /// F7: Yahoo's OHLC are split-adjusted but not dividend-adjusted. For <see cref="AdjustMode.Total"/> on daily+
+    /// bars, every OHLC is scaled by adjclose/close (the standard total-return adjustment).
+    /// </remarks>
+    internal static BarSeries ParseChart(JsonElement root, string symbol, BarInterval interval, AdjustMode adjust = AdjustMode.Split)
     {
         var res = root.Path("chart", "result")?.At(0);
         var bars = new List<Bar>();
+        var basis = PriceAdjustment.Split;
         DateTimeOffset? asOf = null;
         if (res is { } r)
         {
@@ -192,16 +197,27 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
                 var l = quote.Prop("low").Items().ToArray();
                 var c = quote.Prop("close").Items().ToArray();
                 var v = quote.Prop("volume").Items().ToArray();
+                var adj = adjust == AdjustMode.Total && !interval.IsIntraday()
+                    ? r.Path("indicators", "adjclose")?.At(0)?.Prop("adjclose").Items().ToArray()
+                    : null;
+                if (adj is { Length: > 0 }) basis = PriceAdjustment.SplitDividend;
                 for (var i = 0; i < ts.Length; i++)
                 {
                     if (i >= c.Length || c[i].Num() is not { } close) continue;
+                    var f = 1.0;
+                    if (adj is { Length: > 0 })
+                    {
+                        if (i >= adj.Length || adj[i].Num() is not { } ac || !(close > 0)) continue; // no adjusted value: skip, never mix bases
+                        f = ac / close;
+                    }
+                    double? S(double? x) => x * f;
                     bars.Add(Bar.FromSource(DateTimeOffset.FromUnixTimeSeconds((long)ts[i].GetDouble()),
-                        i < o.Length ? o[i].Num() : null, i < h.Length ? h[i].Num() : null,
-                        i < l.Length ? l[i].Num() : null, close, i < v.Length ? v[i].Num() : null));
+                        S(i < o.Length ? o[i].Num() : null), S(i < h.Length ? h[i].Num() : null),
+                        S(i < l.Length ? l[i].Num() : null), close * f, i < v.Length ? v[i].Num() : null));
                 }
             }
         }
-        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "yahoo", AsOf = asOf };
+        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "yahoo", AsOf = asOf, Adjustment = basis };
     }
 
     // ---------------- options ----------------

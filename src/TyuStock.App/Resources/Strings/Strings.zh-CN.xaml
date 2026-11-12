@@ -563,4 +563,13 @@
     <sys:String x:Key="Ex_MetaNote">说明</sys:String>
     <sys:String x:Key="Ex_MetaWatchNote">各行的来源与更新时间见对应列；部分来源为延迟行情</sys:String>
     <sys:String x:Key="Ex_MetaUnknown">未知</sys:String>
+    <sys:String x:Key="Ch_AdjSplit">拆股调整 · 不含分红</sys:String>
+    <sys:String x:Key="Ch_AdjTotal">拆股 + 分红复权</sys:String>
+    <sys:String x:Key="Ch_AdjNone">未复权</sys:String>
+    <sys:String x:Key="Ch_AdjUnknown">复权口径未知</sys:String>
+    <sys:String x:Key="Ch_AdjToggle">含分红复权</sys:String>
+    <sys:String x:Key="Ch_AdjToggleTip">打开：按 adjclose 同时调整拆股和分红（总回报口径，Yahoo 提供）；关闭：只做拆股调整、不扣分红（多数免费数据源的口径）。分钟线不受影响。</sys:String>
+    <sys:String x:Key="Ch_AdjNotOffered">{0} 不提供分红复权，当前为“{1}”</sys:String>
+    <sys:String x:Key="Ch_AdjChanged">数据源由 {0} 换为 {1}，复权口径由“{2}”变为“{3}”，与之前的价格不能直接比较</sys:String>
+    <sys:String x:Key="Ex_MetaAdjust">复权口径</sys:String>
 </ResourceDictionary>

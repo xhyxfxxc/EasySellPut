@@ -563,4 +563,13 @@
     <sys:String x:Key="Ex_MetaNote">Note</sys:String>
     <sys:String x:Key="Ex_MetaWatchNote">See the source and update-time columns for each row; some sources are delayed</sys:String>
     <sys:String x:Key="Ex_MetaUnknown">Unknown</sys:String>
+    <sys:String x:Key="Ch_AdjSplit">Split-adjusted · excl. dividends</sys:String>
+    <sys:String x:Key="Ch_AdjTotal">Split- and dividend-adjusted</sys:String>
+    <sys:String x:Key="Ch_AdjNone">Unadjusted</sys:String>
+    <sys:String x:Key="Ch_AdjUnknown">Adjustment unknown</sys:String>
+    <sys:String x:Key="Ch_AdjToggle">Include dividends</sys:String>
+    <sys:String x:Key="Ch_AdjToggleTip">On: adjust for splits and dividends using adjclose (total-return view, from Yahoo). Off: split-adjusted only, dividends not deducted (what most free sources give). Intraday bars are unaffected.</sys:String>
+    <sys:String x:Key="Ch_AdjNotOffered">{0} does not offer dividend adjustment; showing “{1}”</sys:String>
+    <sys:String x:Key="Ch_AdjChanged">Source changed from {0} to {1} and the adjustment from “{2}” to “{3}”; prices are not directly comparable with before</sys:String>
+    <sys:String x:Key="Ex_MetaAdjust">Price adjustment</sys:String>
 </ResourceDictionary>

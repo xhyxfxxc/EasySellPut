@@ -125,9 +125,39 @@ public sealed record BarSeries : SourcedData
     /// <see cref="SourcedData.FetchedAt"/> then is when the cached data was downloaded.
     /// </summary>
     public bool OfflineCache { get; init; }
+    /// <summary>F7: how the source adjusted historical prices.</summary>
+    public PriceAdjustment Adjustment { get; init; }
 }
 
-public sealed record BarRequest(string Symbol, BarInterval Interval, DateTimeOffset? From = null, DateTimeOffset? To = null);
+/// <summary>F7: price-adjustment basis of a bar series.</summary>
+public enum PriceAdjustment
+{
+    /// <summary>The source does not say.</summary>
+    Unknown = 0,
+    /// <summary>Raw traded prices.</summary>
+    None,
+    /// <summary>Adjusted for splits only; dividends not deducted (Yahoo/Nasdaq default).</summary>
+    Split,
+    /// <summary>Adjusted for splits and dividends (Yahoo adjclose, 前复权 from Tencent/Eastmoney).</summary>
+    SplitDividend,
+}
+
+/// <summary>F7: what the user asked for. <see cref="Split"/> is the default and matches most free sources.</summary>
+public enum AdjustMode
+{
+    Split,
+    /// <summary>Total-return view: splits and dividends (Yahoo adjclose).</summary>
+    Total,
+}
+
+public static class AdjustModeExtensions
+{
+    /// <summary>B2 cache key (<c>adjust</c> column). Split keeps "" so caches written before F7 stay valid.</summary>
+    public static string CacheKey(this AdjustMode m) => m == AdjustMode.Total ? "total" : "";
+}
+
+public sealed record BarRequest(string Symbol, BarInterval Interval, DateTimeOffset? From = null, DateTimeOffset? To = null,
+    AdjustMode Adjust = AdjustMode.Split);
 
 public enum OptionRight { Call, Put }
 

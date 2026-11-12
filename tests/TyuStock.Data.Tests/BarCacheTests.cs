@@ -24,6 +24,7 @@ public sealed class BarCacheTests : IDisposable
         public int Days { get; set; } = 40;
         public double Scale { get; set; } = 1;
         public string Source { get; set; } = "yahoo";
+        public PriceAdjustment Basis { get; set; } = PriceAdjustment.Split;
 
         public Task<BarSeries> GetBarsAsync(BarRequest r, CancellationToken ct = default)
         {
@@ -31,7 +32,7 @@ public sealed class BarCacheTests : IDisposable
             if (Down) throw new HttpRequestException("offline");
             var bars = Enumerable.Range(0, Days).Select(d => Bar.FromSource(D0.AddDays(d), 100 + d, 101 + d, 99 + d, (100.5 + d) * Scale, 1000))
                 .Where(b => r.From is null || b.Time >= r.From).ToList();
-            return Task.FromResult(new BarSeries { Symbol = r.Symbol, Interval = r.Interval, Bars = bars, Source = Source, FetchedAt = D0.AddDays(Days) });
+            return Task.FromResult(new BarSeries { Symbol = r.Symbol, Interval = r.Interval, Bars = bars, Source = Source, FetchedAt = D0.AddDays(Days), Adjustment = Basis });
         }
         public Task<IReadOnlyList<Quote>> GetQuotesAsync(IReadOnlyList<string> symbols, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Quote>>([]);
         public Task<IReadOnlyList<DateOnly>> GetExpirationsAsync(string symbol, CancellationToken ct = default) => throw new NotSupportedException();
@@ -52,7 +53,7 @@ public sealed class BarCacheTests : IDisposable
     public async Task Round_trips_bars_including_missing_fields()
     {
         var db = new MarketDb(Path.Combine(_dir, "rt.db"));
-        Assert.Equal(1, db.ReadSchemaVersion());
+        Assert.Equal(MarketDb.SchemaVersion, db.ReadSchemaVersion());
         var bars = new[] { Bar.FromSource(D0, 1, 2, 0.5, 1.5, 10), Bar.CloseOnly(D0.AddMinutes(1), 1.6, 3) };
         db.SaveBars("AAPL", BarInterval.Minute1, bars, new BarCacheMeta("cboe", D0, D0, 15, false));
         var (back, meta) = db.LoadBars("AAPL", BarInterval.Minute1);
@@ -121,5 +122,67 @@ public sealed class BarCacheTests : IDisposable
         var narrow = await svc.GetBarsAsync(new BarRequest("AAPL", BarInterval.Day1, D0.AddDays(30)));
         Assert.Equal(1, svc.TailFetches);                                                    // default window covers it
         Assert.All(narrow.Bars, b => Assert.True(b.Time >= D0.AddDays(30)));
+    }
+
+    // ---- F7: adjustment basis in the cache ----
+
+    [Fact]
+    public async Task Modes_are_cached_separately_and_basis_round_trips()
+    {
+        var (svc, inner) = Make();
+        await svc.GetBarsAsync(new BarRequest("AAPL", BarInterval.Day1));
+        inner.Basis = PriceAdjustment.SplitDividend;
+        var total = await svc.GetBarsAsync(new BarRequest("AAPL", BarInterval.Day1, Adjust: AdjustMode.Total));
+        Assert.Equal(2, svc.FullFetches);                                 // separate cache entry, not a tail of the split one
+        Assert.Equal(PriceAdjustment.SplitDividend, total.Adjustment);
+        var (_, meta) = svc.Db.LoadBars("AAPL", BarInterval.Day1, "total");
+        Assert.Equal(PriceAdjustment.SplitDividend, meta!.Basis);
+        Assert.Equal(PriceAdjustment.Split, svc.Db.LoadBars("AAPL", BarInterval.Day1).Meta!.Basis);
+
+        inner.Down = true;                                                 // offline view keeps the basis
+        var offline = await svc.GetBarsAsync(new BarRequest("AAPL", BarInterval.Day1, Adjust: AdjustMode.Total));
+        Assert.True(offline.OfflineCache);
+        Assert.Equal(PriceAdjustment.SplitDividend, offline.Adjustment);
+    }
+
+    [Fact]
+    public async Task A_basis_change_forces_a_full_reload_instead_of_splicing()
+    {
+        var (svc, inner) = Make();
+        await svc.GetBarsAsync(new BarRequest("AAPL", BarInterval.Day1));
+        inner.Basis = PriceAdjustment.SplitDividend;                      // same source, different basis
+        var s = await svc.GetBarsAsync(new BarRequest("AAPL", BarInterval.Day1));
+        Assert.Equal((2, 1), (svc.FullFetches, svc.TailFetches));
+        Assert.Equal(PriceAdjustment.SplitDividend, s.Adjustment);
+    }
+
+    [Fact]
+    public void A_version_1_database_is_upgraded_in_place()
+    {
+        var path = Path.Combine(_dir, "v1.db");
+        Directory.CreateDirectory(_dir);
+        using (var c = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path}"))
+        {
+            c.Open();
+            using var cmd = c.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE schema_version (v INTEGER NOT NULL); INSERT INTO schema_version VALUES (1);
+                CREATE TABLE bars (symbol TEXT NOT NULL, interval TEXT NOT NULL, adjust TEXT NOT NULL DEFAULT '',
+                    t INTEGER NOT NULL, o REAL, h REAL, l REAL, c REAL NOT NULL, v REAL NOT NULL, incomplete INTEGER NOT NULL,
+                    PRIMARY KEY (symbol, interval, adjust, t)) WITHOUT ROWID;
+                CREATE TABLE bar_meta (symbol TEXT NOT NULL, interval TEXT NOT NULL, adjust TEXT NOT NULL DEFAULT '',
+                    source TEXT NOT NULL, fetched_at INTEGER NOT NULL, as_of INTEGER, delay_minutes INTEGER, realtime INTEGER NOT NULL, covered_from INTEGER,
+                    PRIMARY KEY (symbol, interval, adjust));
+                INSERT INTO bar_meta VALUES ('AAPL','Day1','','yahoo',1,NULL,NULL,0,NULL);
+                INSERT INTO bars VALUES ('AAPL','Day1','',1,1,1,1,1,1,0);
+                """;
+            cmd.ExecuteNonQuery();
+        }
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        var db = new MarketDb(path);
+        Assert.Equal(2, db.ReadSchemaVersion());
+        var (bars, meta) = db.LoadBars("AAPL", BarInterval.Day1);
+        Assert.Single(bars);
+        Assert.Equal(PriceAdjustment.Unknown, meta!.Basis);               // refreshed by the next fetch
     }
 }

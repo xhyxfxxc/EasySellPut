@@ -28,8 +28,15 @@ public sealed class FakeMarketDataService : IMarketDataService
         return Task.FromResult(r);
     }
 
+    /// <summary>F7: source and adjustment basis of returned bars (default: yahoo, honouring the requested mode).</summary>
+    public Func<BarRequest, (string Source, PriceAdjustment Basis)>? BarMeta { get; set; }
+    public List<BarRequest> BarRequests { get; } = [];
+
     public Task<BarSeries> GetBarsAsync(BarRequest request, CancellationToken ct = default)
     {
+        lock (BarRequests) BarRequests.Add(request);
+        var (src, basis) = BarMeta?.Invoke(request)
+            ?? ("yahoo", request.Adjust == AdjustMode.Total && !request.Interval.IsIntraday() ? PriceAdjustment.SplitDividend : PriceAdjustment.Split);
         var bars = new List<Bar>();
         var t0 = new DateTimeOffset(2026, 1, 2, 14, 30, 0, TimeSpan.Zero);
         var step = request.Interval.IsIntraday() ? request.Interval.Duration() : TimeSpan.FromDays(1);
@@ -42,8 +49,8 @@ public sealed class FakeMarketDataService : IMarketDataService
         }
         return Task.FromResult(new BarSeries
         {
-            Symbol = request.Symbol, Interval = request.Interval, Bars = bars, Source = "yahoo", IsRealtime = true,
-            AsOf = bars[^1].Time, FetchedAt = DateTimeOffset.UtcNow,
+            Symbol = request.Symbol, Interval = request.Interval, Bars = bars, Source = src, IsRealtime = true,
+            AsOf = bars[^1].Time, FetchedAt = DateTimeOffset.UtcNow, Adjustment = basis,
         });
     }
 

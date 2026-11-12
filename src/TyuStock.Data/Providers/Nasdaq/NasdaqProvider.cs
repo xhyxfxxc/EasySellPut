@@ -164,7 +164,7 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
             .Select(p => Bar.CloseOnly(TyuStock.Core.Time.MarketClock.FromEastern(DateTime.UnixEpoch.AddMilliseconds(p.Num("x")!.Value)),
                 p.Num("y")!.Value, 0))
             .ToList();
-        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "nasdaq", AsOf = bars.LastOrDefault()?.Time };
+        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "nasdaq", AsOf = bars.LastOrDefault()?.Time, Adjustment = PriceAdjustment.Split }; // F7: split-adjusted history
     }
 
     internal static BarSeries ParseHistorical(JsonElement root, string symbol)
@@ -174,7 +174,7 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
             .Where(p => p.t is not null && p.c is > 0)
             .Select(p => Bar.FromSource(p.t!.Value, p.x.Num("open"), p.x.Num("high"), p.x.Num("low"), p.c!.Value, p.x.Num("volume")))
             .OrderBy(b => b.Time).ToList();
-        return new BarSeries { Symbol = symbol, Interval = BarInterval.Day1, Bars = bars, Source = "nasdaq", AsOf = bars.LastOrDefault()?.Time };
+        return new BarSeries { Symbol = symbol, Interval = BarInterval.Day1, Bars = bars, Source = "nasdaq", AsOf = bars.LastOrDefault()?.Time, Adjustment = PriceAdjustment.Split }; // F7: split-adjusted history
     }
 
     // ---------------- options ----------------

@@ -37,6 +37,8 @@ public partial class ChartsViewModel : ObservableObject
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly SymbolContext _context;
+    private readonly SettingsStore _settings;
+    private (string Symbol, BarInterval Interval, string Source, PriceAdjustment Basis)? _lastBasis;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private CancellationTokenSource? _cts;
     private bool _active;
@@ -59,6 +61,12 @@ public partial class ChartsViewModel : ObservableObject
     [ObservableProperty] public partial string Headline { get; set; } = "";
     [ObservableProperty] public partial BarSeries? Series { get; set; }
     [ObservableProperty] public partial KlineSnapshot? Snapshot { get; set; }
+    /// <summary>F7: request dividend-adjusted (adjclose) bars; persisted.</summary>
+    [ObservableProperty] public partial bool DividendAdjusted { get; set; }
+    /// <summary>F7: basis of the bars on screen, e.g. "拆股调整 · 不含分红".</summary>
+    [ObservableProperty] public partial string AdjustText { get; set; } = "";
+    /// <summary>F7: shown when the source cannot give what was asked, or a source switch changed the basis.</summary>
+    [ObservableProperty] public partial string AdjustWarning { get; set; } = "";
 
     public event EventHandler? PlotChanged;
 
@@ -79,9 +87,10 @@ public partial class ChartsViewModel : ObservableObject
         && a.Bars[0].Time == b.Bars[0].Time
         && a.Bars[^1] == b.Bars[^1];
 
-    public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
+    public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context, SettingsStore settings)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _settings = settings;
+        DividendAdjusted = settings.Current.Charts.DividendAdjusted;
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
         _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.FirstOrDefault() ?? "AAPL";
@@ -182,7 +191,8 @@ public partial class ChartsViewModel : ObservableObject
             return;
         }
         var headers = new[] { _loc["Ex_Time"], "Open", "High", "Low", "Close", _loc["Ch_Volume"], _loc["Ex_Incomplete"] };
-        var table = MarketExport.Bars($"{SymbolText}-{Range}", headers, Series) with { Metadata = ExportUi.Metadata(_loc, Series) };
+        var meta = ExportUi.Metadata(_loc, Series).Append(new(_loc["Ex_MetaAdjust"], FreshnessText.Adjustment(Series.Adjustment, _loc))).ToList();
+        var table = MarketExport.Bars($"{SymbolText}-{Range}", headers, Series) with { Metadata = meta };
         var msg = ExportUi.Save($"{SymbolText}-{Range}", [table], _loc);
         if (msg is not null) StatusText = msg;
     }
@@ -217,7 +227,7 @@ public partial class ChartsViewModel : ObservableObject
         var unchanged = false;
         try
         {
-            var request = BuildRequest(symbol, Range);
+            var request = BuildRequest(symbol, Range) with { Adjust = DividendAdjusted ? AdjustMode.Total : AdjustMode.Split };
             // C2: the cache layer turns a refresh into a short tail download; nothing new → no recompute, no redraw.
             var series = await _data.GetBarsAsync(request, _cts.Token);
             if (refreshOnly && Series is { } shown && SameData(shown, series))
@@ -228,6 +238,7 @@ public partial class ChartsViewModel : ObservableObject
             }
             var bars = series.Bars.Select(b => new OhlcvBar(b.Time, b.Open, b.High, b.Low, b.Close, b.Volume)).ToArray();
             Series = series;
+            DescribeAdjustment(request, series);
             Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars, null, series.Bars.Select(b => b.Incomplete || !b.IsConsistent()).ToArray());
             CrosshairText = "";
             Headline = string.IsNullOrWhiteSpace(symbol) ? "" : symbol;
@@ -253,6 +264,27 @@ public partial class ChartsViewModel : ObservableObject
     }
 
     private string? _lastError;
+
+    partial void OnDividendAdjustedChanged(bool value)
+    {
+        if (_settings.Current.Charts.DividendAdjusted != value) _settings.Update(s => s.Charts.DividendAdjusted = value);
+        if (Series is not null) _ = LoadAsync();
+    }
+
+    /// <summary>F7: label the basis and warn about mismatches (asked vs. delivered, or a source switch).</summary>
+    private void DescribeAdjustment(BarRequest request, BarSeries series)
+    {
+        AdjustText = FreshnessText.Adjustment(series.Adjustment, _loc);
+        var warn = "";
+        if (_lastBasis is { } prev && prev.Symbol == request.Symbol && prev.Interval == request.Interval
+            && prev.Basis != series.Adjustment && !string.Equals(prev.Source, series.Source, StringComparison.OrdinalIgnoreCase))
+            warn = string.Format(_loc["Ch_AdjChanged"], SourceNames.Display(prev.Source, _loc), SourceNames.Display(series.Source, _loc),
+                FreshnessText.Adjustment(prev.Basis, _loc), FreshnessText.Adjustment(series.Adjustment, _loc));
+        else if (request.Adjust == AdjustMode.Total && !request.Interval.IsIntraday() && series.Adjustment != PriceAdjustment.SplitDividend)
+            warn = string.Format(_loc["Ch_AdjNotOffered"], SourceNames.Display(series.Source, _loc), AdjustText);
+        AdjustWarning = warn;
+        _lastBasis = (request.Symbol, request.Interval, series.Source, series.Adjustment);
+    }
 
     private void Fail(string message)
     {

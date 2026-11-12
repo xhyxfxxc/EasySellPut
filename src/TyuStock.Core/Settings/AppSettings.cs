@@ -61,6 +61,7 @@ public sealed class AppSettings
     public WindowPlacement? Window { get; set; }
     public AlertSettings Alerts { get; set; } = new();
     public PricingSettings Pricing { get; set; } = new();
+    public ChartSettings Charts { get; set; } = new();
     /// <summary>D4: what the window's close button does. <see cref="CloseAction.Ask"/> until the user has chosen.</summary>
     public CloseAction CloseAction { get; set; } = CloseAction.Ask;
 
@@ -75,6 +76,7 @@ public sealed class AppSettings
         Network.MaxRetries = Math.Clamp(Network.MaxRetries, 0, 5);
         Network.ManualProxy ??= "";
         Pricing ??= new PricingSettings();
+        Charts ??= new ChartSettings();
         if (!double.IsFinite(Pricing.FixedRatePercent)) Pricing.FixedRatePercent = 4.0;
         Pricing.FixedRatePercent = Math.Clamp(Pricing.FixedRatePercent, -1, 20);
         if (!Enum.IsDefined(Pricing.RateMode)) Pricing.RateMode = RiskFreeRateMode.Treasury13Week;
@@ -119,6 +121,13 @@ public sealed class WatchlistGroup
 }
 
 public enum RiskFreeRateMode { Treasury13Week, Fixed }
+
+/// <summary>K-line page preferences.</summary>
+public sealed class ChartSettings
+{
+    /// <summary>F7: request dividend-adjusted (adjclose, total-return) daily+ bars instead of split-only.</summary>
+    public bool DividendAdjusted { get; set; }
+}
 
 /// <summary>F5: risk-free rate for locally computed IV / Greeks / strategy curves.</summary>
 public sealed class PricingSettings
