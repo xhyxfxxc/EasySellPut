@@ -17,15 +17,37 @@ public sealed class OffscreenHost : IDisposable
 {
     private const int WsPopup = unchecked((int)0x80000000);
     private const int WsExToolWindow = 0x00000080, WsExNoActivate = 0x08000000;
-    private readonly HwndSource _source;
+    private readonly HwndSource? _source;
+    private readonly Window? _window;
 
     public FrameworkElement Root { get; }
     public double Width { get; }
     public double Height { get; }
 
-    public OffscreenHost(UIElement content, double width, double height)
+    /// <param name="asMainWindow">
+    /// Host the content in a <see cref="Window"/> that only gets a handle (never shown) and is the application's
+    /// main window, like the real app. Application-level resource changes (theme, strings) reach windows only, so
+    /// runtime-switch tests need this; a bare HwndSource tree never hears about them.
+    /// </param>
+    public OffscreenHost(UIElement content, double width, double height, bool asMainWindow = false)
     {
         Width = width; Height = height;
+        if (asMainWindow)
+        {
+            _window = new Window
+            {
+                Width = width, Height = height, WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false, ShowActivated = false, WindowStartupLocation = WindowStartupLocation.Manual,
+                Left = -32000, Top = -32000, Content = content,
+            };
+            _window.SetResourceReference(Window.BackgroundProperty, "ApplicationBackgroundBrush");
+            _window.SetResourceReference(TextElement.ForegroundProperty, "TextFillColorPrimaryBrush");
+            Application.Current.MainWindow = _window;
+            new WindowInteropHelper(_window).EnsureHandle();   // HWND without WS_VISIBLE: Loaded fires, nothing is shown
+            Root = _window;
+            Layout();
+            return;
+        }
         // A Page may only be parented by a Window or Frame, so it becomes the root visual itself.
         if (content is Page page)
         {
@@ -73,7 +95,13 @@ public sealed class OffscreenHost : IDisposable
 
     public void Dispose()
     {
-        _source.RootVisual = null;                    // raises Unloaded → view-models deactivate (timers stop)
+        if (_window is not null)
+        {
+            _window.Close();                          // Unloaded → view-models deactivate; leaves Application.Windows
+            if (Application.Current.MainWindow == _window) Application.Current.MainWindow = null;
+            return;
+        }
+        _source!.RootVisual = null;                   // raises Unloaded → view-models deactivate (timers stop)
         _source.Dispose();
     }
 }

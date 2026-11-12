@@ -74,6 +74,15 @@ public partial class MainWindow : FluentWindow
 
     internal void CloseWizardForSmoke() => CloseWizard();
 
+    /// <summary>0.4.1 theme check: the window parts that kept the old theme in 0.4.0, with a sample point in window pixels.</summary>
+    internal IEnumerable<(string Part, FrameworkElement Element, Point Sample)> ThemeSurfacesForSmoke() =>
+    [
+        ("title-bar", TitleBar, new Point(320, 22)),
+        ("navigation", RootNavigation, new Point(40, 560)),
+        ("page", (FrameworkElement?)_currentPage ?? RootNavigation, new Point(1000, 400)),
+        ("status-bar", RootNavigation, new Point(900, ActualHeight - 12)),
+    ];
+
     private bool _smoke;
 
     // ---------------- D2: keyboard ----------------

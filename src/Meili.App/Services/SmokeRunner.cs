@@ -103,6 +103,8 @@ public sealed class SmokeRunner
             return Task.FromResult("opens and closes");
         });
 
+        await CheckAsync("theme-switch", () => ThemeSwitchAsync(window, options));
+
         if (!options.SmokeOffline)
         {
             var data = AppServices.Get<IMarketDataService>();
@@ -140,6 +142,69 @@ public sealed class SmokeRunner
         var fails = _checks.Count(c => c.Status == SmokeStatus.Fail);
         WriteReport(options, sw.Elapsed, fails);
         return fails == 0 ? 0 : 1;
+    }
+
+    /// <summary>Brushes every window part resolves must be the application's current ones after a runtime switch.</summary>
+    private static readonly string[] ThemeKeys =
+    [
+        "ApplicationBackgroundBrush", "TextFillColorPrimaryBrush", "CardBackgroundFillColorDefaultBrush", "LayerFillColorDefaultBrush",
+        "ControlFillColorSecondaryBrush", "UpBrush", "DownBrush", "RowHighlightBrush", "ItmBrush", "HealthyBrush",
+    ];
+
+    /// <summary>
+    /// 0.4.1: switch light→dark→light (or the reverse) on the real window with the options page open — the 0.4.0 bug
+    /// left the title bar and navigation dark and table cells grey. Each part must resolve the application's current
+    /// brushes and its sampled pixel must have the theme's lightness; window renders are saved next to the report.
+    /// </summary>
+    private static async Task<string> ThemeSwitchAsync(MainWindow window, AppLaunchOptions options)
+    {
+        var theme = AppServices.Get<ThemeService>();
+        var start = theme.Mode;
+        window.NavigateForSmoke(typeof(Views.Pages.OptionsPage));
+        await Task.Delay(800);
+        var dir = Path.GetDirectoryName(options.SmokeReport ?? Path.Combine(AppServices.DataDirectory.Path, "logs", "smoke.json"))!;
+        var notes = new List<string>();
+        try
+        {
+            foreach (var dark in new[] { !theme.IsDark, theme.IsDark })
+            {
+                theme.Apply(dark ? AppThemeMode.Dark : AppThemeMode.Light, window);
+                await Task.Delay(300);
+                await window.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                var name = dark ? "dark" : "light";
+                if (window.Resources.Count > 0 || window.Resources.MergedDictionaries.Count > 0)
+                    throw new InvalidOperationException($"{name}: window holds {window.Resources.Count} local resources / {window.Resources.MergedDictionaries.Count} dictionaries");
+                var (px, stride) = RenderWindow(window, Path.Combine(dir, $"theme-switch-{name}.png"));
+                foreach (var (part, element, at) in window.ThemeSurfacesForSmoke())
+                {
+                    foreach (var key in ThemeKeys)
+                    {
+                        var expected = ((System.Windows.Media.SolidColorBrush)Application.Current.FindResource(key)).Color;
+                        var actual = ((System.Windows.Media.SolidColorBrush)element.FindResource(key)).Color;
+                        if (expected != actual) throw new InvalidOperationException($"{name}: {part} resolves {key} as {actual}, application has {expected}");
+                    }
+                    var i = (int)at.Y * stride + (int)at.X * 4;
+                    var lum = (0.0722 * px[i] + 0.7152 * px[i + 1] + 0.2126 * px[i + 2]) / 255;   // Pbgra32
+                    if (dark ? lum > 0.35 : lum < 0.6) throw new InvalidOperationException($"{name}: {part} pixel at {at} has lightness {lum:0.00}");
+                    notes.Add($"{name}/{part} {lum:0.00}");
+                }
+            }
+        }
+        finally { theme.Apply(start, window); }
+        return string.Join(", ", notes);
+    }
+
+    private static (byte[] Pixels, int Stride) RenderWindow(Window window, string png)
+    {
+        int w = (int)window.ActualWidth, h = (int)window.ActualHeight, stride = w * 4;
+        var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(w, h, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+        rtb.Render(window);
+        var px = new byte[stride * h];
+        rtb.CopyPixels(px, stride, 0);
+        var enc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+        enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+        using (var fs = File.Create(png)) enc.Save(fs);
+        return (px, stride);
     }
 
     private async Task CheckAsync(string name, Func<Task<string>> body)
