@@ -15,6 +15,7 @@ public static class AppComposition
         s.AddSingleton(new SettingsStore(dataDir.Path));
         s.AddSingleton<LocalizationService>();
         s.AddSingleton<ThemeService>();
+        s.AddSingleton<WatchlistStore>();
         s.AddSingleton<ShellViewModel>();
         s.AddSingleton(sp => new DataServices(sp.GetRequiredService<SettingsStore>().Current.Network));
         s.AddSingleton(sp => sp.GetRequiredService<DataServices>().Router);
@@ -23,6 +24,7 @@ public static class AppComposition
         s.AddSingleton<INetworkController>(sp => sp.GetRequiredService<NetworkController>());
         s.AddTransient<SettingsViewModel>();
         s.AddTransient<DashboardViewModel>();
+        s.AddSingleton<WatchlistViewModel>();
         s.AddSingleton<DataSourcesViewModel>();
     }
 

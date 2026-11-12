@@ -17,7 +17,7 @@ namespace TyuStock.App.ViewModels;
 /// <summary>Overview page: live quote cards for the watchlist, refreshed adaptively by market session.</summary>
 public partial class DashboardViewModel : ObservableObject
 {
-    private readonly SettingsStore _store;
+    private readonly WatchlistStore _watchlist;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
@@ -29,31 +29,35 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial bool IsBusy { get; set; }
 
-    public DashboardViewModel(SettingsStore store, IMarketDataService data, LocalizationService loc)
+    public DashboardViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc)
     {
-        _store = store; _data = data; _loc = loc;
-        foreach (var s in store.Current.Watchlist) Quotes.Add(new QuoteCardViewModel(s));
+        _watchlist = watchlist; _data = data; _loc = loc;
+        RebuildCards();
         _timer.Tick += async (_, _) => await RefreshAsync();
         _loc.LanguageChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); UpdateStatus(); };
+        _watchlist.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(() => { RebuildCards(); _ = RefreshAsync(); });
+    }
+
+    private void RebuildCards()
+    {
+        var wanted = _watchlist.AllSymbols.ToList();
+        var map = Quotes.ToDictionary(q => q.Symbol, StringComparer.OrdinalIgnoreCase);
+        Quotes.Clear();
+        foreach (var s in wanted)
+        {
+            if (!map.TryGetValue(s, out var card)) card = new QuoteCardViewModel(s);
+            Quotes.Add(card);
+        }
     }
 
     public async Task ActivateAsync()
     {
-        _timer.Interval = Interval();
+        _timer.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
         _timer.Start();
         await RefreshAsync();
     }
 
     public void Deactivate() { _timer.Stop(); _cts?.Cancel(); }
-
-    /// <summary>Market open: 5 s; extended hours: 10 s; closed: 60 s.</summary>
-    private static TimeSpan Interval() => MarketClock.GetSession(DateTimeOffset.Now) switch
-    {
-        MarketSession.Regular => TimeSpan.FromSeconds(5),
-        MarketSession.PreMarket or MarketSession.AfterHours => TimeSpan.FromSeconds(10),
-        _ => TimeSpan.FromSeconds(60),
-    };
-
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -75,7 +79,7 @@ public partial class DashboardViewModel : ObservableObject
         finally
         {
             IsBusy = false;
-            _timer.Interval = Interval();
+            _timer.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
             UpdateStatus();
         }
     }

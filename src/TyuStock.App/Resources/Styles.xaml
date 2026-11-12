@@ -3,6 +3,8 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:svc="clr-namespace:TyuStock.App.Services">
     <svc:InverseBoolConverter x:Key="InverseBool" />
+    <svc:BoolToVisConverter x:Key="BoolToVis" />
+    <svc:BoolToVisConverter x:Key="InverseBoolToVis" Invert="True" />
     <!-- Typography: nothing in the app is smaller than 12px. -->
     <FontFamily x:Key="AppFont">Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="NumberFont">Segoe UI Variable Text, Segoe UI</FontFamily>
