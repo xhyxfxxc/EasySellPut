@@ -8,6 +8,9 @@ using Meili.Mac.Platform;
 
 [assembly: AvaloniaTestApplication(typeof(Meili.Mac.Tests.MacHost))]
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
+// One Application for the whole run, like the real app: the DI singletons (theme, strings) attach to it once.
+// The default (PerTest) recreates Application per test, leaving them bound to the first, already disposed one.
+[assembly: Avalonia.Headless.AvaloniaTestIsolation(Avalonia.Headless.AvaloniaTestIsolationLevel.PerAssembly)]
 
 namespace Meili.Mac.Tests;
 
