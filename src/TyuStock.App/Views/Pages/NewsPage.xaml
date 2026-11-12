@@ -138,7 +138,8 @@
                     <TextBlock Style="{StaticResource Secondary}" Text="{DynamicResource Nf_NoProfile}"
                                Visibility="{Binding HasProfile, Converter={StaticResource InverseBoolToVis}}" />
                     <StackPanel Visibility="{Binding HasProfile, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,4">
+                        <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,4"
+                                   Visibility="{Binding HasWebsite, Converter={StaticResource BoolToVis}}">
                             <Run Text="{DynamicResource Nf_Website}" />
                             <Run Text="  " />
                             <Hyperlink Command="{Binding OpenWebsiteCommand}">
