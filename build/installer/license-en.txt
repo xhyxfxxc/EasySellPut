@@ -1,0 +1,9 @@
+﻿Meili Daogu Seller Green-Bubble Group Terminal
+
+This software is provided by Meili Daogu for personal study and reference only. It is not investment advice.
+
+Quotes, options, news and fundamentals come from third-party public endpoints (including but not limited to Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney). Data may be delayed, interrupted or incorrect. You use this software at your own risk.
+
+Please follow each data source's terms of use. Do not redistribute data obtained through this software commercially.
+
+Closing the main window hides the app in the system tray. To quit, right-click the tray icon and choose Exit.
