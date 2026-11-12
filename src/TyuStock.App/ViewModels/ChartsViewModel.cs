@@ -182,7 +182,7 @@ public partial class ChartsViewModel : ObservableObject
             return;
         }
         var headers = new[] { _loc["Ex_Time"], "Open", "High", "Low", "Close", _loc["Ch_Volume"], _loc["Ex_Incomplete"] };
-        var table = MarketExport.Bars($"{SymbolText}-{Range}", headers, Series);
+        var table = MarketExport.Bars($"{SymbolText}-{Range}", headers, Series) with { Metadata = ExportUi.Metadata(_loc, Series) };
         var msg = ExportUi.Save($"{SymbolText}-{Range}", [table], _loc);
         if (msg is not null) StatusText = msg;
     }

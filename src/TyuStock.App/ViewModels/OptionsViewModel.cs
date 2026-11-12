@@ -35,6 +35,7 @@ public partial class OptionsViewModel : ObservableObject
     private IReadOnlyList<OptionStrikeRow> _allRows = [];
     private bool _suppressExpChange;
     private string? _loadedSymbol;
+    private OptionChain? _lastChain;
 
     public ObservableCollection<string> WatchSymbols { get; } = [];
     public ObservableCollection<ExpirationChoice> Expirations { get; } = [];
@@ -183,6 +184,7 @@ public partial class OptionsViewModel : ObservableObject
                 r.Put?.Bid ?? "", r.Put?.Ask ?? "", r.Put?.Last ?? "", r.Put?.Volume ?? "", r.Put?.Oi ?? "", r.Put?.Iv ?? "",
                 r.Put?.Delta ?? "", r.Put?.Gamma ?? "", r.Put?.Theta ?? "", r.Put?.Vega ?? "",
             ]).ToList(),
+            Metadata = ExportUi.Metadata(_loc, _lastChain, _rate, Headline),
         };
         var msg = ExportUi.Save($"{SymbolText}-{exp}", [table], _loc);
         if (msg is not null) StatusText = msg;
@@ -239,6 +241,7 @@ public partial class OptionsViewModel : ObservableObject
             var fundTask = SafeYield(symbol, ct);
             var chain = await chainTask;
             _loadedSymbol = symbol;
+            _lastChain = chain;
             var quotes = await quoteTask;
             var yield = await fundTask;
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));

@@ -550,4 +550,17 @@
     <sys:String x:Key="Op_SpotPrevClose">Underlying {0} (previous close)</sys:String>
     <sys:String x:Key="Op_LivePrice">Latest {0} · {1}</sys:String>
     <sys:String x:Key="Op_LivePriceTip">The underlying price in the chain is from the same moment as the option quotes and is used for IV and Greeks; the latest price comes from the stock quote and is shown for comparison.</sys:String>
+    <sys:String x:Key="Ex_MetaSheet">Export info</sys:String>
+    <sys:String x:Key="Ex_MetaTable">Table</sys:String>
+    <sys:String x:Key="Ex_MetaItem">Item</sys:String>
+    <sys:String x:Key="Ex_MetaValue">Value</sys:String>
+    <sys:String x:Key="Ex_MetaExported">Exported at</sys:String>
+    <sys:String x:Key="Ex_MetaSource">Data source</sys:String>
+    <sys:String x:Key="Ex_MetaTiming">Timeliness</sys:String>
+    <sys:String x:Key="Ex_MetaAsOf">Market/data time (ET)</sys:String>
+    <sys:String x:Key="Ex_MetaFetched">Fetched at (local)</sys:String>
+    <sys:String x:Key="Ex_MetaRate">Pricing assumptions</sys:String>
+    <sys:String x:Key="Ex_MetaNote">Note</sys:String>
+    <sys:String x:Key="Ex_MetaWatchNote">See the source and update-time columns for each row; some sources are delayed</sys:String>
+    <sys:String x:Key="Ex_MetaUnknown">Unknown</sys:String>
 </ResourceDictionary>

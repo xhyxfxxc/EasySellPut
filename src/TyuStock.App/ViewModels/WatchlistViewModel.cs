@@ -441,7 +441,7 @@ public partial class WatchlistViewModel : ObservableObject
             _loc["Wl_ColChangePct"], _loc["Wl_ColVolume"], _loc["Wl_LastUpdated"], _loc["Wl_ColSource"],
             _loc["Op_Bid"], _loc["Op_Ask"], _loc["Wl_ColExt"], _loc["Wl_ColChangePct"], _loc["Ex_Session"],
         };
-        var table = MarketExport.Quotes(SelectedGroupTitle, headers, quotes);
+        var table = MarketExport.Quotes(SelectedGroupTitle, headers, quotes) with { Metadata = ExportUi.Metadata(_loc, null, note: _loc["Ex_MetaWatchNote"]) };
         var msg = ExportUi.Save($"watchlist-{SelectedGroupTitle}", [table], _loc);
         if (msg is not null) { _statusHint = msg; UpdateStatus(); }
     }

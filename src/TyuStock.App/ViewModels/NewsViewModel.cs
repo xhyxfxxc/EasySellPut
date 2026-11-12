@@ -31,6 +31,7 @@ public partial class NewsViewModel : ObservableObject
     private bool _active;
     private string? _lastError;
     private FinancialStatements? _financials;
+    private Fundamentals? _lastFundamentals;
 
     public ObservableCollection<string> WatchSymbols { get; } = [];
     public ObservableCollection<StatItem> Stats { get; } = [];
@@ -137,7 +138,9 @@ public partial class NewsViewModel : ObservableObject
                 Headers = [_loc["Ex_Headline"], _loc["Ex_Publisher"], _loc["Ex_Time"], _loc["Ex_Url"]],
                 Rows = News.Select(n => (IReadOnlyList<string>)[n.Title, n.Publisher, n.TimeText, n.Url]).ToList(),
             });
-        var msg = ExportUi.Save(string.IsNullOrWhiteSpace(SymbolText) ? "fundamentals" : SymbolText + "-fundamentals", tables, _loc);
+        // F9: the profile/statistics come from the fundamentals source; statements carry their own (e.g. SEC).
+        var meta = ExportUi.Metadata(_loc, (SourcedData?)_lastFundamentals ?? _financials);
+        var msg = ExportUi.Save(string.IsNullOrWhiteSpace(SymbolText) ? "fundamentals" : SymbolText + "-fundamentals", ExportUi.WithMetadata(tables, meta), _loc);
         if (msg is not null) StatusText = msg;
     }
 
@@ -191,6 +194,7 @@ public partial class NewsViewModel : ObservableObject
             var (news, newsErr) = await newsTask;
             var quote = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
 
+            _lastFundamentals = fund;
             ApplyQuoteAndProfile(symbol, quote, fund);
             ApplyStats(quote, fund);
             _financials = fin;

@@ -5,11 +5,13 @@ using ClosedXML.Excel;
 namespace TyuStock.Core.Export;
 
 /// <summary>A named sheet/table of already-formatted text cells, ready for CSV or XLSX.</summary>
-public sealed class ExportTable
+public sealed record ExportTable
 {
     public required string Name { get; init; }
     public required IReadOnlyList<string> Headers { get; init; }
     public required IReadOnlyList<IReadOnlyList<string>> Rows { get; init; }
+    /// <summary>F9: provenance rows (source, as-of, export time, delay, pricing assumptions) written with the data.</summary>
+    public IReadOnlyList<KeyValuePair<string, string>> Metadata { get; init; } = [];
 }
 
 /// <summary>Writes export tables as UTF-8 BOM CSV (Excel-friendly Chinese) or a formatted .xlsx workbook.</summary>
@@ -23,12 +25,19 @@ public static class TableExporter
         sb.AppendLine(Join(table.Headers));
         foreach (var row in table.Rows)
             sb.AppendLine(Join(row));
+        // F9: provenance after one blank line, so the data block stays a clean table for Excel/pandas.
+        if (table.Metadata.Count > 0)
+        {
+            sb.AppendLine();
+            foreach (var (k, v) in table.Metadata) sb.AppendLine(Join([k, v]));
+        }
         File.WriteAllText(path, sb.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
     }
 
     public static void WriteXlsx(ExportTable table, string path) => WriteXlsx([table], path);
 
-    public static void WriteXlsx(IReadOnlyList<ExportTable> tables, string path)
+    /// <param name="infoSheet">F9: name and headers (table, item, value) of the provenance sheet added when any table has metadata.</param>
+    public static void WriteXlsx(IReadOnlyList<ExportTable> tables, string path, (string Name, string Table, string Item, string Value)? infoSheet = null)
     {
         ArgumentNullException.ThrowIfNull(tables);
         if (tables.Count == 0) throw new ArgumentException("At least one table is required.", nameof(tables));
@@ -59,6 +68,23 @@ public static class TableExporter
             if (table.Headers.Count > 0)
                 ws.SheetView.FreezeRows(1);
             ws.Columns().AdjustToContents(1, 40, 8, 40);
+        }
+        if (tables.Any(t => t.Metadata.Count > 0))
+        {
+            var info = infoSheet ?? ("Info", "Table", "Item", "Value");
+            var ws = wb.Worksheets.Add(UniqueSheetName(info.Name, used));
+            ws.Cell(1, 1).Value = info.Table; ws.Cell(1, 2).Value = info.Item; ws.Cell(1, 3).Value = info.Value;
+            ws.Range(1, 1, 1, 3).Style.Font.Bold = true;
+            var r = 2;
+            foreach (var t in tables)
+                foreach (var (k, v) in t.Metadata)
+                {
+                    ws.Cell(r, 1).Value = t.Name; ws.Cell(r, 2).Value = k; ws.Cell(r, 3).Value = v; // text, never parsed as numbers
+                    r++;
+                }
+            ws.Range(1, 1, Math.Max(1, r - 1), 3).Style.Font.FontSize = 12;
+            ws.SheetView.FreezeRows(1);
+            ws.Columns().AdjustToContents(1, 60, 8, 80);
         }
         wb.SaveAs(path);
     }

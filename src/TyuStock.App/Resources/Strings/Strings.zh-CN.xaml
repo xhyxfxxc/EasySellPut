@@ -550,4 +550,17 @@
     <sys:String x:Key="Op_SpotPrevClose">标的价 {0}（昨收）</sys:String>
     <sys:String x:Key="Op_LivePrice">最新价 {0} · {1}</sys:String>
     <sys:String x:Key="Op_LivePriceTip">期权链里的标的价与期权报价同一时刻，用于计算隐含波动率和希腊值；最新价来自股票行情，仅供对照。</sys:String>
+    <sys:String x:Key="Ex_MetaSheet">导出信息</sys:String>
+    <sys:String x:Key="Ex_MetaTable">表</sys:String>
+    <sys:String x:Key="Ex_MetaItem">项目</sys:String>
+    <sys:String x:Key="Ex_MetaValue">内容</sys:String>
+    <sys:String x:Key="Ex_MetaExported">导出时间</sys:String>
+    <sys:String x:Key="Ex_MetaSource">数据源</sys:String>
+    <sys:String x:Key="Ex_MetaTiming">时效</sys:String>
+    <sys:String x:Key="Ex_MetaAsOf">行情/数据时间（美东）</sys:String>
+    <sys:String x:Key="Ex_MetaFetched">抓取时间（本地）</sys:String>
+    <sys:String x:Key="Ex_MetaRate">定价假设</sys:String>
+    <sys:String x:Key="Ex_MetaNote">说明</sys:String>
+    <sys:String x:Key="Ex_MetaWatchNote">各行的来源与更新时间见对应列；部分来源为延迟行情</sys:String>
+    <sys:String x:Key="Ex_MetaUnknown">未知</sys:String>
 </ResourceDictionary>

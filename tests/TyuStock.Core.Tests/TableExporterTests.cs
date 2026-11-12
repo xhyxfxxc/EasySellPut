@@ -97,4 +97,47 @@ public class TableExporterTests : IDisposable
         Assert.Equal("营业收入", table.Rows[0][0]);
         Assert.Equal("1234.5", table.Rows[0][1]);
     }
+
+    // ---- F9: provenance metadata ----
+
+    private static ExportTable WithMeta() => Sample() with
+    {
+        Metadata = [new("导出时间", "2026-11-12 21:00:00 +08:00"), new("时效", "延迟 15 分钟"), new("定价假设", "BSM · r = 4.12%")],
+    };
+
+    [Fact]
+    public void Csv_writes_metadata_after_a_blank_line()
+    {
+        var path = Path.Combine(_dir, "m.csv");
+        TableExporter.WriteCsv(WithMeta(), path);
+        var lines = File.ReadAllText(path, Encoding.UTF8).Split(Environment.NewLine);
+        var blank = Array.IndexOf(lines, "");
+        Assert.True(blank > 2);                                  // header + rows first
+        Assert.Equal("导出时间,2026-11-12 21:00:00 +08:00", lines[blank + 1]);
+        Assert.Equal("时效,延迟 15 分钟", lines[blank + 2]);
+    }
+
+    [Fact]
+    public void Xlsx_adds_an_info_sheet_with_text_values()
+    {
+        var path = Path.Combine(_dir, "m.xlsx");
+        TableExporter.WriteXlsx([WithMeta()], path, ("导出信息", "表", "项目", "内容"));
+        using var wb = new XLWorkbook(path);
+        Assert.Equal(2, wb.Worksheets.Count);
+        var info = wb.Worksheet("导出信息");
+        Assert.Equal("项目", info.Cell(1, 2).GetString());
+        Assert.Equal("自选", info.Cell(2, 1).GetString());
+        Assert.Equal("BSM · r = 4.12%", info.Cell(4, 3).GetString());
+        Assert.Equal(XLDataType.Text, info.Cell(2, 3).DataType);
+        Assert.Equal(3, wb.Worksheet("自选").LastRowUsed()!.RowNumber());  // data sheet untouched
+    }
+
+    [Fact]
+    public void No_metadata_means_no_info_sheet()
+    {
+        var path = Path.Combine(_dir, "n.xlsx");
+        TableExporter.WriteXlsx([Sample()], path);
+        using var wb = new XLWorkbook(path);
+        Assert.Single(wb.Worksheets);
+    }
 }

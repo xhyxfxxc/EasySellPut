@@ -3,6 +3,8 @@ using System.IO;
 using System.Windows;
 using Microsoft.Win32;
 using TyuStock.Core.Export;
+using TyuStock.Core.Models;
+using TyuStock.Core.Pricing;
 
 namespace TyuStock.App.Services;
 
@@ -48,7 +50,7 @@ public static class ExportUi
             {
                 if (!path.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
                     path += ".xlsx";
-                TableExporter.WriteXlsx(tables, path);
+                TableExporter.WriteXlsx(tables, path, (loc["Ex_MetaSheet"], loc["Ex_MetaTable"], loc["Ex_MetaItem"], loc["Ex_MetaValue"]));
             }
             return string.Format(loc["Ex_Saved"], path);
         }
@@ -58,6 +60,37 @@ public static class ExportUi
             return string.Format(loc["Ex_Failed"], ex.Message);
         }
     }
+
+    /// <summary>
+    /// F9: provenance rows for an export, from the same freshness model the UI uses. <paramref name="data"/> is the
+    /// dataset the table came from (null for multi-source tables, which carry per-row source columns instead).
+    /// </summary>
+    public static IReadOnlyList<KeyValuePair<string, string>> Metadata(LocalizationService loc, SourcedData? data,
+        RiskFreeRate? rate = null, string? note = null, DateTimeOffset? now = null)
+    {
+        var t = now ?? DateTimeOffset.Now;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var list = new List<KeyValuePair<string, string>>
+        {
+            new(loc["Ex_MetaExported"], t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", inv)),
+        };
+        if (data is not null)
+        {
+            list.Add(new(loc["Ex_MetaSource"], ViewModels.SourceNames.Display(data.Source, loc)));
+            list.Add(new(loc["Ex_MetaTiming"], FreshnessText.Timing(DataFreshness.Evaluate(data, t), loc)));
+            list.Add(new(loc["Ex_MetaAsOf"], data.AsOf is { } a
+                ? TyuStock.Core.Time.MarketClock.ToEastern(a).ToString("yyyy-MM-dd HH:mm:ss", inv)
+                : loc["Ex_MetaUnknown"]));
+            if (data.FetchedAt is { } f)
+                list.Add(new(loc["Ex_MetaFetched"], f.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", inv)));
+        }
+        if (rate is not null) list.Add(new(loc["Ex_MetaRate"], PricingText.Model(rate, loc)));
+        if (!string.IsNullOrWhiteSpace(note)) list.Add(new(loc["Ex_MetaNote"], note));
+        return list;
+    }
+
+    public static IReadOnlyList<ExportTable> WithMetadata(IReadOnlyList<ExportTable> tables, IReadOnlyList<KeyValuePair<string, string>> meta)
+        => tables.Select(t => t with { Metadata = meta }).ToList();
 
     public static string Sanitize(string? name)
     {
