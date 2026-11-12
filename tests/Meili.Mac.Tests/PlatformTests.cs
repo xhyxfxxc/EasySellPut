@@ -39,8 +39,9 @@ public class PlatformTests : IDisposable
     [Fact]
     public void Translocated_app_never_uses_a_portable_folder()
     {
-        // A macOS path ('/' separators) even when the suite runs on Windows.
-        var bundleParent = _root + "/private/var/folders/AppTranslocation/ABC/d";
+        // Translocation paths are macOS paths; on Windows DirectoryInfo rewrites them with backslashes.
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "macOS path semantics");
+        var bundleParent = Path.Combine(_root, "private", "var", "folders", "AppTranslocation", "ABC", "d");
         var exe = Path.Combine(bundleParent, "X.app", "Contents", "MacOS");
         Directory.CreateDirectory(exe);
         File.WriteAllText(Path.Combine(bundleParent, DataDirectoryResolver.PortableFlagFile), "");
