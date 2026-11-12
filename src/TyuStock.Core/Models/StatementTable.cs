@@ -81,8 +81,26 @@ public static class NumberDisplay
         return x.ToString("0.00", CultureInfo.InvariantCulture);
     }
 
+    /// <summary>
+    /// G1: precision follows the price level — below 1 up to 4 decimals, 1–10 up to 3, otherwise 2 (thousands
+    /// separators from 1,000). Trailing extra zeros are not padded, so 0.05 stays "0.05" but 0.1234 keeps all four.
+    /// </summary>
+    public static string PriceFormat(double reference)
+    {
+        var a = Math.Abs(reference);
+        return a < 1 ? "0.00##" : a < 10 ? "0.00#" : a < 1000 ? "0.00" : "#,##0.00";
+    }
+
     public static string Price(double? value, string empty = Empty)
-        => value is { } x && double.IsFinite(x) ? x.ToString("0.00", CultureInfo.InvariantCulture) : empty;
+        => value is { } x && double.IsFinite(x) ? x.ToString(PriceFormat(x), CultureInfo.InvariantCulture) : empty;
+
+    /// <summary>A signed price change shown with the precision of the price it belongs to (e.g. +0.0125 on a $0.41 stock).</summary>
+    public static string SignedChange(double? change, double reference, string empty = Empty)
+    {
+        if (change is not { } c || !double.IsFinite(c)) return empty;
+        var body = Math.Abs(c).ToString(PriceFormat(reference), CultureInfo.InvariantCulture);
+        return (c > 0 ? "+" : c < 0 ? "-" : "") + body;
+    }
 
     public static string Percent(double? decimalFraction, string empty = Empty)
         => decimalFraction is { } x && double.IsFinite(x)

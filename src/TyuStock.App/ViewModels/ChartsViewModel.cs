@@ -301,7 +301,7 @@ public partial class ChartsViewModel : ObservableObject
         CrosshairText = $"{et:yyyy-MM-dd HH:mm}   " + string.Format(_loc["Ch_CrosshairMore"], head, ma, ema)
             + (b.Incomplete || !b.IsConsistent() ? "   " + _loc["Ch_IncompleteBar"] : "");
 
-        string F(double x) => double.IsFinite(x) ? x.ToString(x >= 1000 ? "N2" : "0.00", inv) : "—";
+        string F(double x) => NumberDisplay.Price(x);
         string Def(double x) => double.IsFinite(x) ? F(x) : "—";
         static string Vol(double v) => v >= 1_000_000 ? (v / 1_000_000).ToString("0.00", CultureInfo.InvariantCulture) + "M" : v.ToString("N0", CultureInfo.InvariantCulture);
     }

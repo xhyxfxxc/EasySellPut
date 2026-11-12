@@ -232,7 +232,7 @@ public partial class NewsViewModel : ObservableObject
         var ch = quote?.Change;
         var pct = quote?.ChangePercent;
         if (ch is { } c && pct is { } p)
-            ChangeText = $"{(c >= 0 ? "+" : "")}{c.ToString("0.00", CultureInfo.InvariantCulture)}  ({(p >= 0 ? "+" : "")}{p.ToString("0.00", CultureInfo.InvariantCulture)}%)";
+            ChangeText = $"{NumberDisplay.SignedChange(c, price ?? c)}  ({(p >= 0 ? "+" : "")}{p.ToString("0.00", CultureInfo.InvariantCulture)}%)";
         else
             ChangeText = "";
         var up = (ch ?? 0) >= 0;

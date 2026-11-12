@@ -291,7 +291,7 @@ public partial class OptionsViewModel : ObservableObject
             var src = SourceNames.Display(chain.Source, _loc);
             _lastError = Rows.Count == 0 ? _loc["Op_Empty"] : null;
             Headline = Spot is { } p
-                ? $"{symbol}   {string.Format(_loc["Op_Spot"], p.ToString("0.00", CultureInfo.InvariantCulture))}"
+                ? $"{symbol}   {string.Format(_loc["Op_Spot"], NumberDisplay.Price(p))}"
                 : symbol;
             DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
             HasDelay = DelayText.Length > 0;
@@ -464,7 +464,7 @@ public sealed class EnrichedSide
         };
     }
 
-    private static string Px(double? v) => v is { } x && x > 0 ? x.ToString("0.00", CultureInfo.InvariantCulture) : "—";
+    private static string Px(double? v) => v is { } x && x > 0 ? NumberDisplay.Price(x) : "—";
     private static string Qty(double? v) => v is { } x && x > 0 ? x.ToString("N0", CultureInfo.InvariantCulture) : "—";
     private static string G(double? v, string fmt) => v is { } x && double.IsFinite(x) ? x.ToString(fmt, CultureInfo.InvariantCulture) : "—";
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -125,9 +126,9 @@ public sealed class NotificationService : IDisposable
 
     public static string FormatValue(AlertKind kind, double value) => kind switch
     {
-        AlertKind.PercentUp or AlertKind.PercentDown => value.ToString("0.##"),
-        AlertKind.VolumeAbove => value.ToString("N0"),
-        _ => value.ToString("0.##"),
+        AlertKind.PercentUp or AlertKind.PercentDown => value.ToString("0.##", CultureInfo.InvariantCulture),
+        AlertKind.VolumeAbove => value.ToString("N0", CultureInfo.InvariantCulture),
+        _ => TyuStock.Core.Models.NumberDisplay.Price(value),
     };
 
     public void Dispose()

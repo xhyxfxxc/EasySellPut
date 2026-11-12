@@ -294,7 +294,7 @@ public partial class StrategyViewModel : ObservableObject
             }
 
             Headline = Spot is { } p
-                ? $"{symbol}   {string.Format(_loc["St_Spot"], p.ToString("0.00", CultureInfo.InvariantCulture))}"
+                ? $"{symbol}   {string.Format(_loc["St_Spot"], NumberDisplay.Price(p))}"
                 : symbol;
 
             if (seed is not null)
@@ -501,7 +501,7 @@ public partial class StrategyViewModel : ObservableObject
             MaxLossText = FormatBound(analysis.MaxLoss, analysis.MaxLossPrice, unbounded: analysis.IsMaxLossUnbounded);
             BreakevenText = analysis.Breakevens.Count == 0
                 ? "—"
-                : string.Join("  ·  ", analysis.Breakevens.Select(b => b.ToString("0.00", CultureInfo.InvariantCulture)));
+                : string.Join("  ·  ", analysis.Breakevens.Select(b => NumberDisplay.Price(b)));
             if (double.IsFinite(analysis.RewardToRisk))
                 RewardText = string.Format(_loc["St_RewardRisk"], analysis.RewardToRisk);
             if (Spot is { } s && overlay is { } val)
@@ -556,7 +556,7 @@ public partial class StrategyViewModel : ObservableObject
     {
         if (unbounded) return _loc["St_Unbounded"];
         var body = value.ToString("N2", Culture());
-        if (at is { } p && p > 0) return $"{body}  ({string.Format(_loc["St_AtPrice"], p.ToString("0.00", CultureInfo.InvariantCulture))})";
+        if (at is { } p && p > 0) return $"{body}  ({string.Format(_loc["St_AtPrice"], NumberDisplay.Price(p))})";
         return body;
     }
 

@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using TyuStock.App.Services;
 using TyuStock.Core.Abstractions;
 using TyuStock.Core.Models;
+using TyuStock.Core.Quotes;
 using TyuStock.Core.Settings;
 using TyuStock.Core.Time;
 using TyuStock.Data.Routing;
@@ -18,9 +19,10 @@ namespace TyuStock.App.ViewModels;
 public partial class DashboardViewModel : ObservableObject
 {
     private readonly WatchlistStore _watchlist;
-    private readonly IMarketDataService _data;
+    private const string Owner = "dashboard";
+    private readonly QuoteHub _hub;
     private readonly LocalizationService _loc;
-    private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
+    private bool _active;
     private CancellationTokenSource? _cts;
     private DateTimeOffset? _lastUpdate;
     private string? _lastError;
@@ -29,13 +31,12 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial bool IsBusy { get; set; }
 
-    public DashboardViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc)
+    public DashboardViewModel(WatchlistStore watchlist, QuoteHub hub, LocalizationService loc)
     {
-        _watchlist = watchlist; _data = data; _loc = loc;
+        _watchlist = watchlist; _hub = hub; _loc = loc;
         RebuildCards();
-        _timer.Tick += async (_, _) => await RefreshAsync();
         _loc.LanguageChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); UpdateStatus(); };
-        _watchlist.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(() => { RebuildCards(); _ = RefreshAsync(); });
+        _watchlist.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(() => { RebuildCards(); if (_active) { Resubscribe(); _ = RefreshAsync(); } });
     }
 
     private void RebuildCards()
@@ -50,14 +51,57 @@ public partial class DashboardViewModel : ObservableObject
         }
     }
 
+    /// <summary>C1: listen to the shared quote hub while visible; the app-level pump does the periodic fetch.</summary>
     public async Task ActivateAsync()
     {
-        _timer.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
-        _timer.Start();
+        if (!_active)
+        {
+            _active = true;
+            _hub.Updated += OnBatch;
+        }
+        Resubscribe();
+        ShowCached();
         await RefreshAsync();
     }
 
-    public void Deactivate() { _timer.Stop(); _cts?.Cancel(); }
+    public void Deactivate()
+    {
+        _active = false;
+        _hub.Updated -= OnBatch;
+        _hub.Unsubscribe(Owner);
+        _cts?.Cancel();
+    }
+
+    private void Resubscribe() => _hub.Subscribe(Owner, Quotes.Select(q => q.Symbol));
+
+    private void ShowCached()
+    {
+        foreach (var card in Quotes)
+            if (_hub.TryGetCached(card.Symbol, out var q)) card.Update(q, _loc);
+    }
+
+    private void OnBatch(object? sender, QuoteBatch batch)
+    {
+        if (!Quotes.Any(c => batch.Covers(c.Symbol))) return;
+        if (batch.Error is not null) { _lastError = ErrorText(batch.Error); UpdateStatus(); return; }
+        Apply(batch.Quotes);
+    }
+
+    private void Apply(IReadOnlyList<Quote> quotes)
+    {
+        var map = quotes.GroupBy(q => q.Symbol, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        foreach (var card in Quotes)
+            if (map.TryGetValue(card.Symbol, out var q)) card.Update(q, _loc);
+        if (map.Count > 0) { _lastUpdate = DateTimeOffset.Now; _lastError = null; }
+        UpdateStatus();
+    }
+
+    private string ErrorText(Exception ex) => ex switch
+    {
+        AllSourcesFailedException => _loc["Dash_AllFailed"],
+        OperationCanceledException => _loc["Dash_Timeout"],
+        _ => ex.Message,
+    };
     [RelayCommand]
     private async Task RefreshAsync()
     {
@@ -67,19 +111,15 @@ public partial class DashboardViewModel : ObservableObject
         _cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
         try
         {
-            var quotes = await _data.GetQuotesAsync(Quotes.Select(q => q.Symbol).ToList(), _cts.Token);
-            var map = quotes.ToDictionary(q => q.Symbol, StringComparer.OrdinalIgnoreCase);
-            foreach (var card in Quotes)
-                if (map.TryGetValue(card.Symbol, out var q)) card.Update(q, _loc);
-            _lastUpdate = DateTimeOffset.Now; _lastError = null;
+            // Served from the hub's short-TTL cache when another page just fetched; otherwise one combined request.
+            var quotes = await _hub.GetQuotesAsync(Quotes.Select(q => q.Symbol).ToList(), _cts.Token);
+            Apply(quotes);
         }
-        catch (AllSourcesFailedException) { _lastError = _loc["Dash_AllFailed"]; }
-        catch (OperationCanceledException) { _lastError = _loc["Dash_Timeout"]; }
-        catch (Exception ex) { _lastError = ex.Message; }
+        catch (OperationCanceledException) when (!_active) { }
+        catch (Exception ex) { _lastError = ErrorText(ex); }
         finally
         {
             IsBusy = false;
-            _timer.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
             UpdateStatus();
         }
     }
@@ -110,15 +150,15 @@ public partial class QuoteCardViewModel(string symbol) : ObservableObject
         if (_quote is not { } q) return;
         var inv = CultureInfo.InvariantCulture;
         Name = q.Name ?? "";
-        PriceText = q.Price.ToString(q.Price >= 1000 ? "N2" : "0.00", inv);
+        PriceText = NumberDisplay.Price(q.Price);
         var chg = q.Change ?? (q.PreviousClose is { } pc ? q.Price - pc : 0);
         var pct = q.ChangePercent ?? (q.PreviousClose is > 0 ? chg / q.PreviousClose.Value * 100 : 0);
-        ChangeText = $"{chg.ToString("+0.00;-0.00;0.00", inv)}  {pct.ToString("+0.00;-0.00;0.00", inv)}%";
+        ChangeText = $"{NumberDisplay.SignedChange(chg, q.Price)}  {pct.ToString("+0.00;-0.00;0.00", inv)}%";
         var up = chg >= 0;
         ChangeBrush = Application.Current.TryFindResource(up ? "UpBrush" : "DownBrush") as Brush;
         ChangeBackground = Application.Current.TryFindResource(up ? "UpBackgroundBrush" : "DownBackgroundBrush") as Brush;
         ExtText = q.ExtendedPrice is { } ep
-            ? $"{loc[q.MarketState == MarketState.PreMarket ? "Quote_Pre" : "Quote_Post"]}  {ep.ToString("0.00", inv)}  {(q.ExtendedChangePercent ?? 0).ToString("+0.00;-0.00;0.00", inv)}%"
+            ? $"{loc[q.MarketState == MarketState.PreMarket ? "Quote_Pre" : "Quote_Post"]}  {NumberDisplay.Price(ep)}  {(q.ExtendedChangePercent ?? 0).ToString("+0.00;-0.00;0.00", inv)}%"
             : "";
         var now = DateTimeOffset.Now;
         SourceText = FreshnessText.SourceAndTiming(q, loc, now);

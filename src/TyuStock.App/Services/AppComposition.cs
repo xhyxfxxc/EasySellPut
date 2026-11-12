@@ -25,6 +25,8 @@ public static class AppComposition
         s.AddSingleton(sp => new DataServices(sp.GetRequiredService<SettingsStore>().Current.Network));
         s.AddSingleton(sp => sp.GetRequiredService<DataServices>().Router);
         s.AddSingleton<IMarketDataService>(sp => sp.GetRequiredService<DataServices>().Router);
+        s.AddSingleton(sp => new TyuStock.Core.Quotes.QuoteHub(sp.GetRequiredService<IMarketDataService>()));
+        s.AddSingleton<QuotePump>();
         s.AddSingleton<NetworkController>();
         s.AddSingleton<INetworkController>(sp => sp.GetRequiredService<NetworkController>());
         s.AddTransient<SettingsViewModel>();
@@ -44,5 +46,6 @@ public static class AppComposition
         _ = sp.GetRequiredService<NetworkController>().ReconfigureAsync();
         sp.GetRequiredService<AlertStore>().Load();
         sp.GetRequiredService<AlertMonitor>().Start();
+        sp.GetRequiredService<QuotePump>().Start();
     }
 }

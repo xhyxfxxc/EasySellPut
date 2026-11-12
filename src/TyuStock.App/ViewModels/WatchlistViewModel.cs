@@ -9,6 +9,7 @@ using TyuStock.App.Services;
 using TyuStock.Core.Abstractions;
 using TyuStock.Core.Export;
 using TyuStock.Core.Models;
+using TyuStock.Core.Quotes;
 using TyuStock.Core.Settings;
 using TyuStock.Core.Time;
 using TyuStock.Data.Routing;
@@ -22,7 +23,8 @@ public partial class WatchlistViewModel : ObservableObject
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly NavigationHub _nav;
-    private readonly DispatcherTimer _refresh = new(DispatcherPriority.Background);
+    private const string Owner = "watchlist";
+    private readonly QuoteHub _hub;
     private readonly DispatcherTimer _searchDebounce = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly DispatcherTimer _flash = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(700) };
     private CancellationTokenSource? _refreshCts;
@@ -52,10 +54,9 @@ public partial class WatchlistViewModel : ObservableObject
     public bool CanRemoveGroup => Groups.Count > 1;
     public string SelectedGroupTitle => Groups.FirstOrDefault(g => g.Id == SelectedGroupId)?.Title ?? _loc["Wl_DefaultGroup"];
 
-    public WatchlistViewModel(WatchlistStore store, IMarketDataService data, LocalizationService loc, NavigationHub nav)
+    public WatchlistViewModel(WatchlistStore store, IMarketDataService data, QuoteHub hub, LocalizationService loc, NavigationHub nav)
     {
-        _store = store; _data = data; _loc = loc; _nav = nav;
-        _refresh.Tick += async (_, _) => await RefreshAsync();
+        _store = store; _data = data; _hub = hub; _loc = loc; _nav = nav;
         _searchDebounce.Tick += async (_, _) => { _searchDebounce.Stop(); await SearchAsync(); };
         _flash.Tick += (_, _) =>
         {
@@ -74,18 +75,23 @@ public partial class WatchlistViewModel : ObservableObject
         RebuildRows();
     }
 
+    /// <summary>C1: listen to the shared quote hub while visible; the app-level pump does the periodic fetch.</summary>
     public async Task ActivateAsync()
     {
-        _active = true;
-        _refresh.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
-        _refresh.Start();
+        if (!_active)
+        {
+            _active = true;
+            _hub.Updated += OnBatch;
+        }
+        Resubscribe();
         await RefreshAsync();
     }
 
     public void Deactivate()
     {
         _active = false;
-        _refresh.Stop();
+        _hub.Updated -= OnBatch;
+        _hub.Unsubscribe(Owner);
         _searchDebounce.Stop();
         _refreshCts?.Cancel();
         _searchCts?.Cancel();
@@ -131,6 +137,7 @@ public partial class WatchlistViewModel : ObservableObject
             Rows.Add(row);
         }
         HasRows = Rows.Count > 0;
+        Resubscribe();
         if (SelectedRow is not null && Rows.All(r => r.Symbol != SelectedRow.Symbol))
             SelectedRow = null;
     }
@@ -162,13 +169,49 @@ public partial class WatchlistViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(id)) SelectedGroupId = id;
     }
 
+    private void Resubscribe()
+    {
+        if (_active) _hub.Subscribe(Owner, Rows.Select(r => r.Symbol));
+    }
+
+    private void OnBatch(object? sender, QuoteBatch batch)
+    {
+        if (!Rows.Any(r => batch.Covers(r.Symbol))) return;
+        if (batch.Error is not null) { _lastError = ErrorText(batch.Error); UpdateStatus(); return; }
+        Apply(batch.Quotes, batch.Requested);
+        UpdateStatus();
+    }
+
+    private void Apply(IReadOnlyList<Quote> quotes, IReadOnlyList<string> requested)
+    {
+        var map = quotes.GroupBy(q => q.Symbol, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        var flashing = false;
+        foreach (var row in Rows)
+            if (map.TryGetValue(row.Symbol, out var q) && row.Update(q, _loc)) flashing = true;
+        if (flashing)
+        {
+            _flash.Stop();
+            _flash.Start();
+        }
+        var missing = Rows.Where(r => requested.Contains(r.Symbol, StringComparer.OrdinalIgnoreCase) && !map.ContainsKey(r.Symbol))
+            .Select(r => r.Symbol).ToList();
+        _lastUpdate = DateTimeOffset.Now;
+        _lastError = missing.Count > 0 ? string.Format(_loc["Wl_Missing"], string.Join(", ", missing)) : null;
+    }
+
+    private string ErrorText(Exception ex) => ex switch
+    {
+        AllSourcesFailedException => _loc["Wl_AllFailed"],
+        OperationCanceledException => _loc["Wl_Timeout"],
+        _ => ex.Message,
+    };
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
         if (IsBusy || Rows.Count == 0)
         {
             if (Rows.Count == 0) { _lastError = null; UpdateStatus(); }
-            _refresh.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
             return;
         }
         IsBusy = true;
@@ -177,34 +220,16 @@ public partial class WatchlistViewModel : ObservableObject
         _refreshCts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
         try
         {
-            var quotes = await _data.GetQuotesAsync(Rows.Select(r => r.Symbol).ToList(), _refreshCts.Token);
-            var map = quotes.ToDictionary(q => q.Symbol, StringComparer.OrdinalIgnoreCase);
-            var flashing = false;
-            foreach (var row in Rows)
-            {
-                if (map.TryGetValue(row.Symbol, out var q))
-                {
-                    if (row.Update(q, _loc)) flashing = true;
-                }
-            }
-            if (flashing)
-            {
-                _flash.Stop();
-                _flash.Start();
-            }
-            var missing = Rows.Where(r => !map.ContainsKey(r.Symbol)).Select(r => r.Symbol).ToList();
-            _lastUpdate = DateTimeOffset.Now;
-            _lastError = missing.Count > 0 ? string.Format(_loc["Wl_Missing"], string.Join(", ", missing)) : null;
+            var symbols = Rows.Select(r => r.Symbol).ToList();
+            var quotes = await _hub.GetQuotesAsync(symbols, _refreshCts.Token);
+            Apply(quotes, symbols);
         }
-        catch (AllSourcesFailedException) { _lastError = _loc["Wl_AllFailed"]; }
-        catch (OperationCanceledException) when (_active) { _lastError = _loc["Wl_Timeout"]; }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { _lastError = ex.Message; }
+        catch (OperationCanceledException) when (!_active) { }
+        catch (Exception ex) { _lastError = ErrorText(ex); }
         finally
         {
             _statusHint = null;
             IsBusy = false;
-            _refresh.Interval = MarketClock.QuoteRefreshInterval(DateTimeOffset.Now);
             UpdateStatus();
         }
     }
@@ -473,16 +498,16 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
         if (_quote is not { } q) return;
         var inv = CultureInfo.InvariantCulture;
         Name = q.Name ?? "";
-        PriceText = q.Price.ToString(q.Price >= 1000 ? "N2" : "0.00", inv);
+        PriceText = NumberDisplay.Price(q.Price);
         var chg = q.Change ?? (q.PreviousClose is { } pc ? q.Price - pc : 0);
         var pct = q.ChangePercent ?? (q.PreviousClose is > 0 ? chg / q.PreviousClose.Value * 100 : 0);
-        ChangeText = chg.ToString("+0.00;-0.00;0.00", inv);
+        ChangeText = NumberDisplay.SignedChange(chg, q.Price);
         ChangePctText = pct.ToString("+0.00;-0.00;0.00", inv) + "%";
         var up = chg >= 0;
         ChangeBrush = Application.Current.TryFindResource(up ? "UpBrush" : "DownBrush") as Brush;
         ChangeBackground = Application.Current.TryFindResource(up ? "UpBackgroundBrush" : "DownBackgroundBrush") as Brush;
         ExtText = q.ExtendedPrice is { } ep
-            ? $"{loc[q.MarketState == MarketState.PreMarket ? "Quote_Pre" : "Quote_Post"]}  {ep.ToString("0.00", inv)}  {(q.ExtendedChangePercent ?? 0).ToString("+0.00;-0.00;0.00", inv)}%"
+            ? $"{loc[q.MarketState == MarketState.PreMarket ? "Quote_Pre" : "Quote_Post"]}  {NumberDisplay.Price(ep)}  {(q.ExtendedChangePercent ?? 0).ToString("+0.00;-0.00;0.00", inv)}%"
             : "";
         VolumeText = FormatVolume(q.Volume);
         var now = DateTimeOffset.Now;
