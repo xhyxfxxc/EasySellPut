@@ -572,4 +572,5 @@
     <sys:String x:Key="Ch_AdjNotOffered">{0} 不提供分红复权，当前为“{1}”</sys:String>
     <sys:String x:Key="Ch_AdjChanged">数据源由 {0} 换为 {1}，复权口径由“{2}”变为“{3}”，与之前的价格不能直接比较</sys:String>
     <sys:String x:Key="Ex_MetaAdjust">复权口径</sys:String>
+    <sys:String x:Key="Wl_ColTime">时间</sys:String>
 </ResourceDictionary>

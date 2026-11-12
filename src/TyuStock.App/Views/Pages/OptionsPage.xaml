@@ -1,4 +1,5 @@
 <Page x:Class="TyuStock.App.Views.Pages.OptionsPage"
+      Typography.NumeralAlignment="Tabular" Typography.NumeralStyle="Lining"
       AutomationProperties.AutomationId="OptionsPageRoot"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

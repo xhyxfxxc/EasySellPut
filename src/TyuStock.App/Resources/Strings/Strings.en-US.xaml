@@ -572,4 +572,5 @@
     <sys:String x:Key="Ch_AdjNotOffered">{0} does not offer dividend adjustment; showing “{1}”</sys:String>
     <sys:String x:Key="Ch_AdjChanged">Source changed from {0} to {1} and the adjustment from “{2}” to “{3}”; prices are not directly comparable with before</sys:String>
     <sys:String x:Key="Ex_MetaAdjust">Price adjustment</sys:String>
+    <sys:String x:Key="Wl_ColTime">Time</sys:String>
 </ResourceDictionary>

@@ -1,4 +1,5 @@
 <Page x:Class="TyuStock.App.Views.Pages.WatchlistPage"
+      Typography.NumeralAlignment="Tabular" Typography.NumeralStyle="Lining"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -195,6 +196,9 @@
                     <Setter Property="Padding" Value="8,8" />
                     <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
                 </Style>
+                <Style x:Key="NumHeader" TargetType="GridViewColumnHeader" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
+                    <Setter Property="HorizontalContentAlignment" Value="Right" />
+                </Style>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="MinHeight" Value="44" />
@@ -245,16 +249,27 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="170">
+                    <!-- E2: numeric columns are right-aligned with tabular digits -->
+                    <GridViewColumn Width="100" HeaderContainerStyle="{StaticResource NumHeader}">
                         <GridViewColumn.Header>
                             <TextBlock Text="{DynamicResource Wl_ColPrice}" FontSize="12" FontWeight="SemiBold" />
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
+                                <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource NumberFont}" FontSize="16" FontWeight="SemiBold"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <!-- D8: quote time + stale marker -->
+                    <GridViewColumn Width="120">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColTime}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource NumberFont}" FontSize="16" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                    <TextBlock Text="{Binding PriceTimeText}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                                    <TextBlock Text="{Binding PriceTimeText}" FontSize="12" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip="{Binding TimingTip}" />
                                     <Border Margin="6,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="6,1" Background="{StaticResource DegradedBrush}"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVis}}" ToolTip="{Binding StaleTip}"
@@ -265,26 +280,26 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="100">
+                    <GridViewColumn Width="100" HeaderContainerStyle="{StaticResource NumHeader}">
                         <GridViewColumn.Header>
                             <TextBlock Text="{DynamicResource Wl_ColChange}" FontSize="12" FontWeight="SemiBold" />
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                <Border CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}" VerticalAlignment="Center" HorizontalAlignment="Right">
                                     <TextBlock Text="{Binding ChangeText}" FontFamily="{StaticResource NumberFont}" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{Binding ChangeBrush}" />
                                 </Border>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="100">
+                    <GridViewColumn Width="100" HeaderContainerStyle="{StaticResource NumHeader}">
                         <GridViewColumn.Header>
                             <TextBlock Text="{DynamicResource Wl_ColChangePct}" FontSize="12" FontWeight="SemiBold" />
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                <Border CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}" VerticalAlignment="Center" HorizontalAlignment="Right">
                                     <TextBlock Text="{Binding ChangePctText}" FontFamily="{StaticResource NumberFont}" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{Binding ChangeBrush}" />
                                 </Border>
@@ -301,13 +316,13 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="90">
+                    <GridViewColumn Width="90" HeaderContainerStyle="{StaticResource NumHeader}">
                         <GridViewColumn.Header>
                             <TextBlock Text="{DynamicResource Wl_ColVolume}" FontSize="12" FontWeight="SemiBold" />
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding VolumeText}" FontFamily="{StaticResource NumberFont}" FontSize="14" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding VolumeText}" FontFamily="{StaticResource NumberFont}" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
