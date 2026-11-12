@@ -53,7 +53,7 @@ dotnet publish $AppProj -c Release -r win-x64 --self-contained true -o $PublishD
     /p:DebugSymbols=false
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)" }
 
-$published = Join-Path $PublishDir "TyuStockApp.exe"
+$published = Join-Path $PublishDir "MeiliTerminal.exe"
 if (-not (Test-Path $published)) { throw "Published exe not found: $published" }
 
 Get-ChildItem $PayloadDir -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force

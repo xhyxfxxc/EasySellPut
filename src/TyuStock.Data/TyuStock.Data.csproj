@@ -10,7 +10,7 @@
     <ProjectReference Include="..\TyuStock.Core\TyuStock.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="TyuStockApp" />
+    <InternalsVisibleTo Include="MeiliTerminal" />
     <InternalsVisibleTo Include="TyuStock.Data.Tests" />
   </ItemGroup>
 </Project>

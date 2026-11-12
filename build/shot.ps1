@@ -11,8 +11,8 @@ $s | Add-Member -Force NoteProperty language $Language
 $s | Add-Member -Force NoteProperty theme $Theme
 $s | Add-Member -Force NoteProperty window $null
 [IO.File]::WriteAllText($sf, ($s | ConvertTo-Json -Depth 8), (New-Object Text.UTF8Encoding $false))
-Get-Process TyuStockApp -ErrorAction SilentlyContinue | Stop-Process -Force
-$exe = Join-Path $root 'src\TyuStock.App\bin\Debug\net10.0-windows10.0.19041.0\TyuStockApp.exe'
+Get-Process MeiliTerminal -ErrorAction SilentlyContinue | Stop-Process -Force
+$exe = Join-Path $root 'src\TyuStock.App\bin\Debug\net10.0-windows10.0.19041.0\MeiliTerminal.exe'
 $p = Start-Process $exe -ArgumentList '--data-dir', $data, '--page', $Page -PassThru
 Start-Sleep $WaitSeconds
 if ($p.HasExited) { throw "app exited (code $($p.ExitCode))" }

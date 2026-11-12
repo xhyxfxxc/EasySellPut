@@ -11,7 +11,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 BROWSER = {"User-Agent": UA, "Accept": "application/json, text/plain, */*",
            "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "gzip, deflate"}
 NASDAQ = dict(BROWSER, **{"Origin": "https://www.nasdaq.com", "Referer": "https://www.nasdaq.com/"})
-SEC = {"User-Agent": "tyuStockApp research contact@example.com", "Accept-Encoding": "gzip, deflate"}
+SEC = {"User-Agent": "MeiliTerminal research contact@example.com", "Accept-Encoding": "gzip, deflate"}
 SINA = dict(BROWSER, Referer="https://finance.sina.com.cn/")
 HERE = os.path.dirname(os.path.abspath(__file__))
 today = dt.date.today()

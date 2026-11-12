@@ -6,6 +6,9 @@ namespace TyuStock.App.Services;
 /// <summary>Runtime zh-CN / en-US switching by swapping a merged ResourceDictionary (all UI text uses DynamicResource).</summary>
 public sealed class LocalizationService
 {
+    /// <summary>B4: computed, so renaming the assembly cannot break the string dictionaries.</summary>
+    private static readonly string AssemblyName = typeof(LocalizationService).Assembly.GetName().Name!;
+
     private ResourceDictionary? _current;
     public string Language { get; private set; } = "zh-CN";
     public event EventHandler? LanguageChanged;
@@ -15,7 +18,7 @@ public sealed class LocalizationService
         if (language is not ("zh-CN" or "en-US")) language = "zh-CN";
         var dict = new ResourceDictionary
         {
-            Source = new Uri($"pack://application:,,,/TyuStockApp;component/Resources/Strings/Strings.{language}.xaml", UriKind.Absolute),
+            Source = new Uri($"pack://application:,,,/{AssemblyName};component/Resources/Strings/Strings.{language}.xaml", UriKind.Absolute),
         };
         var merged = Application.Current.Resources.MergedDictionaries;
         if (_current is not null) merged.Remove(_current);

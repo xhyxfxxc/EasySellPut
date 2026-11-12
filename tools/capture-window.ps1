@@ -1,4 +1,4 @@
-﻿# Launch TyuStockApp with given args, wait, capture its main window (PrintWindow, works when covered), then close it.
+﻿# Launch the app (MeiliTerminal.exe) with given args, wait, capture its main window (PrintWindow, works when covered), then close it.
 param([string]$Exe, [string[]]$AppArgs, [string]$Out, [int]$WaitSeconds = 12)
 Add-Type -AssemblyName System.Drawing
 Add-Type @"

@@ -8,7 +8,7 @@ os.makedirs(OUT, exist_ok=True)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 B = {"User-Agent": UA, "Accept": "application/json, text/plain, */*", "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "gzip"}
 NQ = dict(B, Origin="https://www.nasdaq.com", Referer="https://www.nasdaq.com/")
-SEC = {"User-Agent": "tyuStockApp research contact@example.com", "Accept-Encoding": "gzip"}
+SEC = {"User-Agent": "MeiliTerminal research contact@example.com", "Accept-Encoding": "gzip"}
 SINA = dict(B, Referer="https://finance.sina.com.cn/")
 jar = http.cookiejar.CookieJar()
 op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))

@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Force $raw | Out-Null
 $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
 $nq = @{ 'Accept' = 'application/json, text/plain, */*'; 'Accept-Language' = 'en-US,en;q=0.9'; 'Origin' = 'https://www.nasdaq.com'; 'Referer' = 'https://www.nasdaq.com/' }
 $sina = @{ 'Referer' = 'https://finance.sina.com.cn/' }
-$secUa = 'tyuStockApp/0.2 personal-use contact@example.com'
+$secUa = 'MeiliTerminal/0.3 personal-use contact@example.com'
 function Get-To($name, $url, $headers = @{}, $agent = $ua) {
     for ($i = 1; $i -le 4; $i++) {
         try {

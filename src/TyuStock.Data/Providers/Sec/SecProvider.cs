@@ -12,7 +12,7 @@ namespace TyuStock.Data.Providers.Sec;
 /// </summary>
 public sealed class SecProvider(HttpGateway http, ResponseCache cache) : ProviderBase(http, cache), IFinancialsProvider, ISymbolSearchProvider
 {
-    public const string UserAgent = "tyuStockApp/0.2 (personal, non-commercial) contact@example.com";
+    public const string UserAgent = "MeiliTerminal/0.3 (personal, non-commercial) contact@example.com";
     private static readonly IReadOnlyDictionary<string, string> Headers = new Dictionary<string, string> { ["User-Agent"] = UserAgent };
 
     public override string Id => "sec";
