@@ -53,6 +53,17 @@ public class StringResourceTests
                 Assert.DoesNotMatch("(?i)coming soon|later release|后续版本|即将推出", kv.Value);
             });
     }
+
+    /// <summary>B8: the About text says free sources have no Level 2 order book or tick-by-tick trades.</summary>
+    [Theory]
+    [InlineData("zh-CN", "逐笔成交")]
+    [InlineData("en-US", "tick-by-tick")]
+    public void About_states_no_order_book_or_ticks(string lang, string phrase)
+    {
+        var about = Load(lang)["Set_AboutDesc"];
+        Assert.Contains("Level 2", about);
+        Assert.Contains(phrase, about);
+    }
 }
 
 public class HostSafetyTests
