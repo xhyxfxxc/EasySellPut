@@ -14,6 +14,8 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="ScottPlot.WPF" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
+    <PackageReference Include="H.NotifyIcon.Wpf" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TyuStock.Core\TyuStock.Core.csproj" />

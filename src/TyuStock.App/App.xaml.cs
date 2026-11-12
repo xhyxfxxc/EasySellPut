@@ -22,7 +22,11 @@ public partial class App : Application
         Directory.CreateDirectory(dataDir.Path);
         AppServices.DataDirectory = dataDir;
 
+        var options = AppLaunchOptions.Parse(e.Args);
+        if (options.ExitOnClose)
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
         var services = new ServiceCollection();
+        services.AddSingleton(options);
         AppComposition.Register(services, dataDir);
         AppServices.Provider = services.BuildServiceProvider();
 
@@ -39,6 +43,8 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        try { AppServices.Get<NotificationService>().Dispose(); } catch { }
+        try { AppServices.Get<AlertMonitor>().Dispose(); } catch { }
         (AppServices.Provider as IDisposable)?.Dispose();
         base.OnExit(e);
     }

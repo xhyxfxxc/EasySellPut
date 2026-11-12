@@ -200,7 +200,7 @@
                     <MenuItem Header="{DynamicResource Wl_MoveDown}" Command="{Binding MoveDownCommand}" />
                     <MenuItem Header="{DynamicResource Wl_Remove}" Command="{Binding RemoveSelectedCommand}" />
                     <Separator />
-                    <MenuItem Header="{DynamicResource Wl_AlertSoon}" Command="{Binding AlertSoonCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_SetAlert}" Command="{Binding SetAlertCommand}" />
                     <MenuItem Header="{DynamicResource Wl_ExportSoon}" Command="{Binding ExportSoonCommand}" />
                 </ContextMenu>
             </ListView.ContextMenu>

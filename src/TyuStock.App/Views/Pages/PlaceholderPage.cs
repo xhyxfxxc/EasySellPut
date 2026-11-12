@@ -35,5 +35,3 @@ public abstract class PlaceholderPage : Page
         };
     }
 }
-
-public sealed class AlertsPage() : PlaceholderPage("Nav_Alerts", SymbolRegular.Alert24, "M8");

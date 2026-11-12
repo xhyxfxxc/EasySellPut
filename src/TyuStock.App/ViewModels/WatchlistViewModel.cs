@@ -20,6 +20,7 @@ public partial class WatchlistViewModel : ObservableObject
     private readonly WatchlistStore _store;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
+    private readonly NavigationHub _nav;
     private readonly DispatcherTimer _refresh = new(DispatcherPriority.Background);
     private readonly DispatcherTimer _searchDebounce = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(300) };
     private readonly DispatcherTimer _flash = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(700) };
@@ -50,9 +51,9 @@ public partial class WatchlistViewModel : ObservableObject
     public bool CanRemoveGroup => Groups.Count > 1;
     public string SelectedGroupTitle => Groups.FirstOrDefault(g => g.Id == SelectedGroupId)?.Title ?? _loc["Wl_DefaultGroup"];
 
-    public WatchlistViewModel(WatchlistStore store, IMarketDataService data, LocalizationService loc)
+    public WatchlistViewModel(WatchlistStore store, IMarketDataService data, LocalizationService loc, NavigationHub nav)
     {
-        _store = store; _data = data; _loc = loc;
+        _store = store; _data = data; _loc = loc; _nav = nav;
         _refresh.Tick += async (_, _) => await RefreshAsync();
         _searchDebounce.Tick += async (_, _) => { _searchDebounce.Stop(); await SearchAsync(); };
         _flash.Tick += (_, _) =>
@@ -364,7 +365,11 @@ public partial class WatchlistViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AlertSoon() => SetHint("Wl_AlertSoon");
+    private void SetAlert()
+    {
+        var symbol = SelectedRow?.Symbol ?? Rows.FirstOrDefault()?.Symbol;
+        _nav.Go(typeof(TyuStock.App.Views.Pages.AlertsPage), symbol);
+    }
 
     [RelayCommand]
     private void ExportSoon() => SetHint("Wl_ExportSoon");

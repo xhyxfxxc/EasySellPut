@@ -93,6 +93,15 @@ public partial class ChartsViewModel : ObservableObject
         _cts?.Cancel();
     }
 
+    public Task OpenSymbolAsync(string symbol)
+    {
+        if (WatchlistStore.TryNormalizeSymbol(symbol, out var s, out _))
+            SymbolText = s;
+        else if (!string.IsNullOrWhiteSpace(symbol))
+            SymbolText = symbol.Trim().ToUpperInvariant();
+        return LoadAsync();
+    }
+
     private void RebuildWatchSymbols()
     {
         WatchSymbols.Clear();

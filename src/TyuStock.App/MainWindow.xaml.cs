@@ -1,4 +1,5 @@
-﻿using System.Windows;
+using System.ComponentModel;
+using System.Windows;
 using TyuStock.App.Services;
 using TyuStock.App.ViewModels;
 using TyuStock.App.Views.Pages;
@@ -12,6 +13,11 @@ public partial class MainWindow : FluentWindow
     private readonly SettingsStore _settings = AppServices.Get<SettingsStore>();
     private readonly ThemeService _theme = AppServices.Get<ThemeService>();
     private readonly LocalizationService _loc = AppServices.Get<LocalizationService>();
+    private readonly AppLaunchOptions _options = AppServices.Get<AppLaunchOptions>();
+    private readonly NavigationHub _nav = AppServices.Get<NavigationHub>();
+    private readonly NotificationService _notify = AppServices.Get<NotificationService>();
+    private bool _exitRequested;
+    private bool _hidingToTray;
 
     public MainWindow()
     {
@@ -24,9 +30,20 @@ public partial class MainWindow : FluentWindow
             // System theme watching needs a loaded window handle.
             if (_theme.Mode == AppThemeMode.System) _theme.Apply(AppThemeMode.System, this);
             UpdateThemeIcon();
+            _notify.Attach(this);
         };
         _theme.ThemeChanged += (_, _) => UpdateThemeIcon();
-        Closing += (_, _) => SavePlacement();
+        StateChanged += OnStateChanged;
+        Closing += OnClosing;
+        _nav.Requested += OnNavigateRequested;
+        _notify.ExitRequested += (_, _) => RequestExit();
+    }
+
+    public void RequestExit()
+    {
+        _exitRequested = true;
+        SavePlacement();
+        Application.Current.Shutdown();
     }
 
     /// <summary>Optional <c>--page &lt;name&gt;</c> start page (used for screenshots and deep links).</summary>
@@ -36,6 +53,51 @@ public partial class MainWindow : FluentWindow
         var i = Array.FindIndex(args, a => a.Equals("--page", StringComparison.OrdinalIgnoreCase));
         if (i < 0 || i + 1 >= args.Length) return null;
         return typeof(DashboardPage).Assembly.GetType($"TyuStock.App.Views.Pages.{args[i + 1]}Page", false, true);
+    }
+
+    private void OnNavigateRequested(object? sender, NavigationRequest e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            RootNavigation.Navigate(e.PageType);
+            if (string.IsNullOrWhiteSpace(e.Symbol)) return;
+            if (e.PageType == typeof(AlertsPage))
+                AppServices.Get<AlertsViewModel>().PrepareForSymbol(e.Symbol);
+            else if (e.PageType == typeof(ChartsPage))
+                _ = AppServices.Get<ChartsViewModel>().OpenSymbolAsync(e.Symbol);
+        });
+    }
+
+    private void OnStateChanged(object? sender, EventArgs e)
+    {
+        if (_exitRequested || _options.ExitOnClose || _hidingToTray) return;
+        if (WindowState == WindowState.Minimized)
+            HideToTray();
+    }
+
+    private void OnClosing(object? sender, CancelEventArgs e)
+    {
+        if (_exitRequested || _options.ExitOnClose)
+        {
+            SavePlacement();
+            return;
+        }
+        e.Cancel = true;
+        HideToTray();
+    }
+
+    private void HideToTray()
+    {
+        if (_hidingToTray) return;
+        _hidingToTray = true;
+        try
+        {
+            SavePlacement();
+            WindowState = WindowState.Normal;
+            ShowInTaskbar = false;
+            Hide();
+        }
+        finally { _hidingToTray = false; }
     }
 
     private void OnToggleLanguage(object sender, RoutedEventArgs e)
@@ -77,4 +139,3 @@ public partial class MainWindow : FluentWindow
         });
     }
 }
-

@@ -13,9 +13,13 @@ public static class AppComposition
     {
         s.AddSingleton(dataDir);
         s.AddSingleton(new SettingsStore(dataDir.Path));
+        s.AddSingleton(new AlertStore(dataDir.Path));
         s.AddSingleton<LocalizationService>();
         s.AddSingleton<ThemeService>();
         s.AddSingleton<WatchlistStore>();
+        s.AddSingleton<NavigationHub>();
+        s.AddSingleton<NotificationService>();
+        s.AddSingleton<AlertMonitor>();
         s.AddSingleton<ShellViewModel>();
         s.AddSingleton(sp => new DataServices(sp.GetRequiredService<SettingsStore>().Current.Network));
         s.AddSingleton(sp => sp.GetRequiredService<DataServices>().Router);
@@ -29,9 +33,15 @@ public static class AppComposition
         s.AddSingleton<OptionsViewModel>();
         s.AddSingleton<StrategyViewModel>();
         s.AddSingleton<NewsViewModel>();
+        s.AddSingleton<AlertsViewModel>();
         s.AddSingleton<DataSourcesViewModel>();
     }
 
     /// <summary>After the window is shown: detect the proxy (Clash etc.) in the background without blocking startup.</summary>
-    public static void OnStarted(IServiceProvider sp) => _ = sp.GetRequiredService<NetworkController>().ReconfigureAsync();
+    public static void OnStarted(IServiceProvider sp)
+    {
+        _ = sp.GetRequiredService<NetworkController>().ReconfigureAsync();
+        sp.GetRequiredService<AlertStore>().Load();
+        sp.GetRequiredService<AlertMonitor>().Start();
+    }
 }
