@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\TyuStock.Core\TyuStock.Core.csproj" />
     <ProjectReference Include="..\TyuStock.Data\TyuStock.Data.csproj" />
+    <ProjectReference Include="..\TyuStock.Analytics\TyuStock.Analytics.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\app.ico" />
