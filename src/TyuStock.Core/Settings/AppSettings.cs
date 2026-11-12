@@ -51,6 +51,7 @@ public sealed class AppSettings
     public List<WatchlistGroup> WatchlistGroups { get; set; } = [];
     public WindowPlacement? Window { get; set; }
     public AlertSettings Alerts { get; set; } = new();
+    public PricingSettings Pricing { get; set; } = new();
 
     public static IReadOnlyList<string> SupportedLanguages { get; } = ["zh-CN", "en-US"];
 
@@ -62,6 +63,10 @@ public sealed class AppSettings
         Network.RequestTimeoutSeconds = Math.Clamp(Network.RequestTimeoutSeconds, 3, 120);
         Network.MaxRetries = Math.Clamp(Network.MaxRetries, 0, 5);
         Network.ManualProxy ??= "";
+        Pricing ??= new PricingSettings();
+        if (!double.IsFinite(Pricing.FixedRatePercent)) Pricing.FixedRatePercent = 4.0;
+        Pricing.FixedRatePercent = Math.Clamp(Pricing.FixedRatePercent, -1, 20);
+        if (!Enum.IsDefined(Pricing.RateMode)) Pricing.RateMode = RiskFreeRateMode.Treasury13Week;
         Alerts ??= new AlertSettings();
         Alerts.MaxQuoteDelayMinutes = Math.Clamp(Alerts.MaxQuoteDelayMinutes, 1, 240);
         Alerts.FailureThreshold = Math.Clamp(Alerts.FailureThreshold, 1, 20);
@@ -96,6 +101,17 @@ public sealed class WatchlistGroup
     public string Id { get; set; } = DefaultId;
     public string Name { get; set; } = "";
     public List<string> Symbols { get; set; } = [];
+}
+
+public enum RiskFreeRateMode { Treasury13Week, Fixed }
+
+/// <summary>F5: risk-free rate for locally computed IV / Greeks / strategy curves.</summary>
+public sealed class PricingSettings
+{
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public RiskFreeRateMode RateMode { get; set; } = RiskFreeRateMode.Treasury13Week;
+    /// <summary>Used in Fixed mode, and as the fallback when the 13-week T-bill yield cannot be fetched.</summary>
+    public double FixedRatePercent { get; set; } = 4.0;
 }
 
 /// <summary>Alert monitoring guards (F3, F10).</summary>

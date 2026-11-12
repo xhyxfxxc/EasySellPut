@@ -21,11 +21,12 @@ public enum StrikeWindowKind { Near5 = 5, Near10 = 10, Near20 = 20, All = 0 }
 /// <summary>Options page: expiration picker, T-quote chain, local IV/Greeks fill-in.</summary>
 public partial class OptionsViewModel : ObservableObject
 {
-    public const double DefaultRate = 0.04;
     private readonly WatchlistStore _watchlist;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly SymbolContext _context;
+    private readonly TyuStock.Core.Pricing.RiskFreeRateProvider _rates;
+    private TyuStock.Core.Pricing.RiskFreeRate _rate;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(45) };
     private CancellationTokenSource? _cts;
     private bool _active;
@@ -54,6 +55,8 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "";
     [ObservableProperty] public partial string DelayText { get; set; } = "";
+    /// <summary>F5: "BSM (European) · r = x %" with the rate's origin.</summary>
+    [ObservableProperty] public partial string ModelText { get; set; } = "";
     [ObservableProperty] public partial bool HasDelay { get; set; }
     [ObservableProperty] public partial string LocalNote { get; set; } = "";
     [ObservableProperty] public partial double? Spot { get; set; }
@@ -63,9 +66,12 @@ public partial class OptionsViewModel : ObservableObject
 
     public event EventHandler? TableChanged;
 
-    public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
+    public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
+        TyuStock.Core.Pricing.RiskFreeRateProvider rates)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates;
+        _rate = rates.Current;
+        ModelText = PricingText.Model(_rate, loc);
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
         _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
@@ -76,6 +82,7 @@ public partial class OptionsViewModel : ObservableObject
         _watchlist.Changed += (_, _) => RebuildWatchSymbols();
         _loc.LanguageChanged += (_, _) =>
         {
+            ModelText = PricingText.Model(_rate, _loc);
             RelabelExpirations();
             UpdateStatus();
             TableChanged?.Invoke(this, EventArgs.Empty);
@@ -247,9 +254,11 @@ public partial class OptionsViewModel : ObservableObject
             }
             finally { _suppressExpChange = false; }
 
+            _rate = await _rates.GetAsync(ct);
+            ModelText = PricingText.Model(_rate, _loc);
             var settings = new OptionEnrichmentSettings
             {
-                RiskFreeRate = DefaultRate,
+                RiskFreeRate = _rate.Rate,
                 DividendYield = yield,
                 Now = DateTimeOffset.Now,
             };
@@ -295,7 +304,7 @@ public partial class OptionsViewModel : ObservableObject
                 : symbol;
             DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
             HasDelay = DelayText.Length > 0;
-            LocalNote = usedLocal ? string.Format(_loc["Op_LocalGreeks"], DefaultRate) : "";
+            LocalNote = usedLocal ? string.Format(_loc["Op_LocalGreeks"], _rate.Rate) : "";
             if (_lastError is null)
                 StatusText = string.Format(_loc["Op_Source"], src, Rows.Count);
         }

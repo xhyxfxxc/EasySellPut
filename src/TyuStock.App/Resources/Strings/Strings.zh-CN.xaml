@@ -495,4 +495,17 @@
     <sys:String x:Key="Al_MaxDelay">行情延迟超过</sys:String>
     <sys:String x:Key="Al_Minutes">分钟不触发提醒</sys:String>
     <sys:String x:Key="Ch_OfflineCache">网络不可用，显示本地缓存（抓取于 {0}）</sys:String>
+    <sys:String x:Key="Px_Model">模型：BSM（欧式）· r = {0}（{1}）</sys:String>
+    <sys:String x:Key="Px_RateTreasury">13 周美债收益率</sys:String>
+    <sys:String x:Key="Px_RateFixed">固定利率</sys:String>
+    <sys:String x:Key="Px_RateFallback">取不到美债收益率，按固定利率</sys:String>
+    <sys:String x:Key="Px_ModelTip">本地补算的 IV、希腊值和策略曲线用 Black-Scholes-Merton 欧式模型。美股个股期权是美式，深度实值或临近除息时可能提前行权，理论值和 IV 会有偏差。</sys:String>
+    <sys:String x:Key="Set_Pricing">期权定价</sys:String>
+    <sys:String x:Key="Set_RateMode">无风险利率</sys:String>
+    <sys:String x:Key="Set_RateModeDesc">用于本地补算 IV、希腊值和策略曲线</sys:String>
+    <sys:String x:Key="Set_RateTreasury">13 周美债收益率（^IRX，每 6 小时更新）</sys:String>
+    <sys:String x:Key="Set_RateFixedItem">固定利率</sys:String>
+    <sys:String x:Key="Set_FixedRate">固定利率（%）</sys:String>
+    <sys:String x:Key="Set_FixedRateDesc">选“固定利率”时使用；取不到美债收益率时也用它兜底</sys:String>
+    <sys:String x:Key="Set_RateInvalid">请输入 -1 到 20 之间的数字</sys:String>
 </ResourceDictionary>

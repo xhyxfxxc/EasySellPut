@@ -30,6 +30,8 @@ public static class AppComposition
             sp.GetRequiredService<DataServices>().Router, sp.GetRequiredService<TyuStock.Data.Cache.MarketDb>()));
         s.AddSingleton(sp => new TyuStock.Core.Quotes.QuoteHub(sp.GetRequiredService<IMarketDataService>()));
         s.AddSingleton<QuotePump>();
+        s.AddSingleton(sp => new TyuStock.Core.Pricing.RiskFreeRateProvider(sp.GetRequiredService<IMarketDataService>(),
+            () => sp.GetRequiredService<SettingsStore>().Current.Pricing));
         s.AddSingleton<NetworkController>();
         s.AddSingleton<INetworkController>(sp => sp.GetRequiredService<NetworkController>());
         s.AddTransient<SettingsViewModel>();

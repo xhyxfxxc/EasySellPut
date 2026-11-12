@@ -495,4 +495,17 @@
     <sys:String x:Key="Al_MaxDelay">Ignore quotes older than</sys:String>
     <sys:String x:Key="Al_Minutes">minutes</sys:String>
     <sys:String x:Key="Ch_OfflineCache">Offline — showing cached data (downloaded {0})</sys:String>
+    <sys:String x:Key="Px_Model">Model: BSM (European) · r = {0} ({1})</sys:String>
+    <sys:String x:Key="Px_RateTreasury">13-week T-bill</sys:String>
+    <sys:String x:Key="Px_RateFixed">fixed</sys:String>
+    <sys:String x:Key="Px_RateFallback">T-bill yield unavailable, fixed rate used</sys:String>
+    <sys:String x:Key="Px_ModelTip">Locally computed IV, Greeks and strategy curves use the Black-Scholes-Merton European model. US single-stock options are American; deep in-the-money or near an ex-dividend date, early exercise makes theoretical values and IV less accurate.</sys:String>
+    <sys:String x:Key="Set_Pricing">Option pricing</sys:String>
+    <sys:String x:Key="Set_RateMode">Risk-free rate</sys:String>
+    <sys:String x:Key="Set_RateModeDesc">Used for locally computed IV, Greeks and strategy curves</sys:String>
+    <sys:String x:Key="Set_RateTreasury">13-week T-bill yield (^IRX, refreshed every 6 h)</sys:String>
+    <sys:String x:Key="Set_RateFixedItem">Fixed rate</sys:String>
+    <sys:String x:Key="Set_FixedRate">Fixed rate (%)</sys:String>
+    <sys:String x:Key="Set_FixedRateDesc">Used in fixed mode, and as the fallback when the T-bill yield cannot be fetched</sys:String>
+    <sys:String x:Key="Set_RateInvalid">Enter a number between -1 and 20</sys:String>
 </ResourceDictionary>

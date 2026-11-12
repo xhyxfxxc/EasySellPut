@@ -93,6 +93,11 @@
                         Visibility="{Binding HasDelay, Converter={StaticResource BoolToVis}}">
                     <TextBlock Style="{StaticResource Caption}" Text="{Binding DelayText}" />
                 </Border>
+                <!-- F5: pricing model and risk-free rate used for local IV / Greeks -->
+                <Border DockPanel.Dock="Left" Margin="8,0,0,0" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}" ToolTip="{DynamicResource Px_ModelTip}">
+                    <TextBlock Style="{StaticResource Caption}" Text="{Binding ModelText}" />
+                </Border>
             </DockPanel>
             <WrapPanel Margin="0,0,0,8" VerticalAlignment="Center">
                 <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_Preset}" />

@@ -17,7 +17,6 @@ namespace TyuStock.App.ViewModels;
 /// <summary>Strategy P/L page: presets or custom legs, expiry and T+n curves, live chain fill-in.</summary>
 public partial class StrategyViewModel : ObservableObject
 {
-    public const double DefaultRate = 0.04;
     public const double DefaultVolatility = 0.30;
 
     private static readonly StrategyKind[] PresetOrder =
@@ -35,6 +34,8 @@ public partial class StrategyViewModel : ObservableObject
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly SymbolContext _context;
+    private readonly TyuStock.Core.Pricing.RiskFreeRateProvider _rates;
+    private TyuStock.Core.Pricing.RiskFreeRate _rate;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(45) };
     private CancellationTokenSource? _cts;
     private bool _active, _manualLegs, _suppress, _hasChain;
@@ -60,6 +61,8 @@ public partial class StrategyViewModel : ObservableObject
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "";
     [ObservableProperty] public partial string DelayText { get; set; } = "";
+    /// <summary>F5: "BSM (European) · r = x %" with the rate's origin.</summary>
+    [ObservableProperty] public partial string ModelText { get; set; } = "";
     [ObservableProperty] public partial bool HasDelay { get; set; }
     [ObservableProperty] public partial string LocalNote { get; set; } = "";
     [ObservableProperty] public partial string CostText { get; set; } = "";
@@ -77,9 +80,12 @@ public partial class StrategyViewModel : ObservableObject
     public string HorizonLabel { get; private set; } = "";
     public event EventHandler? ChartChanged;
 
-    public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
+    public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
+        TyuStock.Core.Pricing.RiskFreeRateProvider rates)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates;
+        _rate = rates.Current;
+        ModelText = PricingText.Model(_rate, loc);
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
         _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
@@ -91,6 +97,7 @@ public partial class StrategyViewModel : ObservableObject
         _watchlist.Changed += (_, _) => RebuildWatchSymbols();
         _loc.LanguageChanged += (_, _) =>
         {
+            ModelText = PricingText.Model(_rate, _loc);
             RelabelExpirations();
             RebuildChoices();
             RelabelLegs();
@@ -261,13 +268,15 @@ public partial class StrategyViewModel : ObservableObject
             }
             finally { _suppress = false; }
 
+            _rate = await _rates.GetAsync(ct);
+            ModelText = PricingText.Model(_rate, _loc);
             _listed = [];
             _hasChain = false;
             if (chain is not null)
             {
                 var settings = new OptionEnrichmentSettings
                 {
-                    RiskFreeRate = DefaultRate,
+                    RiskFreeRate = _rate.Rate,
                     DividendYield = _yield,
                     Now = DateTimeOffset.Now,
                 };
@@ -485,14 +494,14 @@ public partial class StrategyViewModel : ObservableObject
             var spot = Spot ?? (strategy.Strikes.Count > 0 ? strategy.Strikes[strategy.Strikes.Count / 2] : 100);
             var (lo, hi) = strategy.SuggestPriceRange(spot);
             var usedDefaultIv = strategy.Legs.Any(l => l.IsOption && !l.HasImpliedVolatility);
-            var nowVal = new StrategyValuation(DateTimeOffset.Now, DefaultRate, _yield) { DefaultVolatility = DefaultVolatility };
+            var nowVal = new StrategyValuation(DateTimeOffset.Now, _rate.Rate, _yield) { DefaultVolatility = DefaultVolatility };
             StrategyValuation? overlay = nowVal;
             if (HorizonDays > 0)
             {
                 var etToday = DateOnly.FromDateTime(UsEastern.ToEastern(DateTimeOffset.Now).DateTime);
                 var target = etToday.AddDays(HorizonDays);
                 if (strategy.EarliestExpiry is { } e && target >= e) overlay = null;
-                else overlay = StrategyValuation.AtDate(target, DefaultRate, _yield) with { DefaultVolatility = DefaultVolatility };
+                else overlay = StrategyValuation.AtDate(target, _rate.Rate, _yield) with { DefaultVolatility = DefaultVolatility };
             }
             Curve = strategy.Curve(lo, hi, 251, overlay);
             HasCurve = Curve.Prices.Length > 1;
