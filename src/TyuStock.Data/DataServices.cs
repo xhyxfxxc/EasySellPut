@@ -45,6 +45,10 @@ public sealed class DataServices : IDisposable
         new Providers.Cboe.CboeProvider(http, cache),
         new Providers.Nasdaq.NasdaqProvider(http, cache),
         new Providers.Cnbc.CnbcProvider(http, cache),
+        new Providers.Sec.SecProvider(http, cache),
+        new Providers.China.SinaProvider(http, cache),
+        new Providers.China.TencentProvider(http, cache),
+        new Providers.China.EastmoneyProvider(http, cache),
     ];
 
     public void Dispose() => Gateway.Dispose();
