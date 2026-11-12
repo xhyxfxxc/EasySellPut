@@ -56,6 +56,7 @@ public static class JsonX
         _ => null,
     };
 
+    public static IEnumerable<JsonElement> Items(this JsonElement? e, string name) => e is { } v ? v.Prop(name).Items() : [];
     public static IEnumerable<JsonElement> Items(this JsonElement? e) =>
         e is { ValueKind: JsonValueKind.Array } a ? a.EnumerateArray() : [];
 
@@ -68,7 +69,9 @@ public static class JsonX
     public static double? ParseNumber(string? s)
     {
         if (string.IsNullOrWhiteSpace(s)) return null;
-        s = s.Trim().Replace("$", "").Replace(",", "").Replace("%", "").Replace("+", "").Trim();
+        s = s.Trim();
+        if (s.Length > 2 && s[0] == '(' && s[^1] == ')') s = "-" + s[1..^1]; // accounting negative: ($1,234)
+        s = s.Replace("$", "").Replace(",", "").Replace("%", "").Replace("+", "").Trim();
         if (s is "" or "N/A" or "NA" or "--" or "-" or "null" or "UNCH") return null;
         double mult = 1;
         if (s.Length > 1)
