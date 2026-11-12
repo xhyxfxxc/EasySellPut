@@ -17,9 +17,8 @@ public static class AlertQuoteGate
 {
     public static (AlertQuoteUse Use, Freshness Freshness) Check(Quote quote, DateTimeOffset now, int maxDelayMinutes)
     {
-        ArgumentNullException.ThrowIfNull(quote);
         var f = DataFreshness.Evaluate(quote, now);
-        var limit = TimeSpan.FromMinutes(Math.Max(1, maxDelayMinutes));
+        var limit = TimeSpan.FromMinutes(maxDelayMinutes);
         var use = f.Kind switch
         {
             FreshnessKind.Realtime => AlertQuoteUse.Usable,

@@ -157,7 +157,7 @@ public partial class OptionsPage : Page
     {
         public static readonly RatioToScale Instance = new();
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
-            new ScaleTransform(value is double d && double.IsFinite(d) ? Math.Clamp(d, 0, 1) : 0, 1);
+            new ScaleTransform((double)value, 1);   // OiRatio is already clamped to [0, 1]
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
             throw new NotSupportedException();
     }

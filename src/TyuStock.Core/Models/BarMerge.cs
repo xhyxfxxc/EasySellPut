@@ -27,8 +27,6 @@ public static class BarMerge
 
     public static (IReadOnlyList<Bar> Bars, BarMergeOutcome Outcome) Merge(IReadOnlyList<Bar> cached, IReadOnlyList<Bar> tail)
     {
-        ArgumentNullException.ThrowIfNull(cached);
-        ArgumentNullException.ThrowIfNull(tail);
         if (cached.Count == 0) return (tail, BarMergeOutcome.Initial);
         if (tail.Count == 0) return (cached, BarMergeOutcome.Merged);
 

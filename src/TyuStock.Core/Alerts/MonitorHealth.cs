@@ -23,7 +23,7 @@ public sealed class MonitorHealth
         ConsecutiveFailures++;
         FailingSince ??= at;
         LastError = error;
-        if (!Interrupted && ConsecutiveFailures >= Math.Max(1, Threshold))
+        if (!Interrupted && ConsecutiveFailures >= Threshold)
         {
             Interrupted = true;
             return MonitorTransition.Interrupted;

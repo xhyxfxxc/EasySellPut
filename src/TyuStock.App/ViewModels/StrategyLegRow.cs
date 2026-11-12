@@ -124,7 +124,7 @@ public partial class StrategyLegRow : ObservableObject
     private static string F(double v)
         => v == Math.Truncate(v) ? v.ToString("0", CultureInfo.InvariantCulture) : v.ToString("0.00", CultureInfo.InvariantCulture);
 
-    private string L(string key) => System.Windows.Application.Current?.TryFindResource(key) as string ?? key;
+    private static string L(string key) => (string)System.Windows.Application.Current.FindResource(key);
 
     partial void OnTypeChanged(LegType value) { RefreshLabels(); Notify(); }
     partial void OnSideChanged(PositionSide value) { RefreshLabels(); Notify(); }

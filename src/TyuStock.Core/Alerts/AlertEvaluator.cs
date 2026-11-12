@@ -75,7 +75,6 @@ public static class AlertEvaluator
     /// </summary>
     public static AlertEvalResult EvaluateIv(PriceAlert alert, IvSample? sample, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(alert);
         var next = alert.Clone();
         if (!alert.Enabled)
             return new AlertEvalResult(AlertEvalStatus.Disabled, false, null, false, next);

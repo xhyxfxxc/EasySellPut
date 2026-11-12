@@ -23,8 +23,7 @@ public static class IvSampleGate
 {
     public static AlertQuoteUse Check(IvSample sample, DateTimeOffset now, int maxDelayMinutes)
     {
-        ArgumentNullException.ThrowIfNull(sample);
         if (sample.AsOf is not { } asOf) return AlertQuoteUse.UsableDelayUnknown;
-        return now - asOf > TimeSpan.FromMinutes(Math.Max(1, maxDelayMinutes)) ? AlertQuoteUse.TooStale : AlertQuoteUse.Usable;
+        return now - asOf > TimeSpan.FromMinutes(maxDelayMinutes) ? AlertQuoteUse.TooStale : AlertQuoteUse.Usable;
     }
 }

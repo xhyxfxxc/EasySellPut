@@ -33,7 +33,6 @@ public static class DataFreshness
 {
     public static Freshness Evaluate(SourcedData data, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(data);
         if (data.IsRealtime) return new Freshness(FreshnessKind.Realtime, TimeSpan.Zero, data.AsOf);
         if (data.DelayMinutes is > 0 and var d) return new Freshness(FreshnessKind.Delayed, TimeSpan.FromMinutes(d), data.AsOf);
         if (data.DelayMinutes == 0) return new Freshness(FreshnessKind.Realtime, TimeSpan.Zero, data.AsOf);
@@ -75,7 +74,6 @@ public static class QuoteStaleness
 
     public static StaleReason Check(SourcedData data, DateTimeOffset now)
     {
-        ArgumentNullException.ThrowIfNull(data);
         if (data.FetchedAt is { } fetched && now - fetched > MaxAge(now)) return StaleReason.NotUpdated;
         var f = DataFreshness.Evaluate(data, now);
         if (f.Kind == FreshnessKind.Measured && f.Lag > MaxMeasuredLag) return StaleReason.SourceLagging;

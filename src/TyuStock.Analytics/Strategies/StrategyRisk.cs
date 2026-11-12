@@ -17,8 +17,6 @@ public static class StrategyRisk
     /// </summary>
     public static double ProbabilityOfProfit(OptionStrategy strategy, double spot, double volatility, StrategyValuation now)
     {
-        ArgumentNullException.ThrowIfNull(strategy);
-        ArgumentNullException.ThrowIfNull(now);
         if (strategy.EarliestExpiry is not { } first) return double.NaN;
         double t = now.YearsTo(first);
         if (!(t > 0) || !(spot > 0) || !(volatility > 0)) return double.NaN;
@@ -61,7 +59,6 @@ public static class StrategyRisk
     /// </summary>
     public static MarginEstimate RegTMargin(OptionStrategy strategy, double spot)
     {
-        ArgumentNullException.ThrowIfNull(strategy);
         bool hasStock = strategy.Legs.Any(l => !l.IsOption);
         bool shortsHedged = Hedged(strategy, LegType.Call) && Hedged(strategy, LegType.Put);
         if (!hasStock && shortsHedged)

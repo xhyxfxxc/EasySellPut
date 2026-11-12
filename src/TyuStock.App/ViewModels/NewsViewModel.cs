@@ -394,7 +394,7 @@ public partial class NewsViewModel : ObservableObject
 
     private bool _up = true;
 
-    private static Brush? UpDownBrush(bool up) => Application.Current.TryFindResource(up ? "UpBrush" : "DownBrush") as Brush;
+    private static Brush UpDownBrush(bool up) => (Brush)Application.Current.FindResource(up ? "UpBrush" : "DownBrush");
 
     private void Relabel()
     {

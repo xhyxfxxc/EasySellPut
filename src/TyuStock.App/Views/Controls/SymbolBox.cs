@@ -214,7 +214,7 @@ public sealed class SymbolBox : UserControl
     {
         var seq = ++_seq;
         var q = showAll ? "" : (Text ?? "").Trim();
-        var watch = WatchSymbols?.Cast<object>().Select(o => o?.ToString() ?? "").ToList() ?? [];
+        var watch = WatchSymbols?.Cast<string>().ToList() ?? [];
         IReadOnlyList<SymbolMatch>? hits = null;
         SearchFailed = false;
         if (q.Length > 0 && AppServices.Provider?.GetService<SymbolSearchService>() is { } search)
