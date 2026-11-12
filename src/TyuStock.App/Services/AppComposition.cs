@@ -25,6 +25,7 @@ public static class AppComposition
         s.AddTransient<SettingsViewModel>();
         s.AddTransient<DashboardViewModel>();
         s.AddSingleton<WatchlistViewModel>();
+        s.AddSingleton<ChartsViewModel>();
         s.AddSingleton<DataSourcesViewModel>();
     }
 
