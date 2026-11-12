@@ -95,6 +95,49 @@ public class HttpLayerTests
         Assert.Equal(expected, u.ToString());
     }
 
+    private const string ScutilClash = """
+        <dictionary> {
+          ExceptionsList : <array> {
+            0 : 127.0.0.1
+            1 : localhost
+          }
+          FTPPassive : 1
+          HTTPEnable : 1
+          HTTPPort : 7890
+          HTTPProxy : 127.0.0.1
+          HTTPSEnable : 1
+          HTTPSPort : 7897
+          HTTPSProxy : 127.0.0.1
+          SOCKSEnable : 1
+          SOCKSPort : 7891
+          SOCKSProxy : 127.0.0.1
+        }
+        """;
+
+    [Fact]
+    public void Parses_macos_scutil_proxy_preferring_https()
+    {
+        Assert.True(ProxyDetector.TryParseScutilProxy(ScutilClash, out var u));
+        Assert.Equal("http://127.0.0.1:7897/", u.ToString());
+    }
+
+    [Fact]
+    public void Parses_macos_scutil_socks_only_and_ignores_empty()
+    {
+        Assert.True(ProxyDetector.TryParseScutilProxy("<dictionary> {\n  SOCKSEnable : 0\n  SOCKSPort : 1080\n  SOCKSProxy : 127.0.0.1\n}", out var u));
+        Assert.Equal("socks5://127.0.0.1:1080/", u.ToString());
+        Assert.False(ProxyDetector.TryParseScutilProxy("<dictionary> {\n  HTTPEnable : 0\n}", out _));
+    }
+
+    [Fact]
+    public void Macos_proxy_comes_first_and_only_when_loopback()
+    {
+        var first = ProxyDetector.Candidates(ScutilClash).First();
+        Assert.Equal(("http://127.0.0.1:7897/", "macOS proxy setting"), (first.Uri.ToString(), first.Origin));
+        var remote = ScutilClash.Replace("127.0.0.1", "10.0.0.5");
+        Assert.DoesNotContain(ProxyDetector.Candidates(remote), c => c.Origin == "macOS proxy setting");
+    }
+
     [Theory]
     [InlineData("", false)]
     [InlineData("ftp://1.2.3.4:21", false)]

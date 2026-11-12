@@ -18,8 +18,8 @@ public sealed record ProxyResolution(ProxyMode Mode, Uri? ProxyUri, bool UseSyst
 }
 
 /// <summary>
-/// Finds a usable local proxy (Clash / Clash Verge / V2RayN etc.). Checks, in order: the Windows proxy setting
-/// (even when switched off, Clash leaves its port there), HTTPS_PROXY/HTTP_PROXY/ALL_PROXY, then well-known local ports.
+/// Finds a usable local proxy (Clash / Clash Verge / V2RayN etc.). Checks, in order: the system proxy setting — Windows
+/// registry or macOS <c>scutil --proxy</c> (even when switched off, Clash leaves its port there) — HTTPS_PROXY/HTTP_PROXY/ALL_PROXY, then well-known local ports.
 /// A candidate is accepted only if its TCP port is actually listening.
 /// </summary>
 public static class ProxyDetector
@@ -38,13 +38,14 @@ public static class ProxyDetector
             case ProxyMode.Direct:
                 return new(ProxyMode.Direct, null, false, "user");
             case ProxyMode.System:
-                return new(ProxyMode.System, null, true, "windows");
+                return new(ProxyMode.System, null, true, "system");
             case ProxyMode.Manual:
                 if (TryParseProxy(settings.ManualProxy, out var manual)) return new(ProxyMode.Manual, manual, false, "user");
                 return new(ProxyMode.Manual, null, true, "invalid manual proxy, using system");
         }
 
-        foreach (var (uri, origin) in Candidates())
+        var macProxy = OperatingSystem.IsMacOS() ? await ReadMacProxyAsync(ct) : null;
+        foreach (var (uri, origin) in Candidates(macProxy))
         {
             if (await IsListeningAsync(uri.Host, uri.Port, TimeSpan.FromMilliseconds(300), ct))
                 return new(ProxyMode.AutoDetect, uri, false, origin);
@@ -52,9 +53,11 @@ public static class ProxyDetector
         return new(ProxyMode.AutoDetect, null, true, "none");
     }
 
-    internal static IEnumerable<(Uri Uri, string Origin)> Candidates()
+    internal static IEnumerable<(Uri Uri, string Origin)> Candidates(string? macScutilOutput = null)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (macScutilOutput is not null && TryParseScutilProxy(macScutilOutput, out var m) && IsLoopback(m) && seen.Add(m.Authority))
+            yield return (m, "macOS proxy setting");
         if (OperatingSystem.IsWindows())
         {
             var reg = ReadWindowsProxyServer();
@@ -97,6 +100,52 @@ public static class ProxyDetector
         if (parts.TryGetValue("http", out h) && TryParseProxy(h, out uri)) return true;
         if (parts.TryGetValue("socks", out h) && TryParseProxy("socks5://" + h, out uri)) return true;
         return false;
+    }
+
+    /// <summary>
+    /// Parses <c>scutil --proxy</c> output ("HTTPSProxy : 127.0.0.1" / "HTTPSPort : 7890" lines). Prefers HTTPS, then
+    /// HTTP, then SOCKS; the Enable flags are ignored on purpose (Clash leaves host/port behind when switched off, and
+    /// the caller only accepts a port that is actually listening).
+    /// </summary>
+    public static bool TryParseScutilProxy(string output, out Uri uri)
+    {
+        uri = null!;
+        var map = output.Split('\n')
+            .Select(l => l.Split(" : ", 2, StringSplitOptions.TrimEntries))
+            .Where(p => p.Length == 2)
+            .GroupBy(p => p[0]).ToDictionary(g => g.Key, g => g.First()[1]);
+        foreach (var (prefix, scheme) in new[] { ("HTTPS", "http"), ("HTTP", "http"), ("SOCKS", "socks5") })
+        {
+            if (map.TryGetValue(prefix + "Proxy", out var host) && map.TryGetValue(prefix + "Port", out var port)
+                && TryParseProxy($"{scheme}://{host}:{port}", out uri))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>Runs <c>/usr/sbin/scutil --proxy</c> (2 s limit). Null when it fails: no readable setting means "no system proxy".</summary>
+    private static async Task<string?> ReadMacProxyAsync(CancellationToken ct)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(2));
+        System.Diagnostics.Process? p = null;
+        try
+        {
+            p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("/usr/sbin/scutil", "--proxy")
+            {
+                RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true,
+            })!;
+            var text = await p.StandardOutput.ReadToEndAsync(cts.Token);
+            await p.WaitForExitAsync(cts.Token);
+            return text;
+        }
+        catch (Exception ex) when (ex is OperationCanceledException or System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            if (p is { HasExited: false }) p.Kill();
+            Meili.Core.Diagnostics.AppLog.Warn("proxy", "scutil --proxy failed: " + ex.Message);
+            return null;
+        }
+        finally { p?.Dispose(); }
     }
 
     private static bool IsLoopback(Uri u) =>
