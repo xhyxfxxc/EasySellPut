@@ -101,11 +101,6 @@ try {
     Compress-Archive -Path $PortableLabel -DestinationPath $portableZip -CompressionLevel Optimal
 } finally { Pop-Location }
 
-# Also place a copy of the exe at dist root with the portable label, plus a sibling portable.flag,
-# so a single-folder drop works. The flagged folder above is the recommended layout.
-Copy-Item (Join-Path $PortableDir $ExeFileName) (Join-Path $DistDir "$PortableLabel.exe") -Force
-# Do not put portable.flag in dist\ root (the installer sits there too). Use the subfolder / zip.
-
 Write-Host "=== Inno Setup installer ==="
 if (-not (Test-Path $Iscc)) { throw "ISCC.exe not found at $Iscc" }
 & $Iscc (Join-Path $Root "build\installer\setup.iss")
@@ -126,7 +121,6 @@ $readme = @"
 
 2）便携版（免安装）
     推荐：解压「${PortableLabel}.zip」，或直接打开「$PortableLabel」文件夹，双击「$ExeFileName」。
-    也可单独复制「${PortableLabel}.exe」，但请同时带上 portable.flag，并放在同一目录，数据才会写到程序旁的 data\ 文件夹。
     没有 portable.flag 时，便携版 exe 会改用上面的当前用户数据目录。
 
 使用提示
