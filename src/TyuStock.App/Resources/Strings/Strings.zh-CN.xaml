@@ -45,8 +45,6 @@
     <sys:String x:Key="Quote_Realtime">实时</sys:String>
     <sys:String x:Key="Quote_Delayed">延迟</sys:String>
 
-    <sys:String x:Key="Placeholder_Title">即将推出</sys:String>
-    <sys:String x:Key="Placeholder_Body">这个功能正在开发中，会在后续版本里上线。</sys:String>
 
     <sys:String x:Key="Set_Appearance">外观</sys:String>
     <sys:String x:Key="Set_Language">界面语言</sys:String>
@@ -173,8 +171,6 @@
     <sys:String x:Key="Wl_Added">已添加 {0}</sys:String>
     <sys:String x:Key="Wl_Removed">已删除 {0}</sys:String>
     <sys:String x:Key="Wl_SearchEmpty">没有匹配结果，回车将按该代码直接添加。</sys:String>
-    <sys:String x:Key="Wl_AlertSoon">价格提醒将在后续版本提供</sys:String>
-    <sys:String x:Key="Wl_ExportSoon">导出将在后续版本提供</sys:String>
     <sys:String x:Key="Wl_ConfirmRemoveGroup">删除分组「{0}」？其中的标的会合并到「{1}」。</sys:String>
     <sys:String x:Key="Wl_Count">{0} 只</sys:String>
     <sys:String x:Key="Wl_Refresh">刷新</sys:String>

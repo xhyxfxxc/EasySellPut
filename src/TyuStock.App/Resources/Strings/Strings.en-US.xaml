@@ -45,8 +45,6 @@
     <sys:String x:Key="Quote_Realtime">Real-time</sys:String>
     <sys:String x:Key="Quote_Delayed">Delayed</sys:String>
 
-    <sys:String x:Key="Placeholder_Title">Coming soon</sys:String>
-    <sys:String x:Key="Placeholder_Body">This feature is under development and will arrive in a later version.</sys:String>
 
     <sys:String x:Key="Set_Appearance">Appearance</sys:String>
     <sys:String x:Key="Set_Language">Language</sys:String>
@@ -173,8 +171,6 @@
     <sys:String x:Key="Wl_Added">Added {0}</sys:String>
     <sys:String x:Key="Wl_Removed">Removed {0}</sys:String>
     <sys:String x:Key="Wl_SearchEmpty">No matches. Press Enter to add this as a symbol.</sys:String>
-    <sys:String x:Key="Wl_AlertSoon">Price alerts will arrive in a later release</sys:String>
-    <sys:String x:Key="Wl_ExportSoon">Export will arrive in a later release</sys:String>
     <sys:String x:Key="Wl_ConfirmRemoveGroup">Delete group "{0}"? Its symbols will be merged into "{1}".</sys:String>
     <sys:String x:Key="Wl_Count">{0} symbols</sys:String>
     <sys:String x:Key="Wl_Refresh">Refresh</sys:String>

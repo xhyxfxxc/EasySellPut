@@ -41,6 +41,18 @@ public class StringResourceTests
         foreach (var lang in new[] { "zh-CN", "en-US" })
             Assert.All(Load(lang), kv => Assert.DoesNotContain("tyu", kv.Value, StringComparison.OrdinalIgnoreCase));
     }
+
+    /// <summary>D5: no "coming in a later release" text for features that shipped (alerts, export) or never will.</summary>
+    [Fact]
+    public void No_stale_coming_soon_strings()
+    {
+        foreach (var lang in new[] { "zh-CN", "en-US" })
+            Assert.All(Load(lang), kv =>
+            {
+                Assert.False(kv.Key.EndsWith("Soon", StringComparison.Ordinal) || kv.Key.StartsWith("Placeholder_", StringComparison.Ordinal), kv.Key);
+                Assert.DoesNotMatch("(?i)coming soon|later release|后续版本|即将推出", kv.Value);
+            });
+    }
 }
 
 public class HostSafetyTests
