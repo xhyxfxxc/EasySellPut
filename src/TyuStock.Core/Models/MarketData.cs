@@ -1,0 +1,200 @@
+namespace TyuStock.Core.Models;
+
+/// <summary>What a data provider can do. Used for routing and for the data-source status page.</summary>
+[Flags]
+public enum DataCapability
+{
+    None = 0,
+    Quote = 1,
+    IntradayBars = 2,
+    DailyBars = 4,
+    Options = 8,
+    Fundamentals = 16,
+    Financials = 32,
+    News = 64,
+    Search = 128,
+}
+
+public enum MarketState { Unknown, PreMarket, Regular, AfterHours, Closed }
+
+public enum BarInterval { Minute1, Minute5, Minute15, Minute30, Hour1, Day1, Week1, Month1 }
+
+public static class BarIntervalExtensions
+{
+    public static bool IsIntraday(this BarInterval i) => i < BarInterval.Day1;
+    public static TimeSpan Duration(this BarInterval i) => i switch
+    {
+        BarInterval.Minute1 => TimeSpan.FromMinutes(1),
+        BarInterval.Minute5 => TimeSpan.FromMinutes(5),
+        BarInterval.Minute15 => TimeSpan.FromMinutes(15),
+        BarInterval.Minute30 => TimeSpan.FromMinutes(30),
+        BarInterval.Hour1 => TimeSpan.FromHours(1),
+        BarInterval.Day1 => TimeSpan.FromDays(1),
+        BarInterval.Week1 => TimeSpan.FromDays(7),
+        _ => TimeSpan.FromDays(30),
+    };
+}
+
+/// <summary>Common provenance metadata carried by every piece of market data.</summary>
+public abstract record SourcedData
+{
+    /// <summary>Provider id, e.g. "yahoo", "cboe".</summary>
+    public string Source { get; init; } = "";
+    /// <summary>When the data was valid (exchange time), if known.</summary>
+    public DateTimeOffset? AsOf { get; init; }
+    public bool IsRealtime { get; init; }
+    public int DelayMinutes { get; init; }
+}
+
+public sealed record Quote : SourcedData
+{
+    public required string Symbol { get; init; }
+    public string? Name { get; init; }
+    public string? Exchange { get; init; }
+    public string Currency { get; init; } = "USD";
+    public double Price { get; init; }
+    public double? Change { get; init; }
+    public double? ChangePercent { get; init; }
+    public double? PreviousClose { get; init; }
+    public double? Open { get; init; }
+    public double? High { get; init; }
+    public double? Low { get; init; }
+    public double? Volume { get; init; }
+    public double? Bid { get; init; }
+    public double? Ask { get; init; }
+    public double? BidSize { get; init; }
+    public double? AskSize { get; init; }
+    public double? FiftyTwoWeekHigh { get; init; }
+    public double? FiftyTwoWeekLow { get; init; }
+    public double? MarketCap { get; init; }
+    public MarketState MarketState { get; init; }
+    /// <summary>Pre-market or after-hours last price, when the market is in an extended session.</summary>
+    public double? ExtendedPrice { get; init; }
+    public double? ExtendedChange { get; init; }
+    public double? ExtendedChangePercent { get; init; }
+    public DateTimeOffset? ExtendedTime { get; init; }
+}
+
+public sealed record Bar(DateTimeOffset Time, double Open, double High, double Low, double Close, double Volume);
+
+public sealed record BarSeries : SourcedData
+{
+    public required string Symbol { get; init; }
+    public required BarInterval Interval { get; init; }
+    public required IReadOnlyList<Bar> Bars { get; init; }
+}
+
+public sealed record BarRequest(string Symbol, BarInterval Interval, DateTimeOffset? From = null, DateTimeOffset? To = null);
+
+public enum OptionRight { Call, Put }
+
+public sealed record OptionContract
+{
+    public required string ContractSymbol { get; init; }
+    public required string Underlying { get; init; }
+    public required OptionRight Right { get; init; }
+    public required double Strike { get; init; }
+    public required DateOnly Expiration { get; init; }
+    public double? Bid { get; init; }
+    public double? Ask { get; init; }
+    public double? BidSize { get; init; }
+    public double? AskSize { get; init; }
+    public double? Last { get; init; }
+    public double? Change { get; init; }
+    public double? ChangePercent { get; init; }
+    public double? Volume { get; init; }
+    public double? OpenInterest { get; init; }
+    /// <summary>Implied volatility as a fraction (0.25 = 25%).</summary>
+    public double? ImpliedVolatility { get; init; }
+    public double? Delta { get; init; }
+    public double? Gamma { get; init; }
+    public double? Theta { get; init; }
+    public double? Vega { get; init; }
+    public double? Rho { get; init; }
+    public double? TheoreticalPrice { get; init; }
+    public DateTimeOffset? LastTradeTime { get; init; }
+    public bool? InTheMoney { get; init; }
+    public double? Mid => Bid is > 0 && Ask is > 0 ? (Bid + Ask) / 2 : null;
+}
+
+public sealed record OptionChain : SourcedData
+{
+    public required string Underlying { get; init; }
+    public double? UnderlyingPrice { get; init; }
+    /// <summary>All expirations the source knows about.</summary>
+    public required IReadOnlyList<DateOnly> Expirations { get; init; }
+    /// <summary>Contracts for <see cref="Expiration"/> (or for all expirations when the source returns everything at once and Expiration is null).</summary>
+    public required IReadOnlyList<OptionContract> Contracts { get; init; }
+    public DateOnly? Expiration { get; init; }
+}
+
+public sealed record Fundamentals : SourcedData
+{
+    public required string Symbol { get; init; }
+    public string? Name { get; init; }
+    public string? QuoteType { get; init; }
+    public string? Exchange { get; init; }
+    public string? Sector { get; init; }
+    public string? Industry { get; init; }
+    public string? Description { get; init; }
+    public string? Website { get; init; }
+    public string? Country { get; init; }
+    public int? Employees { get; init; }
+    public double? MarketCap { get; init; }
+    public double? SharesOutstanding { get; init; }
+    public double? TrailingPE { get; init; }
+    public double? ForwardPE { get; init; }
+    public double? Eps { get; init; }
+    public double? Beta { get; init; }
+    public double? DividendYield { get; init; }
+    public double? DividendRate { get; init; }
+    public double? FiftyTwoWeekHigh { get; init; }
+    public double? FiftyTwoWeekLow { get; init; }
+    public double? AverageVolume { get; init; }
+    public double? ProfitMargin { get; init; }
+    public double? Revenue { get; init; }
+    public double? TargetPrice { get; init; }
+    public double? PriceToBook { get; init; }
+    public DateOnly? NextEarningsDate { get; init; }
+    public DateOnly? ExDividendDate { get; init; }
+}
+
+public enum FinancialStatementKind { Income, Balance, CashFlow }
+
+/// <summary>Canonical line-item keys shared by all providers.</summary>
+public static class FinancialItems
+{
+    public const string TotalRevenue = "TotalRevenue";
+    public const string GrossProfit = "GrossProfit";
+    public const string OperatingIncome = "OperatingIncome";
+    public const string NetIncome = "NetIncome";
+    public const string DilutedEps = "DilutedEPS";
+    public const string TotalAssets = "TotalAssets";
+    public const string TotalLiabilities = "TotalLiabilities";
+    public const string StockholdersEquity = "StockholdersEquity";
+    public const string OperatingCashFlow = "OperatingCashFlow";
+    public const string CapitalExpenditure = "CapitalExpenditure";
+    public const string FreeCashFlow = "FreeCashFlow";
+}
+
+public sealed record FinancialLine(FinancialStatementKind Statement, string Item, DateOnly PeriodEnd, double Value, bool Annual = true);
+
+public sealed record FinancialStatements : SourcedData
+{
+    public required string Symbol { get; init; }
+    public required IReadOnlyList<FinancialLine> Lines { get; init; }
+}
+
+public sealed record NewsItem
+{
+    public required string Title { get; init; }
+    public required string Url { get; init; }
+    public string? Publisher { get; init; }
+    public DateTimeOffset? Published { get; init; }
+    public string? Summary { get; init; }
+    public string? ThumbnailUrl { get; init; }
+    public IReadOnlyList<string> RelatedSymbols { get; init; } = [];
+    public string Source { get; init; } = "";
+}
+
+public sealed record SymbolMatch(string Symbol, string Name, string? Exchange, string? Type, string Source);
