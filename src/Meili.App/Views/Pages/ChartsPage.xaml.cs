@@ -48,7 +48,7 @@ public partial class ChartsPage : Page
             plot.Plot.RenderManager.RenderFinished += (_, _) =>
             {
                 if (PricePlot.IsVisible)
-                    _painter.SyncX(PricePlot, VolumePlot, MacdPlot, RsiPlot, KdjPlot);
+                    _painter.SyncX(PricePlot, new[] { VolumePlot, MacdPlot, RsiPlot, KdjPlot }.Where(p => p.IsVisible));
             };
         }
     }
@@ -129,12 +129,12 @@ public partial class ChartsPage : Page
             _userView = false;
         }
         foreach (var p in AllPlots()) if (p.IsVisible) p.Refresh();
-        _painter.SyncX(PricePlot, VolumePlot, MacdPlot, RsiPlot, KdjPlot);
+        _painter.SyncX(PricePlot, new[] { VolumePlot, MacdPlot, RsiPlot, KdjPlot }.Where(p => p.IsVisible));
     }
 
     private void ApplyAllThemes()
     {
-        var palette = ChartPalette.Current(_theme.IsDark);
+        var palette = WpfChartPalette.Current(_theme.IsDark);
         foreach (var p in AllPlots()) _painter.ApplyTheme(p, palette);
     }
 

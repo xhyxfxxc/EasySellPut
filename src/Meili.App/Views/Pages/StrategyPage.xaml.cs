@@ -70,7 +70,7 @@ public partial class StrategyPage : Page
     {
         var plot = PayoffPlot.Plot;
         plot.Clear();
-        var c = ChartPalette.Current(_theme.IsDark);
+        var c = WpfChartPalette.Current(_theme.IsDark);
         var muted = c.Muted;
         _themePaint.ApplyTheme(PayoffPlot, c);
 

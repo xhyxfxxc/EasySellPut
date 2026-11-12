@@ -23,7 +23,7 @@ public class ChartThemeTests
                 foreach (var dark in new[] { true, false })
                 {
                     ScreenRenderTests.Apply("zh-CN", dark);
-                    var c = ChartPalette.Current(dark);
+                    var c = WpfChartPalette.Current(dark);
                     foreach (var s in new[] { c.Series1, c.Series2, c.Series3, c.Series4, c.Series5, c.Series6, c.Marker, c.Up, c.Down })
                         Assert.True(UiAudit.Contrast(M(s), M(c.DataBackground)) >= 3, $"{(dark ? "dark" : "light")} {s.ToHex()}");
                     Assert.True(UiAudit.Contrast(M(c.Text), M(c.Background)) >= 4.5);
@@ -50,12 +50,12 @@ public class ChartThemeTests
                 using var host = new OffscreenHost(page, 1280, 800);
                 await ScreenRenderTests.Settle();
                 var plot = UiAudit.Descendants<WpfPlot>(page).First(p => p.IsVisible);
-                Assert.Equal(ChartPalette.Current(true).Background, plot.Plot.FigureBackground.Color);
+                Assert.Equal(WpfChartPalette.Current(true).Background, plot.Plot.FigureBackground.Color);
                 if (dir is { Length: > 0 }) host.SavePng(Path.Combine(dir, $"e5-{name}-1-dark.png"));
 
                 ScreenRenderTests.Apply("zh-CN", false);                        // switch while the page is open
                 await ScreenRenderTests.Settle();
-                var light = ChartPalette.Current(false);
+                var light = WpfChartPalette.Current(false);
                 Assert.Equal(light.Background, plot.Plot.FigureBackground.Color);
                 Assert.Equal(light.DataBackground, plot.Plot.DataBackground.Color);
                 if (dir is { Length: > 0 }) host.SavePng(Path.Combine(dir, $"e5-{name}-2-light.png"));
@@ -65,7 +65,7 @@ public class ChartThemeTests
                     ThemeService.ApplyUpDownColors(UpDownColorMode.GreenUp);
                     await ScreenRenderTests.Settle();
                     var candles = plot.Plot.GetPlottables().OfType<ScottPlot.Plottables.CandlestickPlot>().Single();
-                    Assert.Equal(ChartPalette.Current(false).Up, candles.RisingFillStyle.Color);
+                    Assert.Equal(WpfChartPalette.Current(false).Up, candles.RisingFillStyle.Color);
                     Assert.Equal(light.Down, candles.RisingFillStyle.Color);                // green-up: rising uses the former "down" green
                     if (dir is { Length: > 0 }) host.SavePng(Path.Combine(dir, $"e5-{name}-3-light-greenup.png"));
                 }

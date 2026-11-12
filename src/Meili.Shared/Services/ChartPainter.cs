@@ -1,27 +1,28 @@
-using System.Windows.Media;
 using ScottPlot;
 using ScottPlot.Plottables;
-using ScottPlot.WPF;
 using Meili.Analytics;
+using Meili.Shared.ViewModels;
 using Meili.Core.Models;
 using BarSeries = Meili.Core.Models.BarSeries;
 using Meili.Core.Time;
 using Meili.Core.Settings;
 using Color = ScottPlot.Color;
 
-namespace Meili.App.Services;
+namespace Meili.Shared.Services;
 
 /// <summary>Paints a <see cref="KlineSnapshot"/> onto stacked ScottPlot controls and keeps their X axes in sync.</summary>
 public sealed class ChartPainter
 {
     private const float FontSize = 12f;
-    private const string FontName = "Microsoft YaHei UI";
+
+    /// <summary>A font with CJK glyphs, set by each front end ("Microsoft YaHei UI" on Windows, "PingFang SC" on macOS).</summary>
+    public static string FontName { get; set; } = "Microsoft YaHei UI";
     private bool _syncing;
 
     /// <summary>E5: colours of the last <see cref="ApplyTheme"/>; the Draw methods paint with them.</summary>
     public ChartPalette Palette { get; private set; } = null!;
 
-    public void ApplyTheme(WpfPlot plot, ChartPalette palette)
+    public void ApplyTheme(IPlotControl plot, ChartPalette palette)
     {
         Palette = palette;
         var (text, grid, bg, dataBg) = (palette.Text, palette.Grid, palette.Background, palette.DataBackground);
@@ -49,7 +50,7 @@ public sealed class ChartPainter
         plot.Menu?.Clear();
     }
 
-    public void DrawPrice(WpfPlot plot, BarSeries series, KlineSnapshot snap, ChartsViewModel vm)
+    public void DrawPrice(IPlotControl plot, BarSeries series, KlineSnapshot snap, ChartsViewModel vm)
     {
         var (up, down, text) = (Palette.Up, Palette.Down, Palette.Text);
         var p = plot.Plot;
@@ -129,7 +130,7 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawVolume(WpfPlot plot, BarSeries series)
+    public void DrawVolume(IPlotControl plot, BarSeries series)
     {
         var (up, down) = (Palette.Up, Palette.Down);
         var p = plot.Plot;
@@ -156,7 +157,7 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawMacd(WpfPlot plot, KlineSnapshot snap, string title)
+    public void DrawMacd(IPlotControl plot, KlineSnapshot snap, string title)
     {
         var (up, down, text) = (Palette.Up, Palette.Down, Palette.Text);
         var p = plot.Plot;
@@ -187,7 +188,7 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawRsi(WpfPlot plot, KlineSnapshot snap, string title)
+    public void DrawRsi(IPlotControl plot, KlineSnapshot snap, string title)
     {
         var muted = Palette.Muted;
         var p = plot.Plot;
@@ -206,7 +207,7 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawKdj(WpfPlot plot, KlineSnapshot snap, string title)
+    public void DrawKdj(IPlotControl plot, KlineSnapshot snap, string title)
     {
         var p = plot.Plot;
         p.Clear();
@@ -222,7 +223,7 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void FinishAxis(WpfPlot plot, string? bottomLabel, bool hideBottomTicks)
+    public void FinishAxis(IPlotControl plot, string? bottomLabel, bool hideBottomTicks)
     {
         var p = plot.Plot;
         p.Axes.Bottom.Label.Text = bottomLabel ?? "";
@@ -230,7 +231,8 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void SyncX(WpfPlot source, params WpfPlot[] others)
+    /// <summary>Copies the X range of <paramref name="source"/> to <paramref name="others"/> (pass only the visible plots).</summary>
+    public void SyncX(IPlotControl source, params IEnumerable<IPlotControl> others)
     {
         if (_syncing) return;
         _syncing = true;
@@ -240,7 +242,6 @@ public sealed class ChartPainter
             var max = source.Plot.Axes.Bottom.Max;
             foreach (var o in others)
             {
-                if (!o.IsVisible) continue;
                 if (Math.Abs(o.Plot.Axes.Bottom.Min - min) < 1e-9 && Math.Abs(o.Plot.Axes.Bottom.Max - max) < 1e-9) continue;
                 o.Plot.Axes.Bottom.Min = min;
                 o.Plot.Axes.Bottom.Max = max;
@@ -294,9 +295,8 @@ public sealed class ChartPainter
 
     private static string Label(ChartsViewModel vm, string key)
     {
-        // Localization is applied through resources; the VM already uses the same keys for chips.
-        // We read from Application resources so the plot labels follow the UI language.
-        return System.Windows.Application.Current.TryFindResource(key) as string ?? key;
+        // The VM already uses the same keys for chips, so plot labels follow the UI language.
+        return LocalizationService.Current[key];
     }
 
     private static TimeSpan SpanOf(ChartRangeKind range) => range switch
