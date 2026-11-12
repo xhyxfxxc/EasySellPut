@@ -12,12 +12,32 @@ public sealed class ThemeService : IThemeController
     void IThemeController.Apply(AppThemeMode mode) => Apply(mode);
     void IThemeController.ApplyUpDownColors(UpDownColorMode mode) => ApplyUpDownColors(mode);
 
+    /// <summary>
+    /// 0.4.1: solid window background instead of Mica. WPF-UI only re-tints a Mica backdrop reliably at startup;
+    /// after a runtime light/dark switch the transparent title bar and navigation pane kept showing the old tint
+    /// (lepoco/wpfui #927, #1163, #1222, #1639). With no backdrop every surface is a theme brush and switches with it.
+    /// </summary>
+    public const WindowBackdropType Backdrop = WindowBackdropType.None;
+
     private Window? _watched;
     public AppThemeMode Mode { get; private set; } = AppThemeMode.System;
     public event EventHandler? ThemeChanged;
 
     public bool IsDark => ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark;
 
+    // Every theme change, including one the system watcher makes on its own, re-tones the semantic brushes.
+    public ThemeService() => ApplicationThemeManager.Changed += (_, _) =>
+    {
+        ApplySemanticColors(IsDark);
+        ThemeChanged?.Invoke(this, EventArgs.Empty);
+    };
+
+    /// <summary>
+    /// Switches the WPF-UI theme dictionary at application level only. Pages and the window resolve every brush
+    /// through DynamicResource against <see cref="Application.Resources"/>; nothing is copied onto elements
+    /// (0.4.0 called ApplicationThemeManager.Apply(window), which snapshots the application resources into the
+    /// window and left stale up/down, row and ITM brushes plus the old string dictionary shadowing the new ones).
+    /// </summary>
     public void Apply(AppThemeMode mode, Window? mainWindow = null)
     {
         Mode = mode;
@@ -26,20 +46,19 @@ public sealed class ThemeService : IThemeController
 
         switch (mode)
         {
-            case AppThemeMode.Light: ApplicationThemeManager.Apply(ApplicationTheme.Light, WindowBackdropType.Mica, true); break;
-            case AppThemeMode.Dark: ApplicationThemeManager.Apply(ApplicationTheme.Dark, WindowBackdropType.Mica, true); break;
+            case AppThemeMode.Light: ApplicationThemeManager.Apply(ApplicationTheme.Light, Backdrop, true); break;
+            case AppThemeMode.Dark: ApplicationThemeManager.Apply(ApplicationTheme.Dark, Backdrop, true); break;
             default:
+                // WPF-UI's system variant always asks for Mica; reset the window to the solid background afterwards.
                 ApplicationThemeManager.ApplySystemTheme(true);
+                WindowBackgroundManager.UpdateBackground(mainWindow, ApplicationThemeManager.GetAppTheme(), Backdrop);
                 if (mainWindow is not null && mainWindow.IsLoaded)
                 {
-                    SystemThemeWatcher.Watch(mainWindow, WindowBackdropType.Mica, true);
+                    SystemThemeWatcher.Watch(mainWindow, Backdrop, true);
                     _watched = mainWindow;
                 }
                 break;
         }
-        if (mainWindow is not null) ApplicationThemeManager.Apply(mainWindow);
-        ApplySemanticColors(IsDark);
-        ThemeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Quick toggle from the title bar: flips to the opposite explicit theme.</summary>

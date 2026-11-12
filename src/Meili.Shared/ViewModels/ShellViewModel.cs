@@ -29,6 +29,7 @@ public partial class ShellViewModel : ObservableObject
         timer.Tick += (_, _) => Tick();
         timer.Start();
         _loc.LanguageChanged += (_, _) => Tick();
+        Ui.Platform.ColorsChanged += (_, _) => Tick();     // 0.4.1: status-bar dots follow a theme switch at once
         Tick();
     }
 

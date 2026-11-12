@@ -20,7 +20,7 @@ $ProductName = "美丽稻谷卖方绿泡群专用终端"
 $ExeFileName = "$ProductName.exe"
 $PortableLabel = "$ProductName-便携版"
 $SetupLabel = "$ProductName-安装程序"
-$Version = "0.4.0"
+$Version = "0.4.1"
 
 $PublishDir = Join-Path $Root "build\out\publish"
 $PayloadDir = Join-Path $Root "build\out\payload"

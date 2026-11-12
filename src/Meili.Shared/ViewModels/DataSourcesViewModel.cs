@@ -31,6 +31,7 @@ public partial class DataSourcesViewModel : ObservableObject
         foreach (var h in data.Health.All) Sources.Add(new SourceRowViewModel(h, Domestic.Contains(h.Id)));
         _timer.Tick += (_, _) => Refresh();
         _loc.LanguageChanged += (_, _) => { BuildFailover(); OnPropertyChanged(nameof(TestButtonText)); Refresh(); };
+        Ui.Platform.ColorsChanged += (_, _) => Refresh();   // 0.4.1: health brushes follow a theme switch at once
         BuildFailover();
         Refresh();
     }
