@@ -89,8 +89,7 @@ public sealed class CboeProvider(HttpGateway http, ResponseCache cache) : Provid
         var bars = root.Prop("data").Items()
             .Select(x => (t: Eastern.Parse(x.Str("date")), x))
             .Where(p => p.t is not null && p.x.Num("close") is > 0)
-            .Select(p => new Bar(p.t!.Value, p.x.Num("open") ?? p.x.Num("close")!.Value, p.x.Num("high") ?? p.x.Num("close")!.Value,
-                p.x.Num("low") ?? p.x.Num("close")!.Value, p.x.Num("close")!.Value, p.x.Num("volume") ?? 0))
+            .Select(p => Bar.FromSource(p.t!.Value, p.x.Num("open"), p.x.Num("high"), p.x.Num("low"), p.x.Num("close")!.Value, p.x.Num("volume")))
             .OrderBy(b => b.Time).ToList();
         return new BarSeries { Symbol = symbol, Interval = BarInterval.Day1, Bars = bars, Source = "cboe", AsOf = Utc(root.Str("timestamp")), DelayMinutes = 15 };
     }
@@ -103,8 +102,8 @@ public sealed class CboeProvider(HttpGateway http, ResponseCache cache) : Provid
             if (Eastern.Parse(x.Str("datetime")) is not { } t || x.Prop("price") is not { } p || p.Num("close") is not > 0) continue;
             var close = p.Num("close")!.Value;
             // CBOE stamps the bar END (09:31 = 09:30–09:31); normalize to bar start like the other sources.
-            bars.Add(new Bar(t.AddMinutes(-1), p.Num("open") ?? close, p.Num("high") ?? close, p.Num("low") ?? close, close,
-                x.Path("volume", "stock_volume").Num() ?? 0));
+            bars.Add(Bar.FromSource(t.AddMinutes(-1), p.Num("open"), p.Num("high"), p.Num("low"), close,
+                x.Path("volume", "stock_volume").Num()));
         }
         return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "cboe", AsOf = Utc(root.Str("timestamp")), DelayMinutes = 15 };
     }

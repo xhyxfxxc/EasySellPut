@@ -83,7 +83,7 @@ public sealed partial class SinaProvider(HttpGateway http, ResponseCache cache) 
         var bars = doc.RootElement.EnumerateArray()
             .Select(x => (t: Eastern.Parse(x.Str("d")), c: x.Num("c"), x))
             .Where(p => p.t is not null && p.c is > 0)
-            .Select(p => new Bar(p.t!.Value, p.x.Num("o") ?? p.c!.Value, p.x.Num("h") ?? p.c!.Value, p.x.Num("l") ?? p.c!.Value, p.c!.Value, p.x.Num("v") ?? 0))
+            .Select(p => Bar.FromSource(p.t!.Value, p.x.Num("o"), p.x.Num("h"), p.x.Num("l"), p.c!.Value, p.x.Num("v")))
             .ToList();
         return new BarSeries { Symbol = symbol, Interval = BarInterval.Day1, Bars = bars, Source = "sina", AsOf = bars.LastOrDefault()?.Time };
     }

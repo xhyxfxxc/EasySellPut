@@ -47,14 +47,36 @@ public sealed class ChartPainter
     {
         var p = plot.Plot;
         p.Clear();
-        var ohlcs = new List<OHLC>(series.Bars.Count);
         var span = SpanOf(vm.Range);
-        foreach (var b in series.Bars)
-            ohlcs.Add(new OHLC(b.Open, b.High, b.Low, b.Close, MarketClock.ToEastern(b.Time), span));
-        var candles = p.Add.Candlestick(ohlcs);
-        candles.Sequential = false;
-        candles.RisingColor = up;
-        candles.FallingColor = down;
+        var plan = PricePlan.Build(series.Bars);
+        if (plan.LineOnly)
+        {
+            // Every bar is close-only (e.g. an intraday tick series): a price line, not fake flat candles.
+            var line = p.Add.Scatter(plan.CloseX, plan.CloseY);
+            line.Color = text.WithAlpha(220);
+            line.LineWidth = 1.5f;
+            line.MarkerSize = 0;
+        }
+        else
+        {
+            if (plan.Candles.Count > 0)
+            {
+                var ohlcs = plan.Candles.Select(b => new OHLC(b.Open, b.High, b.Low, b.Close, MarketClock.ToEastern(b.Time), span)).ToList();
+                var candles = p.Add.Candlestick(ohlcs);
+                candles.Sequential = false;
+                candles.RisingColor = up;
+                candles.FallingColor = down;
+            }
+            if (plan.CloseX.Count > 0)
+            {
+                // Incomplete bars: only the close is trustworthy — draw it as a hollow-looking point.
+                var dots = p.Add.Scatter(plan.CloseX, plan.CloseY);
+                dots.LineWidth = 0;
+                dots.MarkerSize = 5;
+                dots.MarkerShape = MarkerShape.OpenCircle;
+                dots.Color = text.WithAlpha(200);
+            }
+        }
         var time = snap.Columns.Time;
         if (vm.ShowMa) AddLine(p, time, snap.Sma, Color.FromHex("#3B82F6"), Label(vm, "Ch_MA"));
         if (vm.ShowEma) AddLine(p, time, snap.Ema, Color.FromHex("#F59E0B"), Label(vm, "Ch_EMA"));
@@ -79,10 +101,12 @@ public sealed class ChartPainter
         var p = plot.Plot;
         p.Clear();
         var bars = new List<ScottPlot.Bar>(series.Bars.Count);
+        double? prevClose = null;
         foreach (var b in series.Bars)
         {
             var x = MarketClock.ToEastern(b.Time).ToOADate();
-            var rising = b.Close >= b.Open;
+            var rising = double.IsFinite(b.Open) ? b.Close >= b.Open : prevClose is not double pc || b.Close >= pc;
+            prevClose = b.Close;
             bars.Add(new ScottPlot.Bar
             {
                 Position = x,
@@ -260,5 +284,27 @@ public sealed class ChartPainter
     {
         if (time.Length < 2) return 0.8;
         return Math.Abs(ToX(time[1]) - ToX(time[0]));
+    }
+}
+
+/// <summary>Splits bars into drawable candles and close-only points (F2). Pure, so it is unit-tested without a plot.</summary>
+public sealed class PricePlan
+{
+    public List<TyuStock.Core.Models.Bar> Candles { get; } = [];
+    public List<double> CloseX { get; } = [];
+    public List<double> CloseY { get; } = [];
+    public bool LineOnly { get; private set; }
+
+    public static PricePlan Build(IReadOnlyList<TyuStock.Core.Models.Bar> bars)
+    {
+        var plan = new PricePlan();
+        foreach (var b in bars)
+        {
+            // Re-check consistency even if the provider did: ScottPlot throws on Low > Open/Close.
+            if (!b.Incomplete && b.IsConsistent()) plan.Candles.Add(b);
+            else { plan.CloseX.Add(MarketClock.ToEastern(b.Time).ToOADate()); plan.CloseY.Add(b.Close); }
+        }
+        plan.LineOnly = plan.Candles.Count == 0 && plan.CloseX.Count > 0;
+        return plan;
     }
 }

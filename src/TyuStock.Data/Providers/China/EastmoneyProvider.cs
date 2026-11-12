@@ -88,8 +88,8 @@ public sealed class EastmoneyProvider(HttpGateway http, ResponseCache cache) : P
     {
         var bars = root.Path("data", "klines").Items().Select(k => (k.Str() ?? "").Split(','))
             .Where(f => f.Length >= 6 && Eastern.Parse(f[0]) is not null && JsonX.ParseNumber(f[2]) is > 0)
-            .Select(f => new Bar(Eastern.Parse(f[0])!.Value, JsonX.ParseNumber(f[1])!.Value, JsonX.ParseNumber(f[3])!.Value,
-                JsonX.ParseNumber(f[4])!.Value, JsonX.ParseNumber(f[2])!.Value, JsonX.ParseNumber(f[5]) ?? 0))
+            .Select(f => Bar.FromSource(Eastern.Parse(f[0])!.Value, JsonX.ParseNumber(f[1]), JsonX.ParseNumber(f[3]),
+                JsonX.ParseNumber(f[4]), JsonX.ParseNumber(f[2])!.Value, JsonX.ParseNumber(f[5])))
             .ToList();
         return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "eastmoney", AsOf = bars.LastOrDefault()?.Time };
     }

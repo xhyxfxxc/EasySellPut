@@ -28,17 +28,29 @@ public sealed class KlineSnapshot
     public required KdjSeries Kdj { get; init; }
     public KlineIndicatorOptions Options { get; init; } = new();
 
-    public static KlineSnapshot Compute(IReadOnlyList<OhlcvBar> bars, KlineIndicatorOptions? options = null)
+    public static KlineSnapshot Compute(IReadOnlyList<OhlcvBar> bars, KlineIndicatorOptions? options = null) =>
+        Compute(bars, options, null);
+
+    /// <param name="bars">Bars in time order.</param>
+    /// <param name="options">Indicator periods; defaults when null.</param>
+    /// <param name="incomplete">
+    /// Optional per-bar flag for bars whose High/Low are missing or untrustworthy. Close-based indicators still use
+    /// every real close; KDJ (which needs High/Low) is computed over the complete bars only and realigned, with NaN
+    /// at incomplete positions — a gap is shown instead of a value built from invented highs and lows.
+    /// </param>
+    public static KlineSnapshot Compute(IReadOnlyList<OhlcvBar> bars, KlineIndicatorOptions? options, IReadOnlyList<bool>? incomplete)
     {
         ArgumentNullException.ThrowIfNull(bars);
-        var opt = options ?? new KlineIndicatorOptions();
         var cols = OhlcvColumns.From(bars);
-        return Compute(cols, opt);
+        return Compute(cols, options, incomplete);
     }
 
-    public static KlineSnapshot Compute(OhlcvColumns cols, KlineIndicatorOptions? options = null)
+    public static KlineSnapshot Compute(OhlcvColumns cols, KlineIndicatorOptions? options = null) => Compute(cols, options, null);
+
+    public static KlineSnapshot Compute(OhlcvColumns cols, KlineIndicatorOptions? options, IReadOnlyList<bool>? incomplete)
     {
         ArgumentNullException.ThrowIfNull(cols);
+        if (incomplete is not null && incomplete.Count != cols.Count) throw new ArgumentException("Flag count must match bar count.", nameof(incomplete));
         var opt = options ?? new KlineIndicatorOptions();
         var close = cols.Close;
         return new KlineSnapshot
@@ -50,8 +62,33 @@ public sealed class KlineSnapshot
             Bollinger = Indicators.Bollinger(close, opt.BollingerPeriod, opt.BollingerMultiplier),
             Macd = Indicators.Macd(close, opt.MacdFast, opt.MacdSlow, opt.MacdSignal),
             Rsi = Indicators.Rsi(close, opt.RsiPeriod),
-            Kdj = Indicators.Kdj(cols.High, cols.Low, close, opt.KdjPeriod, opt.KdjM1, opt.KdjM2),
+            Kdj = KdjOnComplete(cols, opt, incomplete),
         };
+    }
+
+    private static KdjSeries KdjOnComplete(OhlcvColumns cols, KlineIndicatorOptions opt, IReadOnlyList<bool>? incomplete)
+    {
+        int n = cols.Count;
+        var keep = new List<int>(n);
+        for (int i = 0; i < n; i++)
+        {
+            double h = cols.High[i], l = cols.Low[i], c = cols.Close[i];
+            bool ok = (incomplete is null || !incomplete[i]) && double.IsFinite(h) && double.IsFinite(l) && double.IsFinite(c) && l <= c && c <= h;
+            if (ok) keep.Add(i);
+        }
+        if (keep.Count == n) return Indicators.Kdj(cols.High, cols.Low, cols.Close, opt.KdjPeriod, opt.KdjM1, opt.KdjM2);
+        var k = Nan(n); var d = Nan(n); var j = Nan(n);
+        if (keep.Count >= opt.KdjPeriod)
+        {
+            var h = keep.Select(i => cols.High[i]).ToArray();
+            var l = keep.Select(i => cols.Low[i]).ToArray();
+            var c = keep.Select(i => cols.Close[i]).ToArray();
+            var sub = Indicators.Kdj(h, l, c, opt.KdjPeriod, opt.KdjM1, opt.KdjM2);
+            for (int x = 0; x < keep.Count; x++) { k[keep[x]] = sub.K[x]; d[keep[x]] = sub.D[x]; j[keep[x]] = sub.J[x]; }
+        }
+        return new KdjSeries(k, d, j);
+
+        static double[] Nan(int len) { var a = new double[len]; Array.Fill(a, double.NaN); return a; }
     }
 
     /// <summary>Pairs (time OADate, value) skipping NaN, for a ScottPlot scatter overlay.</summary>

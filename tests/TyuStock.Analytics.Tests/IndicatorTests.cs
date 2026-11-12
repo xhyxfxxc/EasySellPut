@@ -194,3 +194,43 @@ public class IndicatorTests
         Assert.Throws<ArgumentException>(() => Indicators.Sma(X, 5, new double[3]));
     }
 }
+public class KlineIncompleteTests
+{
+    [Fact]
+    public void Kdj_skips_incomplete_bars_and_realigns_while_close_indicators_use_every_close()
+    {
+        var t0 = new DateTimeOffset(2026, 11, 2, 14, 30, 0, TimeSpan.Zero);
+        var bars = new List<OhlcvBar>();
+        var flags = new List<bool>();
+        for (int i = 0; i < 40; i++)
+        {
+            double c = 100 + Math.Sin(i / 3.0) * 5;
+            bool bad = i % 7 == 3;
+            bars.Add(bad ? new OhlcvBar(t0.AddDays(i), double.NaN, double.NaN, double.NaN, c, 0) : new OhlcvBar(t0.AddDays(i), c - 0.5, c + 1, c - 1, c, 10));
+            flags.Add(bad);
+        }
+        var snap = KlineSnapshot.Compute(bars, null, flags);
+        var complete = bars.Where((_, i) => !flags[i]).ToArray();
+        var expected = Indicators.Kdj(complete.Select(b => b.High).ToArray(), complete.Select(b => b.Low).ToArray(), complete.Select(b => b.Close).ToArray());
+        int x = 0;
+        for (int i = 0; i < bars.Count; i++)
+        {
+            if (flags[i]) { Assert.True(double.IsNaN(snap.Kdj.K[i])); continue; }
+            Assert.Equal(expected.K[x], snap.Kdj.K[i], 10);
+            Assert.Equal(expected.J[x], snap.Kdj.J[i], 10);
+            x++;
+        }
+        Assert.Equal(Indicators.Sma(bars.Select(b => b.Close).ToArray(), 20)[^1], snap.Sma[^1], 10);
+        Assert.True(double.IsFinite(snap.Sma[^1]));
+    }
+
+    [Fact]
+    public void Without_flags_nan_high_low_are_still_excluded_from_kdj()
+    {
+        var t0 = new DateTimeOffset(2026, 11, 2, 14, 30, 0, TimeSpan.Zero);
+        var bars = Enumerable.Range(0, 20).Select(i => new OhlcvBar(t0.AddMinutes(i), double.NaN, double.NaN, double.NaN, 100 + i, 1)).ToArray();
+        var snap = KlineSnapshot.Compute(bars);
+        Assert.All(snap.Kdj.K, v => Assert.True(double.IsNaN(v)));
+        Assert.True(double.IsFinite(snap.Ema[^1]));
+    }
+}

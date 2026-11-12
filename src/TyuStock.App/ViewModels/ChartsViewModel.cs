@@ -152,7 +152,7 @@ public partial class ChartsViewModel : ObservableObject
             StatusText = _loc["Ex_NoData"];
             return;
         }
-        var headers = new[] { _loc["Ex_Time"], "Open", "High", "Low", "Close", _loc["Ch_Volume"] };
+        var headers = new[] { _loc["Ex_Time"], "Open", "High", "Low", "Close", _loc["Ch_Volume"], _loc["Ex_Incomplete"] };
         var table = MarketExport.Bars($"{SymbolText}-{Range}", headers, Series);
         var msg = ExportUi.Save($"{SymbolText}-{Range}", [table], _loc);
         if (msg is not null) StatusText = msg;
@@ -190,7 +190,7 @@ public partial class ChartsViewModel : ObservableObject
             var series = await _data.GetBarsAsync(request, _cts.Token);
             var bars = series.Bars.Select(b => new OhlcvBar(b.Time, b.Open, b.High, b.Low, b.Close, b.Volume)).ToArray();
             Series = series;
-            Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars);
+            Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars, null, series.Bars.Select(b => b.Incomplete || !b.IsConsistent()).ToArray());
             CrosshairText = "";
             Headline = string.IsNullOrWhiteSpace(symbol) ? "" : symbol;
             _lastError = series.Bars.Count == 0 ? _loc["Ch_Empty"] : null;
@@ -266,6 +266,8 @@ public partial class ChartsViewModel : ObservableObject
         {
             var src = SourceNames.Display(s.Source, _loc);
             StatusText = string.Format(_loc["Ch_Source"], src, s.Bars.Count);
+            var bad = s.Bars.Count(b => b.Incomplete || !b.IsConsistent());
+            if (bad > 0) StatusText += "  ·  " + string.Format(_loc["Ch_IncompleteCount"], bad);
         }
         else StatusText = "";
     }
@@ -284,9 +286,10 @@ public partial class ChartsViewModel : ObservableObject
             F(b.Open), F(b.High), F(b.Low), F(b.Close), Vol(b.Volume));
         var ma = Def(Snapshot.Sma[index]);
         var ema = Def(Snapshot.Ema[index]);
-        CrosshairText = $"{et:yyyy-MM-dd HH:mm}   " + string.Format(_loc["Ch_CrosshairMore"], head, ma, ema);
+        CrosshairText = $"{et:yyyy-MM-dd HH:mm}   " + string.Format(_loc["Ch_CrosshairMore"], head, ma, ema)
+            + (b.Incomplete || !b.IsConsistent() ? "   " + _loc["Ch_IncompleteBar"] : "");
 
-        string F(double x) => x.ToString(x >= 1000 ? "N2" : "0.00", inv);
+        string F(double x) => double.IsFinite(x) ? x.ToString(x >= 1000 ? "N2" : "0.00", inv) : "—";
         string Def(double x) => double.IsFinite(x) ? F(x) : "—";
         static string Vol(double v) => v >= 1_000_000 ? (v / 1_000_000).ToString("0.00", CultureInfo.InvariantCulture) + "M" : v.ToString("N0", CultureInfo.InvariantCulture);
     }

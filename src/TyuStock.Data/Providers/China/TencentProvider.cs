@@ -92,8 +92,8 @@ public sealed partial class TencentProvider(HttpGateway http, ResponseCache cach
         var rows = node?.Prop("qfq" + key) ?? node?.Prop(key);
         var bars = rows.Items().Select(x => x.EnumerateArray().Select(v => v.Str()).ToArray())
             .Where(a => a.Length >= 6 && Eastern.Parse(a[0]) is not null && JsonX.ParseNumber(a[2]) is > 0)
-            .Select(a => new Bar(Eastern.Parse(a[0])!.Value, JsonX.ParseNumber(a[1])!.Value, JsonX.ParseNumber(a[3])!.Value,
-                JsonX.ParseNumber(a[4])!.Value, JsonX.ParseNumber(a[2])!.Value, JsonX.ParseNumber(a[5]) ?? 0))
+            .Select(a => Bar.FromSource(Eastern.Parse(a[0])!.Value, JsonX.ParseNumber(a[1]), JsonX.ParseNumber(a[3]),
+                JsonX.ParseNumber(a[4]), JsonX.ParseNumber(a[2])!.Value, JsonX.ParseNumber(a[5])))
             .ToList();
         return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "tencent", AsOf = bars.LastOrDefault()?.Time };
     }
@@ -111,7 +111,7 @@ public sealed partial class TencentProvider(HttpGateway http, ResponseCache cach
             if (f.Length < 3 || f[0].Length != 4 || JsonX.ParseNumber(f[1]) is not { } px || px <= 0) continue;
             var t = day.AddHours(int.Parse(f[0][..2], CultureInfo.InvariantCulture)).AddMinutes(int.Parse(f[0][2..], CultureInfo.InvariantCulture));
             var cum = JsonX.ParseNumber(f[2]) ?? prevVol;
-            bars.Add(new Bar(TyuStock.Core.Time.MarketClock.FromEastern(t), px, px, px, px, Math.Max(0, cum - prevVol)));
+            bars.Add(Bar.CloseOnly(TyuStock.Core.Time.MarketClock.FromEastern(t), px, Math.Max(0, cum - prevVol)));
             prevVol = cum;
         }
         return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "tencent", AsOf = bars.LastOrDefault()?.Time };

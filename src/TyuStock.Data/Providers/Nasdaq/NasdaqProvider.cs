@@ -161,10 +161,10 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
     {
         var bars = root.Path("data", "chart").Items()
             .Where(p => p.Num("x") is not null && p.Num("y") is > 0)
-            .Select(p => new Bar(TyuStock.Core.Time.MarketClock.FromEastern(DateTime.UnixEpoch.AddMilliseconds(p.Num("x")!.Value)),
-                p.Num("y")!.Value, p.Num("y")!.Value, p.Num("y")!.Value, p.Num("y")!.Value, 0))
+            .Select(p => Bar.CloseOnly(TyuStock.Core.Time.MarketClock.FromEastern(DateTime.UnixEpoch.AddMilliseconds(p.Num("x")!.Value)),
+                p.Num("y")!.Value, 0))
             .ToList();
-        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "nasdaq", IsRealtime = true, AsOf = bars.LastOrDefault()?.Time };
+        return new BarSeries { Symbol = symbol, Interval = BarInterval.Minute1, Bars = bars, Source = "nasdaq", AsOf = bars.LastOrDefault()?.Time };
     }
 
     internal static BarSeries ParseHistorical(JsonElement root, string symbol)
@@ -172,7 +172,7 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
         var bars = root.Path("data", "tradesTable", "rows").Items()
             .Select(x => (t: Eastern.Parse(x.Str("date")), c: x.Num("close"), x))
             .Where(p => p.t is not null && p.c is > 0)
-            .Select(p => new Bar(p.t!.Value, p.x.Num("open") ?? p.c!.Value, p.x.Num("high") ?? p.c!.Value, p.x.Num("low") ?? p.c!.Value, p.c!.Value, p.x.Num("volume") ?? 0))
+            .Select(p => Bar.FromSource(p.t!.Value, p.x.Num("open"), p.x.Num("high"), p.x.Num("low"), p.c!.Value, p.x.Num("volume")))
             .OrderBy(b => b.Time).ToList();
         return new BarSeries { Symbol = symbol, Interval = BarInterval.Day1, Bars = bars, Source = "nasdaq", AsOf = bars.LastOrDefault()?.Time };
     }

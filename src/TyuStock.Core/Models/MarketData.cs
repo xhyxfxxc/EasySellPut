@@ -82,7 +82,36 @@ public sealed record Quote : SourcedData
     public DateTimeOffset? ExtendedTime { get; init; }
 }
 
-public sealed record Bar(DateTimeOffset Time, double Open, double High, double Low, double Close, double Volume);
+/// <summary>
+/// One OHLCV bar. Close is always a real traded price; Open/High/Low are <see cref="double.NaN"/> when the source did not
+/// supply them (F2: never fabricated from Close). <see cref="Incomplete"/> marks bars whose O/H/L are missing or
+/// contradict each other (e.g. Low above Open) — charts draw those as a close-only point, KDJ skips them.
+/// </summary>
+public sealed record Bar(DateTimeOffset Time, double Open, double High, double Low, double Close, double Volume)
+{
+    public bool Incomplete { get; init; }
+
+    /// <summary>Builds a bar from raw source values without inventing anything: missing O/H/L stay NaN and the bar is flagged.</summary>
+    public static Bar FromSource(DateTimeOffset time, double? open, double? high, double? low, double close, double? volume)
+    {
+        static double Px(double? v) => v is double d && double.IsFinite(d) && d > 0 ? d : double.NaN;
+        var bar = new Bar(time, Px(open), Px(high), Px(low), close, volume is double vv && double.IsFinite(vv) && vv >= 0 ? vv : 0);
+        return bar with { Incomplete = !bar.IsConsistent() };
+    }
+
+    /// <summary>A close-only point (e.g. an intraday price tick): O/H/L unknown.</summary>
+    public static Bar CloseOnly(DateTimeOffset time, double close, double volume) =>
+        new(time, double.NaN, double.NaN, double.NaN, close, volume) { Incomplete = true };
+
+    /// <summary>True when O/H/L/C are all present and Low ≤ min(Open, Close) ≤ max(Open, Close) ≤ High.</summary>
+    public bool IsConsistent()
+    {
+        if (!double.IsFinite(Open) || !double.IsFinite(High) || !double.IsFinite(Low) || !double.IsFinite(Close)) return false;
+        // Tolerate float noise from sources that round differently per field.
+        var eps = Math.Abs(Close) * 1e-9;
+        return Low <= Math.Min(Open, Close) + eps && High >= Math.Max(Open, Close) - eps && Low <= High + eps;
+    }
+}
 
 public sealed record BarSeries : SourcedData
 {

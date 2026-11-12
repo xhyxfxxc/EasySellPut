@@ -195,15 +195,13 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
                 for (var i = 0; i < ts.Length; i++)
                 {
                     if (i >= c.Length || c[i].Num() is not { } close) continue;
-                    var open = i < o.Length ? o[i].Num() ?? close : close;
-                    bars.Add(new Bar(DateTimeOffset.FromUnixTimeSeconds((long)ts[i].GetDouble()),
-                        open, i < h.Length ? h[i].Num() ?? Math.Max(open, close) : close,
-                        i < l.Length ? l[i].Num() ?? Math.Min(open, close) : close, close,
-                        i < v.Length ? v[i].Num() ?? 0 : 0));
+                    bars.Add(Bar.FromSource(DateTimeOffset.FromUnixTimeSeconds((long)ts[i].GetDouble()),
+                        i < o.Length ? o[i].Num() : null, i < h.Length ? h[i].Num() : null,
+                        i < l.Length ? l[i].Num() : null, close, i < v.Length ? v[i].Num() : null));
                 }
             }
         }
-        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "yahoo", AsOf = asOf, IsRealtime = true };
+        return new BarSeries { Symbol = symbol, Interval = interval, Bars = bars, Source = "yahoo", AsOf = asOf };
     }
 
     // ---------------- options ----------------

@@ -42,6 +42,7 @@ public static class MarketExport
                 Num(b.Low),
                 Num(b.Close),
                 Num(b.Volume, "0"),
+                .. headers.Count > 6 ? new[] { b.Incomplete || !b.IsConsistent() ? "1" : "" } : [],
             ]).ToList(),
         };
 
@@ -109,8 +110,9 @@ public static class MarketExport
             ]).ToList(),
         };
 
+    /// <summary>Non-finite values (e.g. an O/H/L the source did not supply) export as an empty cell, never "NaN".</summary>
     public static string Num(double value, string format = "0.########") =>
-        value.ToString(format, CultureInfo.InvariantCulture);
+        double.IsFinite(value) ? value.ToString(format, CultureInfo.InvariantCulture) : "";
 
     public static string Num(double? value, string format = "0.########") =>
         value is double v ? v.ToString(format, CultureInfo.InvariantCulture) : "";

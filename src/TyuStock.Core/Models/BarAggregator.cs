@@ -22,12 +22,24 @@ public static class BarAggregator
             }
             else
             {
-                cur = cur with { High = Math.Max(cur.High, b.High), Low = Math.Min(cur.Low, b.Low), Close = b.Close, Volume = cur.Volume + b.Volume };
+                cur = cur with
+                {
+                    High = MaxKnown(cur.High, b.High),
+                    Low = MinKnown(cur.Low, b.Low),
+                    Close = b.Close,
+                    Volume = cur.Volume + b.Volume,
+                    Incomplete = cur.Incomplete || b.Incomplete,
+                };
             }
         }
         if (cur is not null) result.Add(cur);
         return result;
     }
+
+    // Math.Max/Min propagate NaN, which would wipe out a whole bucket because of one close-only point. Ignore NaN
+    // here; the bucket is still flagged Incomplete (its true extreme may be outside what we saw).
+    private static double MaxKnown(double a, double b) => double.IsNaN(a) ? b : double.IsNaN(b) ? a : Math.Max(a, b);
+    private static double MinKnown(double a, double b) => double.IsNaN(a) ? b : double.IsNaN(b) ? a : Math.Min(a, b);
 
     private static DateTime Bucket(DateTime et, BarInterval target) => target switch
     {

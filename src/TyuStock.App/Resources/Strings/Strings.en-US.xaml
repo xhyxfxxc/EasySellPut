@@ -472,4 +472,7 @@
     <sys:String x:Key="Quote_AsOfEt">As of {0} ET</sys:String>
     <sys:String x:Key="Quote_AsOfUnknown">Market time unknown</sys:String>
     <sys:String x:Key="Quote_FetchedAt">Fetched at {0}</sys:String>
+    <sys:String x:Key="Ch_IncompleteCount">{0} incomplete bars (O/H/L missing or inconsistent, drawn as close points)</sys:String>
+    <sys:String x:Key="Ch_IncompleteBar">(O/H/L missing or inconsistent; only the close is reliable)</sys:String>
+    <sys:String x:Key="Ex_Incomplete">Incomplete</sys:String>
 </ResourceDictionary>

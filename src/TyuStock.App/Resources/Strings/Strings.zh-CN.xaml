@@ -472,4 +472,7 @@
     <sys:String x:Key="Quote_AsOfEt">行情时间 {0}（美东）</sys:String>
     <sys:String x:Key="Quote_AsOfUnknown">行情时间未知</sys:String>
     <sys:String x:Key="Quote_FetchedAt">抓取于 {0}</sys:String>
+    <sys:String x:Key="Ch_IncompleteCount">{0} 根数据不完整（O/H/L 缺失或矛盾，按收盘点绘制）</sys:String>
+    <sys:String x:Key="Ch_IncompleteBar">（此根 O/H/L 缺失或矛盾，仅收盘价可信）</sys:String>
+    <sys:String x:Key="Ex_Incomplete">数据不完整</sys:String>
 </ResourceDictionary>
