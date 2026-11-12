@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 /// <summary>Standard normal distribution.</summary>
 public static class NormalDistribution

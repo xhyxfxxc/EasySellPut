@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 /// <summary>One OHLCV bar. <see cref="Time"/> is the bar's open time.</summary>
 public readonly record struct OhlcvBar(DateTimeOffset Time, double Open, double High, double Low, double Close, double Volume);

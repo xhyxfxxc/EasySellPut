@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 public static partial class Indicators
 {

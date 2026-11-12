@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 /// <summary>Search bounds and tolerances for <see cref="ImpliedVolatility"/>.</summary>
 public sealed record ImpliedVolatilitySettings

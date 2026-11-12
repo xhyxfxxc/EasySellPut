@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 /// <summary>Time-to-expiry helpers for option pricing (calendar-day, ACT/365 by default).</summary>
 public static class OptionTime

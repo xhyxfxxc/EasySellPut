@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 /// <summary>US/Eastern (New York) time-zone helpers, DST-aware.</summary>
 public static class UsEastern

@@ -1,6 +1,6 @@
 using System.Buffers;
 
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 public static partial class Indicators
 {

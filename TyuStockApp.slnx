@@ -3,9 +3,11 @@
     <Project Path="src/TyuStock.Core/TyuStock.Core.csproj" />
     <Project Path="src/TyuStock.Data/TyuStock.Data.csproj" />
     <Project Path="src/TyuStock.App/TyuStock.App.csproj" />
+    <Project Path="src/TyuStock.Analytics/TyuStock.Analytics.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TyuStock.Core.Tests/TyuStock.Core.Tests.csproj" />
     <Project Path="tests/TyuStock.Data.Tests/TyuStock.Data.Tests.csproj" />
+    <Project Path="tests/TyuStock.Analytics.Tests/TyuStock.Analytics.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,4 +1,4 @@
-namespace TyuStockApp.Analytics;
+namespace TyuStock.Analytics;
 
 // Multi-output indicator results (array-returning convenience overloads).
 // Every array has the same length as the input; warm-up positions are NaN.
