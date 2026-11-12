@@ -65,7 +65,7 @@ public sealed class CnbcProvider(HttpGateway http, ResponseCache cache) : Provid
             ExtendedPrice = ext?.Num("last"), ExtendedChange = ext?.Num("change"), ExtendedChangePercent = ext?.Num("change_pct"),
             ExtendedTime = Eastern.ParseWithOffset(ext?.Str("last_time")),
             AsOf = Eastern.ParseWithOffset(q.Str("last_time")),
-            Source = "cnbc", IsRealtime = realtime, DelayMinutes = realtime ? 0 : 15,
+            Source = "cnbc", IsRealtime = realtime, DelayMinutes = realtime ? 0 : null, // F6: "realTime=false" does not state how late
         };
     }
 
@@ -87,6 +87,6 @@ public sealed class CnbcProvider(HttpGateway http, ResponseCache cache) : Provid
         DividendYield = q.Num("dividendyield") is { } y ? y / 100 : null,
         FiftyTwoWeekHigh = q.Num("yrhiprice"), FiftyTwoWeekLow = q.Num("yrloprice"), AverageVolume = q.Num("tendayavgvol"),
         ProfitMargin = q.Num("NETPROFTTM") is { } m ? m / 100 : null, Revenue = q.Num("revenuettm"),
-        Country = q.Str("countryCode"), Source = "cnbc", AsOf = DateTimeOffset.UtcNow,
+        Country = q.Str("countryCode"), Source = "cnbc",
     };
 }

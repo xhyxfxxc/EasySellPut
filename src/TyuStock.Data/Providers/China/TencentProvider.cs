@@ -52,7 +52,7 @@ public sealed partial class TencentProvider(HttpGateway http, ResponseCache cach
                 Ask = N(19) is > 0 ? N(19) : null, AskSize = N(20), Change = N(31), ChangePercent = N(32), High = N(33), Low = N(34),
                 MarketCap = N(45) is { } mc ? mc * 1e8 : null, FiftyTwoWeekHigh = N(48), FiftyTwoWeekLow = N(49),
                 MarketState = Eastern.SessionNow(), AsOf = Eastern.Parse(f[30]),
-                Source = "tencent", IsRealtime = false, DelayMinutes = 0,
+                Source = "tencent", IsRealtime = false, DelayMinutes = null, // F1: delay not declared by the source; UI measures it from AsOf
             });
         }
         return result;

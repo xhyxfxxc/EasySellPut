@@ -115,7 +115,6 @@
     <sys:String x:Key="Dash_AllFailed">All quote sources are unavailable right now — check network or proxy settings</sys:String>
     <sys:String x:Key="Dash_Timeout">Quote request timed out, retrying shortly</sys:String>
     <sys:String x:Key="Quote_DelayedN">Delayed {0} min</sys:String>
-    <sys:String x:Key="Quote_NearRealtime">Near real-time</sys:String>
     <sys:String x:Key="Quote_Post">After hours</sys:String>
     <sys:String x:Key="Quote_Pre">Pre-market</sys:String>
     <sys:String x:Key="Ds_Circuit">Temporarily skipped, retry in {0}s</sys:String>
@@ -245,7 +244,6 @@
     <sys:String x:Key="Op_Timeout">Loading timed out. Please retry.</sys:String>
     <sys:String x:Key="Op_InvalidSymbol">That symbol does not look valid.</sys:String>
     <sys:String x:Key="Op_Source">Source {0} · {1} strikes</sys:String>
-    <sys:String x:Key="Op_Delayed">Delayed {0} min</sys:String>
     <sys:String x:Key="Op_LocalGreeks">Some IV / Greeks were computed locally (risk-free rate {0:0.##%})</sys:String>
     <sys:String x:Key="Op_Spot">Last {0}</sys:String>
     <sys:String x:Key="Op_IvLocal">local</sys:String>
@@ -302,7 +300,6 @@
     <sys:String x:Key="St_Timeout">Timed out. Please try again.</sys:String>
     <sys:String x:Key="St_BadLeg">Leg {0} is not valid: {1}</sys:String>
     <sys:String x:Key="St_Source">Source {0} · {1} contracts</sys:String>
-    <sys:String x:Key="St_Delayed">Delayed {0} min</sys:String>
     <sys:String x:Key="St_UsedDefaultIv">Some legs have no IV; the T+n curve uses a default volatility of {0:0%}.</sys:String>
     <sys:String x:Key="St_PriceAxis">Underlying price</sys:String>
     <sys:String x:Key="St_PnlAxis">P/L</sys:String>
@@ -467,4 +464,12 @@
     <sys:String x:Key="Ch_Export">Export</sys:String>
     <sys:String x:Key="Op_Export">Export</sys:String>
     <sys:String x:Key="Nf_Export">Export</sys:String>
+    <sys:String x:Key="Quote_LagMeasured">Lag {0} (measured)</sys:String>
+    <sys:String x:Key="Quote_LagUnder1">&lt;1 min</sys:String>
+    <sys:String x:Key="Quote_LagMin">~{0} min</sys:String>
+    <sys:String x:Key="Quote_LagHours">~{0} h</sys:String>
+    <sys:String x:Key="Quote_DelayUnknown">Delay unknown</sys:String>
+    <sys:String x:Key="Quote_AsOfEt">As of {0} ET</sys:String>
+    <sys:String x:Key="Quote_AsOfUnknown">Market time unknown</sys:String>
+    <sys:String x:Key="Quote_FetchedAt">Fetched at {0}</sys:String>
 </ResourceDictionary>

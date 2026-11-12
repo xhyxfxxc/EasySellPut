@@ -22,6 +22,8 @@ public sealed class FailoverRouter : IMarketDataService
 {
     private readonly Dictionary<DataCapability, IReadOnlyList<IDataProvider>> _chains = [];
     public HealthTracker Health { get; }
+    /// <summary>Clock used to stamp <see cref="SourcedData.FetchedAt"/> (replaceable in tests).</summary>
+    public Func<DateTimeOffset> Now { get; set; } = () => DateTimeOffset.UtcNow;
 
     public FailoverRouter(IEnumerable<IDataProvider> providers, HealthTracker health, IReadOnlyDictionary<DataCapability, string[]> order)
     {
@@ -55,13 +57,16 @@ public sealed class FailoverRouter : IMarketDataService
                 var r = await call(p).ConfigureAwait(false);
                 if (!valid(r)) { Fail(id, "empty or implausible result", hard: false, errors); continue; }
                 Health.RecordSuccess(id, sw.Elapsed);
-                return r;
+                return Stamp(r);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex) { Fail(id, Describe(ex), IsHard(ex), errors); }
         }
         throw new AllSourcesFailedException(cap, errors);
     }
+
+    /// <summary>F4: the download time goes into FetchedAt; AsOf stays whatever market time the source stated.</summary>
+    private TResult Stamp<TResult>(TResult r) => r is SourcedData sd && sd.FetchedAt is null ? (TResult)(object)(sd with { FetchedAt = Now() }) : r;
 
     private void Fail(string id, string error, bool hard, List<(string, string)> errors)
     {
@@ -96,7 +101,8 @@ public sealed class FailoverRouter : IMarketDataService
             {
                 var r = (await p.GetQuotesAsync(missing, ct).ConfigureAwait(false)).Where(q => q.Price > 0 && double.IsFinite(q.Price)).ToList();
                 if (r.Count == 0) { Fail(p.Id, "no quotes returned", hard: false, errors); continue; }
-                foreach (var q in r) got.TryAdd(q.Symbol, q);
+                var fetched = Now();
+                foreach (var q in r) got.TryAdd(q.Symbol, q with { FetchedAt = q.FetchedAt ?? fetched });
                 Health.RecordSuccess(p.Id, sw.Elapsed);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }

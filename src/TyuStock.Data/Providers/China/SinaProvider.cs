@@ -52,7 +52,7 @@ public sealed partial class SinaProvider(HttpGateway http, ResponseCache cache) 
                 FiftyTwoWeekHigh = N(8), FiftyTwoWeekLow = N(9), Volume = N(10), MarketCap = N(12), PreviousClose = N(26),
                 MarketState = state, ExtendedPrice = ext, ExtendedChangePercent = ext is null ? null : N(22), ExtendedChange = ext is null ? null : N(23),
                 AsOf = DateTime.TryParseExact(f[3], "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var t) ? new DateTimeOffset(t, Beijing) : null,
-                Source = "sina", IsRealtime = false, DelayMinutes = 0,
+                Source = "sina", IsRealtime = false, DelayMinutes = null, // F1: delay not declared by the source; UI measures it from AsOf
             });
         }
         return result;

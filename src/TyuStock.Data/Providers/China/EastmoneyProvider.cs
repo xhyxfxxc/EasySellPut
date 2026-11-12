@@ -65,7 +65,7 @@ public sealed class EastmoneyProvider(HttpGateway http, ResponseCache cache) : P
             Symbol = symbol, Name = d.Str("f58"), Price = price, High = P("f44"), Low = P("f45"), Open = P("f46"), PreviousClose = P("f60"),
             Volume = d.Num("f47"), MarketCap = d.Num("f116"), Change = d.Num("f169") is { } c ? c / scale : null,
             ChangePercent = d.Num("f170") is { } pc ? pc / 100 : null, AsOf = d.UnixSeconds("f86"),
-            MarketState = Eastern.SessionNow(), Source = "eastmoney", IsRealtime = false, DelayMinutes = 0,
+            MarketState = Eastern.SessionNow(), Source = "eastmoney", IsRealtime = false, DelayMinutes = null, // F1: delay not declared by the source; UI measures it from AsOf
         };
     }
 

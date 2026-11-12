@@ -251,7 +251,7 @@ public partial class OptionsViewModel : ObservableObject
             Headline = Spot is { } p
                 ? $"{symbol}   {string.Format(_loc["Op_Spot"], p.ToString("0.00", CultureInfo.InvariantCulture))}"
                 : symbol;
-            DelayText = chain.DelayMinutes > 0 ? string.Format(_loc["Op_Delayed"], chain.DelayMinutes) : "";
+            DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
             HasDelay = DelayText.Length > 0;
             LocalNote = usedLocal ? string.Format(_loc["Op_LocalGreeks"], DefaultRate) : "";
             if (_lastError is null)

@@ -40,10 +40,17 @@ public abstract record SourcedData
 {
     /// <summary>Provider id, e.g. "yahoo", "cboe".</summary>
     public string Source { get; init; } = "";
-    /// <summary>When the data was valid (exchange time), if known.</summary>
+    /// <summary>
+    /// Market time the values refer to (last trade / source snapshot time), only when the source states it.
+    /// Never the download time: that is <see cref="FetchedAt"/>.
+    /// </summary>
     public DateTimeOffset? AsOf { get; init; }
+    /// <summary>When this app received the data (stamped by the router).</summary>
+    public DateTimeOffset? FetchedAt { get; init; }
+    /// <summary>True only when the source itself says the data is real-time.</summary>
     public bool IsRealtime { get; init; }
-    public int DelayMinutes { get; init; }
+    /// <summary>Delay the source declares, in minutes (0 = real-time). <c>null</c> = the source does not say.</summary>
+    public int? DelayMinutes { get; init; }
 }
 
 public sealed record Quote : SourcedData

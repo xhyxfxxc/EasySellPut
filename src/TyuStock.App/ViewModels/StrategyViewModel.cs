@@ -264,7 +264,7 @@ public partial class StrategyViewModel : ObservableObject
                 _listed = list;
                 _hasChain = list.Count > 0;
                 var src = SourceNames.Display(chain.Source, _loc);
-                DelayText = chain.DelayMinutes > 0 ? string.Format(_loc["St_Delayed"], chain.DelayMinutes) : "";
+                DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
                 HasDelay = DelayText.Length > 0;
                 _lastError = _hasChain ? null : (chainError ?? _loc["St_NoChain"]);
                 if (_hasChain)

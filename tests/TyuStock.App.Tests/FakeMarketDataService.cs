@@ -15,7 +15,7 @@ public sealed class FakeMarketDataService : IMarketDataService
     public static Quote MakeQuote(string symbol, double price = 123.45) => new()
     {
         Symbol = symbol, Name = symbol + " Inc.", Price = price, Change = 1.23, ChangePercent = 1.0, PreviousClose = price - 1.23,
-        Volume = 12_345_678, Source = "yahoo", IsRealtime = true, DelayMinutes = 0, AsOf = DateTimeOffset.UtcNow,
+        Volume = 12_345_678, Source = "yahoo", IsRealtime = true, DelayMinutes = 0, AsOf = DateTimeOffset.UtcNow, FetchedAt = DateTimeOffset.UtcNow,
         MarketState = MarketState.Regular,
     };
 
@@ -43,7 +43,7 @@ public sealed class FakeMarketDataService : IMarketDataService
         return Task.FromResult(new BarSeries
         {
             Symbol = request.Symbol, Interval = request.Interval, Bars = bars, Source = "yahoo", IsRealtime = true,
-            AsOf = bars[^1].Time,
+            AsOf = bars[^1].Time, FetchedAt = DateTimeOffset.UtcNow,
         });
     }
 
@@ -73,7 +73,7 @@ public sealed class FakeMarketDataService : IMarketDataService
         return Task.FromResult(new OptionChain
         {
             Underlying = symbol, UnderlyingPrice = 123.45, Expirations = [Exp(30), Exp(60)], Contracts = contracts, Expiration = exp,
-            Source = "cboe", DelayMinutes = 15,
+            Source = "cboe", DelayMinutes = 15, FetchedAt = DateTimeOffset.UtcNow,
         });
     }
 

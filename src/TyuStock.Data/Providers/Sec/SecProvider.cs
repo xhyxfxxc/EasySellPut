@@ -112,6 +112,6 @@ public sealed class SecProvider(HttpGateway http, ResponseCache cache) : Provide
         foreach (var ocf in all.Where(l => l.Item == FinancialItems.OperatingCashFlow).ToList())
             if (all.FirstOrDefault(l => l.Item == FinancialItems.CapitalExpenditure && l.PeriodEnd == ocf.PeriodEnd) is { } capex)
                 all.Add(new FinancialLine(FinancialStatementKind.CashFlow, FinancialItems.FreeCashFlow, ocf.PeriodEnd, ocf.Value + capex.Value));
-        return new FinancialStatements { Symbol = symbol, Lines = all, Source = "sec", AsOf = DateTimeOffset.UtcNow };
+        return new FinancialStatements { Symbol = symbol, Lines = all, Source = "sec" };
     }
 }

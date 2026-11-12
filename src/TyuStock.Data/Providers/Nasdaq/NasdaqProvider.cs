@@ -118,8 +118,10 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
             ExtendedPrice = extended ? primary?.Num("lastSalePrice") : null,
             ExtendedChange = extended ? primary?.Num("netChange") : null,
             ExtendedChangePercent = extended ? primary?.Num("percentageChange") : null,
-            AsOf = DateTimeOffset.UtcNow,
-            Source = "nasdaq", IsRealtime = primary?.Bool("isRealTime") == true || state == MarketState.Regular, DelayMinutes = 0,
+            // F6: only the source's own isRealTime flag counts; the session state says nothing about delay.
+            AsOf = Eastern.ParseTimestamp(primary?.Str("lastTradeTimestamp")),
+            Source = "nasdaq", IsRealtime = primary?.Bool("isRealTime") == true,
+            DelayMinutes = primary?.Bool("isRealTime") == true ? 0 : null,
         };
     }
 
@@ -230,7 +232,8 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
         return new OptionChain
         {
             Underlying = underlying, UnderlyingPrice = spot, Contracts = list, Expirations = list.Select(c => c.Expiration).Distinct().Order().ToList(),
-            Source = "nasdaq", DelayMinutes = 15, AsOf = DateTimeOffset.UtcNow,
+            // F4: the chain carries no snapshot time; download time is FetchedAt (stamped by the router), not AsOf.
+            Source = "nasdaq", DelayMinutes = 15,
         };
     }
 
@@ -261,7 +264,7 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
             DividendRate = N("AnnualizedDividend"), DividendYield = N("Yield") is { } y ? y / 100 : null,
             AverageVolume = N("AverageVolume"), TargetPrice = N("OneYrTarget"), Beta = N("Beta"),
             FiftyTwoWeekHigh = hi, FiftyTwoWeekLow = lo, ExDividendDate = Eastern.Date(V("ExDividendDate")),
-            Source = "nasdaq", AsOf = DateTimeOffset.UtcNow,
+            Source = "nasdaq",
         };
     }
 
@@ -309,7 +312,7 @@ public sealed class NasdaqProvider(HttpGateway http, ResponseCache cache) : Prov
         foreach (var g in lines.Where(l => l.Item == FinancialItems.OperatingCashFlow).ToList())
             if (lines.FirstOrDefault(l => l.Item == FinancialItems.CapitalExpenditure && l.PeriodEnd == g.PeriodEnd) is { } capex)
                 lines.Add(new FinancialLine(FinancialStatementKind.CashFlow, FinancialItems.FreeCashFlow, g.PeriodEnd, g.Value + capex.Value));
-        return new FinancialStatements { Symbol = symbol, Lines = lines, Source = "nasdaq", AsOf = DateTimeOffset.UtcNow };
+        return new FinancialStatements { Symbol = symbol, Lines = lines, Source = "nasdaq" };
     }
 
     public async Task<IReadOnlyList<NewsItem>> GetNewsAsync(string symbol, int count = 20, CancellationToken ct = default)

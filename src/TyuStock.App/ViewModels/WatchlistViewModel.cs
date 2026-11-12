@@ -441,6 +441,7 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
     [ObservableProperty] public partial string ExtText { get; set; } = "";
     [ObservableProperty] public partial string VolumeText { get; set; } = "—";
     [ObservableProperty] public partial string SourceText { get; set; } = "";
+    [ObservableProperty] public partial string TimingTip { get; set; } = "";
     [ObservableProperty] public partial Brush? ChangeBrush { get; set; }
     [ObservableProperty] public partial Brush? ChangeBackground { get; set; }
     [ObservableProperty] public partial bool IsFlashing { get; set; }
@@ -473,8 +474,9 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
             ? $"{loc[q.MarketState == MarketState.PreMarket ? "Quote_Pre" : "Quote_Post"]}  {ep.ToString("0.00", inv)}  {(q.ExtendedChangePercent ?? 0).ToString("+0.00;-0.00;0.00", inv)}%"
             : "";
         VolumeText = FormatVolume(q.Volume);
-        var timing = q.IsRealtime ? loc["Quote_Realtime"] : q.DelayMinutes > 0 ? string.Format(loc["Quote_DelayedN"], q.DelayMinutes) : loc["Quote_NearRealtime"];
-        SourceText = $"{SourceNames.Display(q.Source, loc)}  ·  {timing}";
+        var now = DateTimeOffset.Now;
+        SourceText = FreshnessText.SourceAndTiming(q, loc, now);
+        TimingTip = FreshnessText.Tooltip(q, loc, now);
     }
 
     private static string FormatVolume(double? volume)

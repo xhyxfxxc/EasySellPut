@@ -115,7 +115,6 @@
     <sys:String x:Key="Dash_AllFailed">所有行情源暂时都不可用，请检查网络或代理设置</sys:String>
     <sys:String x:Key="Dash_Timeout">获取行情超时，稍后自动重试</sys:String>
     <sys:String x:Key="Quote_DelayedN">延迟 {0} 分钟</sys:String>
-    <sys:String x:Key="Quote_NearRealtime">准实时</sys:String>
     <sys:String x:Key="Quote_Post">盘后</sys:String>
     <sys:String x:Key="Quote_Pre">盘前</sys:String>
     <sys:String x:Key="Ds_Circuit">已暂时跳过，{0} 秒后重试</sys:String>
@@ -245,7 +244,6 @@
     <sys:String x:Key="Op_Timeout">加载超时，请重试。</sys:String>
     <sys:String x:Key="Op_InvalidSymbol">代码格式不正确。</sys:String>
     <sys:String x:Key="Op_Source">来源 {0} · {1} 个行权价</sys:String>
-    <sys:String x:Key="Op_Delayed">延迟 {0} 分钟</sys:String>
     <sys:String x:Key="Op_LocalGreeks">部分 IV / 希腊值为本地计算（无风险利率 {0:0.##%}）</sys:String>
     <sys:String x:Key="Op_Spot">现价 {0}</sys:String>
     <sys:String x:Key="Op_IvLocal">本地</sys:String>
@@ -302,7 +300,6 @@
     <sys:String x:Key="St_Timeout">加载超时，请重试。</sys:String>
     <sys:String x:Key="St_BadLeg">第 {0} 条腿无效：{1}</sys:String>
     <sys:String x:Key="St_Source">来源 {0} · {1} 个合约</sys:String>
-    <sys:String x:Key="St_Delayed">延迟 {0} 分钟</sys:String>
     <sys:String x:Key="St_UsedDefaultIv">部分腿缺少 IV，T+n 曲线使用默认波动率 {0:0%}。</sys:String>
     <sys:String x:Key="St_PriceAxis">标的价格</sys:String>
     <sys:String x:Key="St_PnlAxis">盈亏</sys:String>
@@ -467,4 +464,12 @@
     <sys:String x:Key="Ch_Export">导出</sys:String>
     <sys:String x:Key="Op_Export">导出</sys:String>
     <sys:String x:Key="Nf_Export">导出</sys:String>
+    <sys:String x:Key="Quote_LagMeasured">实测滞后{0}</sys:String>
+    <sys:String x:Key="Quote_LagUnder1">不到 1 分钟</sys:String>
+    <sys:String x:Key="Quote_LagMin">约 {0} 分钟</sys:String>
+    <sys:String x:Key="Quote_LagHours">约 {0} 小时</sys:String>
+    <sys:String x:Key="Quote_DelayUnknown">延迟未知</sys:String>
+    <sys:String x:Key="Quote_AsOfEt">行情时间 {0}（美东）</sys:String>
+    <sys:String x:Key="Quote_AsOfUnknown">行情时间未知</sys:String>
+    <sys:String x:Key="Quote_FetchedAt">抓取于 {0}</sys:String>
 </ResourceDictionary>

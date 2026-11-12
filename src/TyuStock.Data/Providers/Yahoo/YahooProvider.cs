@@ -106,8 +106,10 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
             else if (state is MarketState.AfterHours or MarketState.Closed && q.Num("postMarketPrice") is { } post)
             { extP = post; extC = q.Num("postMarketChange"); extPct = q.Num("postMarketChangePercent"); extT = q.UnixSeconds("postMarketTime"); }
 
-            var delay = (int)(q.Num("exchangeDataDelayedBy") ?? 0);
-            var realtime = (q.Str("quoteSourceName") ?? "").Contains("Real Time", StringComparison.OrdinalIgnoreCase) || delay == 0;
+            // F6: trust only what Yahoo states — the exchange delay field or a "Real Time" quote source.
+            var declared = q.Num("exchangeDataDelayedBy") is { } dd ? (int?)(int)dd : null;
+            var realtime = (q.Str("quoteSourceName") ?? "").Contains("Real Time", StringComparison.OrdinalIgnoreCase) || declared == 0;
+            int? delay = realtime ? 0 : declared is > 0 ? declared : null;
             result.Add(new Quote
             {
                 Symbol = symbolMap is not null && symbolMap.TryGetValue(ysym, out var orig) ? orig : ysym,
@@ -136,7 +138,7 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
                 ExtendedTime = extT,
                 AsOf = q.UnixSeconds("regularMarketTime"),
                 IsRealtime = realtime,
-                DelayMinutes = realtime ? 0 : delay,
+                DelayMinutes = delay,
                 Source = "yahoo",
             });
         }
@@ -227,11 +229,12 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
         var r = root.Path("optionChain", "result")?.At(0);
         var exps = new List<DateOnly>();
         var contracts = new List<OptionContract>();
-        double? spot = null; DateOnly? exp = null;
+        double? spot = null; DateOnly? exp = null; DateTimeOffset? snapshot = null;
         if (r is { } res)
         {
             exps.AddRange(res.Prop("expirationDates").Items().Select(x => DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds((long)x.GetDouble()).UtcDateTime)));
             spot = res.Path("quote", "regularMarketPrice").Num();
+            snapshot = res.Prop("quote") is { } uq ? uq.UnixSeconds("regularMarketTime") : null;
             var block = res.Prop("options")?.At(0);
             if (block is { } b)
             {
@@ -261,7 +264,8 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
         return new OptionChain
         {
             Underlying = underlying, UnderlyingPrice = spot, Expirations = exps, Contracts = contracts, Expiration = exp,
-            Source = "yahoo", DelayMinutes = 15, AsOf = DateTimeOffset.UtcNow,
+            // F4: snapshot time = the underlying quote time Yahoo embeds in the chain response (not the download time).
+            Source = "yahoo", DelayMinutes = 15, AsOf = snapshot,
         };
     }
 
@@ -306,7 +310,7 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
             TargetPrice = N(fd, "targetMeanPrice"), PriceToBook = N(ks, "priceToBook"),
             NextEarningsDate = D(ce?.Path("earnings", "earningsDate")?.At(0)),
             ExDividendDate = D(sd?.Prop("exDividendDate")) ?? D(ce?.Prop("exDividendDate")),
-            Source = "yahoo", AsOf = DateTimeOffset.UtcNow,
+            Source = "yahoo",
         };
     }
 
@@ -357,7 +361,7 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
                 lines.Add(new FinancialLine(t.Kind, t.Item, d, val));
             }
         }
-        return new FinancialStatements { Symbol = symbol, Lines = lines, Source = "yahoo", AsOf = DateTimeOffset.UtcNow };
+        return new FinancialStatements { Symbol = symbol, Lines = lines, Source = "yahoo" };
     }
 
     // ---------------- news & search ----------------

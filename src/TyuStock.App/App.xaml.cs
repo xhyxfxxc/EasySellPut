@@ -21,6 +21,8 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
         Directory.CreateDirectory(dataDir.Path);
         AppServices.DataDirectory = dataDir;
+        TyuStock.Core.Diagnostics.AppLog.Initialize(dataDir.Path);
+        TyuStock.Core.Diagnostics.AppLog.Info("app", $"start {string.Join(' ', e.Args)} data={dataDir.Path} ({dataDir.Source})");
 
         var options = AppLaunchOptions.Parse(e.Args);
         if (options.ExitOnClose)

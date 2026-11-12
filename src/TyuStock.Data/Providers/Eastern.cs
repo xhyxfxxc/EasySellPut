@@ -17,6 +17,24 @@ internal static class Eastern
             ? MarketClock.FromEastern(d) : null;
     }
 
+    private static readonly string[] TimestampFormats =
+        ["yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm", "MMM d, yyyy h:mm tt", "MMM dd, yyyy h:mm tt",
+         "MMM d, yyyy hh:mm tt", "MMM d, yyyy h:mm:ss tt", "MM/dd/yyyy h:mm tt", "MM/dd/yyyy HH:mm:ss"];
+
+    /// <summary>
+    /// Like <see cref="Parse"/> but only accepts strings that carry a time of day ("Nov 12, 2026 10:31 AM ET").
+    /// A bare date ("Nov 11, 2026") is not a timestamp and returns null, so it can never be mistaken for a quote time.
+    /// </summary>
+    public static DateTimeOffset? ParseTimestamp(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        var t = s.Trim();
+        foreach (var suffix in new[] { " ET", " EST", " EDT" })
+            if (t.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) { t = t[..^suffix.Length].TrimEnd(); break; }
+        return DateTime.TryParseExact(t, TimestampFormats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var d)
+            ? MarketClock.FromEastern(d) : null;
+    }
+
     public static DateOnly? Date(string? s) =>
         !string.IsNullOrWhiteSpace(s) && DateTime.TryParseExact(s.Trim(), Formats, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var d)
             ? DateOnly.FromDateTime(d) : null;
