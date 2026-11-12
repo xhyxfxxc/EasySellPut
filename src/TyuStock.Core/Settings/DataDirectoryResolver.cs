@@ -8,12 +8,15 @@ public sealed record DataDirectoryInfo(string Path, DataDirectorySource Source);
 /// Decides where the app keeps settings, caches and logs:
 /// 1. <c>--data-dir &lt;path&gt;</c> or <c>--data-dir=&lt;path&gt;</c> on the command line;
 /// 2. portable mode: a file named <c>portable.flag</c> next to the exe → <c>&lt;exe&gt;\data</c>;
-/// 3. otherwise <c>%LOCALAPPDATA%\TyuStockApp</c>.
+/// 3. otherwise <c>%LOCALAPPDATA%\美丽稻谷终端</c> (a leftover <c>TyuStockApp</c> folder is moved here when possible).
 /// </summary>
 public static class DataDirectoryResolver
 {
     public const string PortableFlagFile = "portable.flag";
-    public const string AppFolderName = "TyuStockApp";
+    /// <summary>Visible folder name under LocalAppData. Must not contain "tyu".</summary>
+    public const string AppFolderName = "美丽稻谷终端";
+    /// <summary>Folder used by builds before the product was renamed. Migrated automatically when possible.</summary>
+    public const string LegacyAppFolderName = "TyuStockApp";
 
     public static DataDirectoryInfo Resolve(IReadOnlyList<string> args, string exeDirectory, string localAppData)
     {
@@ -27,7 +30,22 @@ public static class DataDirectoryResolver
         }
         if (File.Exists(Path.Combine(exeDirectory, PortableFlagFile)))
             return new(Path.Combine(exeDirectory, "data"), DataDirectorySource.Portable);
-        return new(Path.Combine(localAppData, AppFolderName), DataDirectorySource.LocalAppData);
+
+        var modern = Path.Combine(localAppData, AppFolderName);
+        var legacy = Path.Combine(localAppData, LegacyAppFolderName);
+        if (!Directory.Exists(modern) && Directory.Exists(legacy))
+        {
+            try
+            {
+                Directory.CreateDirectory(localAppData);
+                Directory.Move(legacy, modern);
+            }
+            catch
+            {
+                return new(legacy, DataDirectorySource.LocalAppData);
+            }
+        }
+        return new(modern, DataDirectorySource.LocalAppData);
     }
 
     private static string Full(string path, string baseDir) =>

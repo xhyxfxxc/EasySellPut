@@ -4,10 +4,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Company>美丽稻谷</Company>
     <Product>美丽稻谷卖方绿泡群专用终端</Product>
     <AssemblyTitle>美丽稻谷卖方绿泡群专用终端</AssemblyTitle>
+    <FileDescription>美丽稻谷卖方绿泡群专用终端</FileDescription>
     <Copyright>Personal use</Copyright>
     <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
     <NoWarn>$(NoWarn);CA1416</NoWarn>

@@ -103,7 +103,11 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Style="{StaticResource CardTitle}" FontSize="16" Text="{DynamicResource App_Title}" />
                             <TextBlock Style="{StaticResource Caption}">
-                                <Run Text="{DynamicResource Set_Version}" /> <Run Text="{Binding Version, Mode=OneWay}" />
+                                <Run Text="{DynamicResource Set_Company}" />
+                                <Run Text="  ·  " />
+                                <Run Text="{DynamicResource Set_Version}" />
+                                <Run Text=" " />
+                                <Run Text="{Binding Version, Mode=OneWay}" />
                             </TextBlock>
                         </StackPanel>
                     </StackPanel>

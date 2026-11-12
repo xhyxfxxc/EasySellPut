@@ -96,9 +96,53 @@ public class DataDirectoryResolverTests : IDisposable
     }
 
     [Fact]
-    public void Default_UsesLocalAppData()
+    public void Default_UsesLocalAppData_WithoutTyuInFolderName()
     {
-        var r = DataDirectoryResolver.Resolve([], _exe, "/lad");
-        Assert.Equal(Path.Combine("/lad", "TyuStockApp"), r.Path);
+        var lad = Path.Combine(Path.GetTempPath(), "tyu-lad-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(lad);
+        try
+        {
+            var r = DataDirectoryResolver.Resolve([], _exe, lad);
+            Assert.Equal(DataDirectorySource.LocalAppData, r.Source);
+            Assert.Equal(Path.Combine(lad, DataDirectoryResolver.AppFolderName), r.Path);
+            Assert.DoesNotContain("tyu", DataDirectoryResolver.AppFolderName, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { try { Directory.Delete(lad, true); } catch { } }
+    }
+
+    [Fact]
+    public void MigratesLegacyTyuStockAppFolderWhenPossible()
+    {
+        var lad = Path.Combine(Path.GetTempPath(), "tyu-lad-" + Guid.NewGuid().ToString("N"));
+        var legacy = Path.Combine(lad, DataDirectoryResolver.LegacyAppFolderName);
+        var modern = Path.Combine(lad, DataDirectoryResolver.AppFolderName);
+        Directory.CreateDirectory(legacy);
+        File.WriteAllText(Path.Combine(legacy, "settings.json"), "{ }");
+        try
+        {
+            var r = DataDirectoryResolver.Resolve([], _exe, lad);
+            Assert.Equal(modern, r.Path);
+            Assert.True(File.Exists(Path.Combine(modern, "settings.json")));
+            Assert.False(Directory.Exists(legacy));
+        }
+        finally { try { Directory.Delete(lad, true); } catch { } }
+    }
+
+    [Fact]
+    public void PrefersModernFolderIfBothExist()
+    {
+        var lad = Path.Combine(Path.GetTempPath(), "tyu-lad-" + Guid.NewGuid().ToString("N"));
+        var legacy = Path.Combine(lad, DataDirectoryResolver.LegacyAppFolderName);
+        var modern = Path.Combine(lad, DataDirectoryResolver.AppFolderName);
+        Directory.CreateDirectory(legacy);
+        Directory.CreateDirectory(modern);
+        File.WriteAllText(Path.Combine(modern, "marker.txt"), "new");
+        try
+        {
+            var r = DataDirectoryResolver.Resolve([], _exe, lad);
+            Assert.Equal(modern, r.Path);
+            Assert.True(Directory.Exists(legacy));
+        }
+        finally { try { Directory.Delete(lad, true); } catch { } }
     }
 }

@@ -76,7 +76,8 @@
     <sys:String x:Key="Set_DataDirDesc">Settings, watchlist and caches live here. Override with --data-dir, or put portable.flag next to the exe for portable mode</sys:String>
     <sys:String x:Key="Set_OpenFolder">Open folder</sys:String>
     <sys:String x:Key="Set_About">About</sys:String>
-    <sys:String x:Key="Set_AboutDesc">Data comes from public endpoints of Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney. For personal reference only, not investment advice. Options data is usually delayed 15 minutes.</sys:String>
+    <sys:String x:Key="Set_AboutDesc">Data comes from public endpoints of Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney. It may be delayed, interrupted or wrong. For personal reference only, not investment advice. Follow each source's terms and do not redistribute the data commercially. Closing the main window hides the app in the tray; right-click the tray icon and choose Exit to quit.</sys:String>
+    <sys:String x:Key="Set_Company">Meili Daogu</sys:String>
     <sys:String x:Key="Set_Version">Version</sys:String>
 
     <sys:String x:Key="Ds_Title">Data sources</sys:String>
