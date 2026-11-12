@@ -523,4 +523,8 @@
     <sys:String x:Key="Sb_WatchTag">自选</sys:String>
     <sys:String x:Key="Sb_NoMatch">没有匹配的代码</sys:String>
     <sys:String x:Key="Sb_SearchFailed">联想搜索暂时不可用，只显示自选中的匹配</sys:String>
+    <sys:String x:Key="Kb_WizardTitle">键盘精灵：输入代码，回车打开 K 线，Esc 关闭</sys:String>
+    <sys:String x:Key="Set_Shortcuts">快捷键</sys:String>
+    <sys:String x:Key="Set_ShortcutsTitle">在任意页面可用</sys:String>
+    <sys:String x:Key="Set_ShortcutsDesc">Ctrl+1…9 依次切换概览、自选、K 线、期权、策略、新闻、提醒、数据源、设置；F5 刷新当前页；不在输入框时直接打字会弹出键盘精灵；Esc 关闭键盘精灵和下拉列表</sys:String>
 </ResourceDictionary>

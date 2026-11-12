@@ -3,6 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:pages="clr-namespace:TyuStock.App.Views.Pages"
+                 xmlns:controls="clr-namespace:TyuStock.App.Views.Controls"
                  Title="{DynamicResource App_Title}"
                  Width="1320" Height="840" MinWidth="980" MinHeight="620"
                  WindowStartupLocation="CenterScreen"
@@ -77,6 +78,22 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
+
+        <!-- D2: keyboard wizard — type a symbol anywhere, Enter opens its K-line, Esc closes -->
+        <Border x:Name="Wizard" Grid.Row="1" Panel.ZIndex="10" Visibility="Collapsed"
+                HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0" Padding="14,10" MinWidth="380"
+                CornerRadius="8" BorderThickness="1"
+                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                AutomationProperties.AutomationId="KeyboardWizard">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="2" Opacity="0.25" />
+            </Border.Effect>
+            <StackPanel>
+                <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Kb_WizardTitle}" Margin="0,0,0,6" />
+                <controls:SymbolBox x:Name="WizardBox" AutomationProperties.AutomationId="KeyboardWizardSymbol" MinWidth="350" />
+            </StackPanel>
+        </Border>
 
         <!-- Status bar -->
         <Border Grid.Row="2" Padding="16,6" BorderThickness="0,1,0,0"

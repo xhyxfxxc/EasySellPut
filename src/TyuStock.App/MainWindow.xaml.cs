@@ -1,5 +1,9 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.Input;
 using TyuStock.App.Services;
 using TyuStock.App.ViewModels;
 using TyuStock.App.Views.Pages;
@@ -18,6 +22,7 @@ public partial class MainWindow : FluentWindow
     private readonly NotificationService _notify = AppServices.Get<NotificationService>();
     private bool _exitRequested;
     private bool _hidingToTray;
+    private FrameworkElement? _currentPage;
 
     public MainWindow()
     {
@@ -37,6 +42,80 @@ public partial class MainWindow : FluentWindow
         Closing += OnClosing;
         _nav.Requested += OnNavigateRequested;
         _notify.ExitRequested += (_, _) => RequestExit();
+        RootNavigation.Navigated += (_, e) => _currentPage = e.Page as FrameworkElement;
+        WizardBox.WatchSymbols = AppServices.Get<WatchlistStore>().AllSymbols;
+        WizardBox.CommitCommand = new RelayCommand(CommitWizard);
+        PreviewKeyDown += OnShortcutKeyDown;
+        PreviewTextInput += OnWindowTextInput;
+        Wizard.IsKeyboardFocusWithinChanged += (_, e) => { if (e.NewValue is false) CloseWizard(); };
+    }
+
+    // ---------------- D2: keyboard ----------------
+
+    private void OnShortcutKeyDown(object sender, KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (KeyboardShortcuts.PageFor(key, Keyboard.Modifiers) is { } page)
+        {
+            CloseWizard();
+            RootNavigation.Navigate(page);
+            e.Handled = true;
+            return;
+        }
+        if (key == Key.F5 && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            var cmd = KeyboardShortcuts.RefreshCommandOf(_currentPage?.DataContext);
+            if (cmd?.CanExecute(null) == true) cmd.Execute(null);
+            e.Handled = true;
+            return;
+        }
+        if (key == Key.Escape && Wizard.Visibility == Visibility.Visible)
+        {
+            CloseWizard();
+            e.Handled = true;
+        }
+    }
+
+    private void OnWindowTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (Wizard.Visibility == Visibility.Visible) return;
+        if (!KeyboardShortcuts.StartsWizard(e.Text, IsTextInput(Keyboard.FocusedElement as DependencyObject))) return;
+        WatchlistSync();
+        Wizard.Visibility = Visibility.Visible;
+        WizardBox.Text = e.Text.ToUpperInvariant();
+        WizardBox.FocusInput();
+        // Put the caret after the first character instead of selecting it, so typing continues naturally.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (Keyboard.FocusedElement is System.Windows.Controls.TextBox tb) { tb.SelectionLength = 0; tb.CaretIndex = tb.Text.Length; }
+            _ = WizardBox.RefreshAsync(showAll: false, open: true);
+        }, System.Windows.Threading.DispatcherPriority.Input);
+        e.Handled = true;
+    }
+
+    private void WatchlistSync() => WizardBox.WatchSymbols = AppServices.Get<WatchlistStore>().AllSymbols;
+
+    private static bool IsTextInput(DependencyObject? d)
+    {
+        for (var x = d; x is not null; x = x is System.Windows.Media.Visual or System.Windows.Media.Media3D.Visual3D ? System.Windows.Media.VisualTreeHelper.GetParent(x) : LogicalTreeHelper.GetParent(x))
+            if (x is TextBoxBase or System.Windows.Controls.PasswordBox || x is ComboBox { IsEditable: true }) return true;
+        return false;
+    }
+
+    private void CommitWizard()
+    {
+        var text = WizardBox.Text;
+        CloseWizard();
+        if (!WatchlistStore.TryNormalizeSymbol(text, out var symbol, out _)) return;
+        _nav.Go(typeof(ChartsPage), symbol);
+    }
+
+    private void CloseWizard()
+    {
+        if (Wizard.Visibility != Visibility.Visible) return;
+        Wizard.Visibility = Visibility.Collapsed;
+        WizardBox.Text = "";
+        _currentPage?.Focus();
     }
 
     public void RequestExit()
