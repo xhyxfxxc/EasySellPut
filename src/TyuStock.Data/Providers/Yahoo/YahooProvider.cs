@@ -79,7 +79,8 @@ public sealed class YahooProvider : ProviderBase, IQuoteProvider, IBarsProvider,
         if (symbols.Count == 0) return [];
         var list = string.Join(",", symbols.Select(ToYahoo).Distinct());
         using var doc = await GetWithCrumbAsync(c => $"{Q2}/v7/finance/quote?symbols={Enc(list)}&crumb={Enc(c)}", ct).ConfigureAwait(false);
-        var back = symbols.ToDictionary(ToYahoo, Norm, StringComparer.OrdinalIgnoreCase);
+        var back = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var s in symbols) back.TryAdd(ToYahoo(s), Norm(s));
         return ParseQuotes(doc.RootElement, back);
     }
 

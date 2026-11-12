@@ -38,16 +38,20 @@ def nasdaq(url):
         time.sleep(1.5)
     return b
 
-get("https://fc.yahoo.com/")
-crumb = get("https://query2.finance.yahoo.com/v1/test/getcrumb", dict(B, Accept="text/plain")).decode().strip()
+import sys
 Y = "https://query2.finance.yahoo.com"
-save("yahoo_quote.json", get(f"{Y}/v7/finance/quote?symbols=AAPL,SPY,TSLA,BRK-B&crumb={crumb}"))
-save("yahoo_chart_1m.json", get("https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1m&range=1d&includePrePost=true"))
-save("yahoo_chart_1d.json", get("https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=3mo"))
-save("yahoo_options.json", get(f"{Y}/v7/finance/options/AAPL?crumb={crumb}"))
-save("yahoo_quotesummary.json", get(f"{Y}/v10/finance/quoteSummary/AAPL?modules=price,summaryDetail,defaultKeyStatistics,financialData,assetProfile,calendarEvents,quoteType&crumb={crumb}"))
-types = "annualTotalRevenue,annualGrossProfit,annualOperatingIncome,annualNetIncome,annualDilutedEPS,annualTotalAssets,annualTotalLiabilitiesNetMinorityInterest,annualStockholdersEquity,annualOperatingCashFlow,annualCapitalExpenditure,annualFreeCashFlow"
-save("yahoo_timeseries.json", get(f"{Y}/ws/fundamentals-timeseries/v1/finance/timeseries/AAPL?type={types}&period1=1420070400&period2={int(time.time())}"))
+SKIP_Y = "--skip-yahoo-core" in sys.argv  # resume after an interrupted run
+if not SKIP_Y:
+    get("https://fc.yahoo.com/")
+    crumb = get("https://query2.finance.yahoo.com/v1/test/getcrumb", dict(B, Accept="text/plain")).decode().strip()
+    Y = "https://query2.finance.yahoo.com"
+    save("yahoo_quote.json", get(f"{Y}/v7/finance/quote?symbols=AAPL,SPY,TSLA,BRK-B&crumb={crumb}"))
+    save("yahoo_chart_1m.json", get("https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1m&range=1d&includePrePost=true"))
+    save("yahoo_chart_1d.json", get("https://query1.finance.yahoo.com/v8/finance/chart/SPY?interval=1d&range=3mo"))
+    save("yahoo_options.json", get(f"{Y}/v7/finance/options/AAPL?crumb={crumb}"))
+    save("yahoo_quotesummary.json", get(f"{Y}/v10/finance/quoteSummary/AAPL?modules=price,summaryDetail,defaultKeyStatistics,financialData,assetProfile,calendarEvents,quoteType&crumb={crumb}"))
+    types = "annualTotalRevenue,annualGrossProfit,annualOperatingIncome,annualNetIncome,annualDilutedEPS,annualTotalAssets,annualTotalLiabilitiesNetMinorityInterest,annualStockholdersEquity,annualOperatingCashFlow,annualCapitalExpenditure,annualFreeCashFlow"
+    save("yahoo_timeseries.json", get(f"{Y}/ws/fundamentals-timeseries/v1/finance/timeseries/AAPL?type={types}&period1=1420070400&period2={int(time.time())}"))
 save("yahoo_search.json", get(f"{Y}/v1/finance/search?q=AAPL&quotesCount=8&newsCount=8"))
 
 C = "https://cdn.cboe.com/api/global/delayed_quotes"

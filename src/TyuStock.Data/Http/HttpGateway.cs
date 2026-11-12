@@ -27,6 +27,7 @@ public sealed class HttpGateway : IDisposable
     private readonly CookieContainer _cookies = new();
     private HttpClient _client;
     private NetworkSettings _settings;
+    private readonly Func<ProxyResolution, HttpMessageHandler>? _handlerFactory;
 
     public ProxyResolution Proxy { get; private set; }
     public CookieContainer Cookies => _cookies;
@@ -35,9 +36,12 @@ public sealed class HttpGateway : IDisposable
 
     static HttpGateway() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // GBK for Sina
 
-    public HttpGateway(NetworkSettings settings, ProxyResolution? proxy = null, RateLimiter? limiter = null)
+    /// <param name="handlerFactory">Test hook: supplies the message handler instead of a real socket handler.</param>
+    public HttpGateway(NetworkSettings settings, ProxyResolution? proxy = null, RateLimiter? limiter = null,
+        Func<ProxyResolution, HttpMessageHandler>? handlerFactory = null)
     {
         _settings = settings;
+        _handlerFactory = handlerFactory;
         _limiter = limiter ?? new RateLimiter();
         Proxy = proxy ?? new ProxyResolution(ProxyMode.System, null, true, "default");
         _client = Build(Proxy);
@@ -55,8 +59,11 @@ public sealed class HttpGateway : IDisposable
         return resolution;
     }
 
+    public NetworkSettings Settings => _settings;
+
     private HttpClient Build(ProxyResolution p)
     {
+        if (_handlerFactory is not null) return new HttpClient(_handlerFactory(p), disposeHandler: false) { Timeout = Timeout.InfiniteTimeSpan };
         var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
