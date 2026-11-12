@@ -23,6 +23,7 @@ public partial class DashboardViewModel : ObservableObject
     private const string Owner = "dashboard";
     private readonly QuoteHub _hub;
     private readonly LocalizationService _loc;
+    private readonly NavigationHub _nav;
     private bool _active;
     private CancellationTokenSource? _cts;
     private DateTimeOffset? _lastUpdate;
@@ -31,10 +32,12 @@ public partial class DashboardViewModel : ObservableObject
     public ObservableCollection<QuoteCardViewModel> Quotes { get; } = [];
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial bool IsBusy { get; set; }
+    /// <summary>D8: every source failed on the last attempt — show the InfoBar.</summary>
+    [ObservableProperty] public partial bool AllSourcesFailed { get; set; }
 
-    public DashboardViewModel(WatchlistStore watchlist, QuoteHub hub, LocalizationService loc)
+    public DashboardViewModel(WatchlistStore watchlist, QuoteHub hub, LocalizationService loc, NavigationHub nav)
     {
-        _watchlist = watchlist; _hub = hub; _loc = loc;
+        _watchlist = watchlist; _hub = hub; _loc = loc; _nav = nav;
         RebuildCards();
         _loc.LanguageChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); UpdateStatus(); };
         _watchlist.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(() => { RebuildCards(); if (_active) { Resubscribe(); _ = RefreshAsync(); } });
@@ -84,16 +87,28 @@ public partial class DashboardViewModel : ObservableObject
     private void OnBatch(object? sender, QuoteBatch batch)
     {
         if (!Quotes.Any(c => batch.Covers(c.Symbol))) return;
-        if (batch.Error is not null) { _lastError = ErrorText(batch.Error); UpdateStatus(); return; }
+        if (batch.Error is not null) { Failed(batch.Error); return; }
         Apply(batch.Quotes);
     }
+
+    private void Failed(Exception ex)
+    {
+        _lastError = ErrorText(ex);
+        AllSourcesFailed = ex is AllSourcesFailedException;
+        var now = DateTimeOffset.Now;
+        foreach (var c in Quotes) c.RefreshStale(_loc, now);
+        UpdateStatus();
+    }
+
+    [RelayCommand]
+    private void OpenDataSources() => _nav.Go(typeof(Views.Pages.DataSourcesPage));
 
     private void Apply(IReadOnlyList<Quote> quotes)
     {
         var map = quotes.GroupBy(q => q.Symbol, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
         foreach (var card in Quotes)
             if (map.TryGetValue(card.Symbol, out var q)) card.Update(q, _loc);
-        if (map.Count > 0) { _lastUpdate = DateTimeOffset.Now; _lastError = null; }
+        if (map.Count > 0) { _lastUpdate = DateTimeOffset.Now; _lastError = null; AllSourcesFailed = false; }
         UpdateStatus();
     }
 
@@ -117,7 +132,7 @@ public partial class DashboardViewModel : ObservableObject
             Apply(quotes);
         }
         catch (OperationCanceledException) when (!_active) { }
-        catch (Exception ex) { AppLog.Warn("dashboard", "refresh failed", ex); _lastError = ErrorText(ex); }
+        catch (Exception ex) { AppLog.Warn("dashboard", "refresh failed", ex); Failed(ex); }
         finally
         {
             IsBusy = false;
@@ -143,8 +158,20 @@ public partial class QuoteCardViewModel(string symbol) : ObservableObject
     [ObservableProperty] public partial string TimingTip { get; set; } = "";
     [ObservableProperty] public partial Brush? ChangeBrush { get; set; }
     [ObservableProperty] public partial Brush? ChangeBackground { get; set; }
+    [ObservableProperty] public partial bool IsStale { get; set; }
+    [ObservableProperty] public partial string StaleTip { get; set; } = "";
+    [ObservableProperty] public partial string PriceTimeText { get; set; } = "";
 
     public void Update(Quote q, LocalizationService loc) { _quote = q; Relabel(loc); }
+
+    /// <summary>D8: re-check the stale marker (also called when a refresh fails, so old prices get flagged).</summary>
+    public void RefreshStale(LocalizationService loc, DateTimeOffset now)
+    {
+        if (_quote is not { } q) { IsStale = false; return; }
+        var tip = FreshnessText.Stale(q, loc, now);
+        IsStale = tip is not null;
+        StaleTip = tip ?? "";
+    }
 
     public void Relabel(LocalizationService loc)
     {
@@ -165,6 +192,8 @@ public partial class QuoteCardViewModel(string symbol) : ObservableObject
         SourceText = FreshnessText.SourceAndTiming(q, loc, now);
         AsOfText = FreshnessText.AsOf(q.AsOf, loc);
         TimingTip = FreshnessText.Tooltip(q, loc, now);
+        PriceTimeText = FreshnessText.PriceTime(q);
+        RefreshStale(loc, now);
     }
 }
 

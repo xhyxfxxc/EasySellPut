@@ -538,4 +538,10 @@
     <sys:String x:Key="Set_CloseActionDesc">点窗口右上角的关闭按钮时</sys:String>
     <sys:String x:Key="Set_CloseAsk">每次询问</sys:String>
     <sys:String x:Key="Nf_OpenFailed">无法打开链接，请检查默认浏览器设置</sys:String>
+    <sys:String x:Key="Quote_Stale">过期</sys:String>
+    <sys:String x:Key="Quote_StaleNotUpdated">已 {0} 未能刷新，显示的是最后一次获取的价格</sys:String>
+    <sys:String x:Key="Quote_StaleLagging">数据源滞后{0}，价格可能不是最新</sys:String>
+    <sys:String x:Key="Dash_AllFailedTitle">所有数据源都无法连接</sys:String>
+    <sys:String x:Key="Dash_AllFailedBody">下面是最后一次成功获取的价格（已标“过期”）。请检查网络或代理设置，或打开“数据源”页查看各源状态。</sys:String>
+    <sys:String x:Key="Dash_OpenSources">查看数据源</sys:String>
 </ResourceDictionary>

@@ -164,6 +164,12 @@
                                  Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
                 <TextBlock Style="{StaticResource Caption}" Text="{Binding StatusText}" VerticalAlignment="Center" />
             </DockPanel>
+            <!-- D8 -->
+            <ui:InfoBar Title="{DynamicResource Dash_AllFailedTitle}" Message="{DynamicResource Dash_AllFailedBody}"
+                        IsOpen="{Binding AllSourcesFailed}" IsClosable="False" Severity="Error" Margin="0,0,0,8"
+                        AutomationProperties.AutomationId="WatchAllFailed">
+                <ui:Button Appearance="Secondary" Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" Padding="10,4" />
+            </ui:InfoBar>
         </StackPanel>
 
         <TextBlock DockPanel.Dock="Top" Style="{StaticResource Secondary}" Margin="32,24,32,0"
@@ -239,14 +245,23 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Width="110">
+                    <GridViewColumn Width="170">
                         <GridViewColumn.Header>
                             <TextBlock Text="{DynamicResource Wl_ColPrice}" FontSize="12" FontWeight="SemiBold" />
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource NumberFont}" FontSize="16" FontWeight="SemiBold"
-                                           VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource NumberFont}" FontSize="16" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <TextBlock Text="{Binding PriceTimeText}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip="{Binding TimingTip}" />
+                                    <Border Margin="6,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="6,1" Background="{StaticResource DegradedBrush}"
+                                            Visibility="{Binding IsStale, Converter={StaticResource BoolToVis}}" ToolTip="{Binding StaleTip}"
+                                            AutomationProperties.AutomationId="StaleBadge">
+                                        <TextBlock Text="{DynamicResource Quote_Stale}" FontSize="12" FontWeight="SemiBold" Foreground="#1A1A1A" />
+                                    </Border>
+                                </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

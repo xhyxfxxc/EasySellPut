@@ -46,3 +46,39 @@ public static class DataFreshness
         return new Freshness(FreshnessKind.Unknown, null, data.AsOf);
     }
 }
+
+public enum StaleReason
+{
+    None,
+    /// <summary>We have not managed to refresh this quote for several refresh cycles (sources failing / offline).</summary>
+    NotUpdated,
+    /// <summary>Refreshed fine, but the source's own timestamp lags far behind during regular hours.</summary>
+    SourceLagging,
+}
+
+/// <summary>
+/// D8: when a displayed price should carry a "stale" marker. Builds on <see cref="DataFreshness"/>: a declared delay
+/// (e.g. 15 minutes) is expected and never "stale"; only a quote we failed to refresh, or a measured lag far beyond
+/// normal, is.
+/// </summary>
+public static class QuoteStaleness
+{
+    /// <summary>Measured lag above this during the regular session counts as stale.</summary>
+    public static readonly TimeSpan MaxMeasuredLag = TimeSpan.FromMinutes(20);
+
+    /// <summary>A quote not refreshed for this long (three refresh cycles, at least two minutes) is stale.</summary>
+    public static TimeSpan MaxAge(DateTimeOffset now)
+    {
+        var three = Time.MarketClock.QuoteRefreshInterval(now) * 3;
+        return three < TimeSpan.FromMinutes(2) ? TimeSpan.FromMinutes(2) : three;
+    }
+
+    public static StaleReason Check(SourcedData data, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.FetchedAt is { } fetched && now - fetched > MaxAge(now)) return StaleReason.NotUpdated;
+        var f = DataFreshness.Evaluate(data, now);
+        if (f.Kind == FreshnessKind.Measured && f.Lag > MaxMeasuredLag) return StaleReason.SourceLagging;
+        return StaleReason.None;
+    }
+}

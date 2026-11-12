@@ -178,7 +178,7 @@ public partial class WatchlistViewModel : ObservableObject
     private void OnBatch(object? sender, QuoteBatch batch)
     {
         if (!Rows.Any(r => batch.Covers(r.Symbol))) return;
-        if (batch.Error is not null) { _lastError = ErrorText(batch.Error); UpdateStatus(); return; }
+        if (batch.Error is not null) { Failed(batch.Error); return; }
         Apply(batch.Quotes, batch.Requested);
         UpdateStatus();
     }
@@ -197,8 +197,24 @@ public partial class WatchlistViewModel : ObservableObject
         var missing = Rows.Where(r => requested.Contains(r.Symbol, StringComparer.OrdinalIgnoreCase) && !map.ContainsKey(r.Symbol))
             .Select(r => r.Symbol).ToList();
         _lastUpdate = DateTimeOffset.Now;
+        if (map.Count > 0) AllSourcesFailed = false;
         _lastError = missing.Count > 0 ? string.Format(_loc["Wl_Missing"], string.Join(", ", missing)) : null;
     }
+
+    /// <summary>D8: every source failed on the last attempt — show the InfoBar.</summary>
+    [ObservableProperty] public partial bool AllSourcesFailed { get; set; }
+
+    private void Failed(Exception ex)
+    {
+        _lastError = ErrorText(ex);
+        AllSourcesFailed = ex is AllSourcesFailedException;
+        var now = DateTimeOffset.Now;
+        foreach (var r in Rows) r.RefreshStale(_loc, now);
+        UpdateStatus();
+    }
+
+    [RelayCommand]
+    private void OpenDataSources() => _nav.Go(typeof(Views.Pages.DataSourcesPage));
 
     private string ErrorText(Exception ex) => ex switch
     {
@@ -226,7 +242,7 @@ public partial class WatchlistViewModel : ObservableObject
             Apply(quotes, symbols);
         }
         catch (OperationCanceledException) when (!_active) { }
-        catch (Exception ex) { AppLog.Warn("watchlist", "refresh failed", ex); _lastError = ErrorText(ex); }
+        catch (Exception ex) { AppLog.Warn("watchlist", "refresh failed", ex); Failed(ex); }
         finally
         {
             _statusHint = null;
@@ -483,6 +499,18 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
     [ObservableProperty] public partial Brush? ChangeBrush { get; set; }
     [ObservableProperty] public partial Brush? ChangeBackground { get; set; }
     [ObservableProperty] public partial bool IsFlashing { get; set; }
+    [ObservableProperty] public partial bool IsStale { get; set; }
+    [ObservableProperty] public partial string StaleTip { get; set; } = "";
+    [ObservableProperty] public partial string PriceTimeText { get; set; } = "";
+
+    /// <summary>D8: re-check the stale marker (also after a failed refresh).</summary>
+    public void RefreshStale(LocalizationService loc, DateTimeOffset now)
+    {
+        if (_quote is not { } q) { IsStale = false; return; }
+        var tip = FreshnessText.Stale(q, loc, now);
+        IsStale = tip is not null;
+        StaleTip = tip ?? "";
+    }
 
     /// <returns>True when the last price changed and a flash should play.</returns>
     public bool Update(Quote q, LocalizationService loc)
@@ -515,6 +543,8 @@ public partial class WatchlistRowViewModel(string symbol) : ObservableObject
         var now = DateTimeOffset.Now;
         SourceText = FreshnessText.SourceAndTiming(q, loc, now);
         TimingTip = FreshnessText.Tooltip(q, loc, now);
+        PriceTimeText = FreshnessText.PriceTime(q);
+        RefreshStale(loc, now);
     }
 
     private static string FormatVolume(double? volume)

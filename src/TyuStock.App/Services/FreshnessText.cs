@@ -54,6 +54,19 @@ public static class FreshnessText
         return string.Join(" · ", parts);
     }
 
+    /// <summary>D8: "stale" explanation for a price, or null when the price is current.</summary>
+    public static string? Stale(SourcedData d, LocalizationService loc, DateTimeOffset now) => QuoteStaleness.Check(d, now) switch
+    {
+        StaleReason.NotUpdated => string.Format(loc["Quote_StaleNotUpdated"], Lag(now - d.FetchedAt!.Value, loc)),
+        StaleReason.SourceLagging => string.Format(loc["Quote_StaleLagging"], Lag(DataFreshness.Evaluate(d, now).Lag!.Value, loc)),
+        _ => null,
+    };
+
+    /// <summary>D8: short time shown beside a price: market time (ET) when the source gives one, else the fetch time.</summary>
+    public static string PriceTime(SourcedData d) => d.AsOf is { } t
+        ? MarketClock.ToEastern(t).ToString("HH:mm", CultureInfo.InvariantCulture) + " ET"
+        : d.FetchedAt is { } f ? f.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture) : "";
+
     /// <summary>Multi-line tooltip: source, timing, market time, fetch time.</summary>
     public static string Tooltip(SourcedData d, LocalizationService loc, DateTimeOffset now)
     {

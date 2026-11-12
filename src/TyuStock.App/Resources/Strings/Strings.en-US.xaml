@@ -538,4 +538,10 @@
     <sys:String x:Key="Set_CloseActionDesc">When the window close button is clicked</sys:String>
     <sys:String x:Key="Set_CloseAsk">Ask</sys:String>
     <sys:String x:Key="Nf_OpenFailed">Could not open the link. Check your default browser.</sys:String>
+    <sys:String x:Key="Quote_Stale">Stale</sys:String>
+    <sys:String x:Key="Quote_StaleNotUpdated">Not refreshed for {0}; showing the last price received</sys:String>
+    <sys:String x:Key="Quote_StaleLagging">Source lags by {0}; the price may be out of date</sys:String>
+    <sys:String x:Key="Dash_AllFailedTitle">All data sources are unreachable</sys:String>
+    <sys:String x:Key="Dash_AllFailedBody">Prices below are the last ones received (marked Stale). Check your network or proxy, or open Data sources to see each source.</sys:String>
+    <sys:String x:Key="Dash_OpenSources">Open data sources</sys:String>
 </ResourceDictionary>

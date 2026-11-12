@@ -33,6 +33,12 @@
                 </ui:Button>
                 <TextBlock DockPanel.Dock="Right" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,12,0" Text="{Binding StatusText}" />
             </DockPanel>
+            <!-- D8: every source failed — prices below are the last ones received -->
+            <ui:InfoBar Title="{DynamicResource Dash_AllFailedTitle}" Message="{DynamicResource Dash_AllFailedBody}"
+                        IsOpen="{Binding AllSourcesFailed}" IsClosable="False" Severity="Error" Margin="0,0,0,12"
+                        AutomationProperties.AutomationId="DashAllFailed">
+                <ui:Button Appearance="Secondary" Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" Padding="10,4" />
+            </ui:InfoBar>
             <ItemsControl ItemsSource="{Binding Quotes}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
@@ -59,6 +65,11 @@
                                     <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource NumberFont}" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                                     <Border Margin="12,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}">
                                         <TextBlock Text="{Binding ChangeText}" FontFamily="{StaticResource NumberFont}" FontSize="14" FontWeight="SemiBold" Foreground="{Binding ChangeBrush}" />
+                                    </Border>
+                                    <Border Margin="8,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="6,1" Background="{StaticResource DegradedBrush}"
+                                            Visibility="{Binding IsStale, Converter={StaticResource BoolToVis}}" ToolTip="{Binding StaleTip}"
+                                            AutomationProperties.AutomationId="StaleBadge">
+                                        <TextBlock Text="{DynamicResource Quote_Stale}" FontSize="12" FontWeight="SemiBold" Foreground="#1A1A1A" />
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Row="3" Margin="0,6,0,0">
