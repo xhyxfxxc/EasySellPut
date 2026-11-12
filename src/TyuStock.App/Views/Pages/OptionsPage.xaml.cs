@@ -39,14 +39,6 @@ public partial class OptionsPage : Page
             ScrollAtm();
         });
         _theme.ThemeChanged += (_, _) => Dispatcher.Invoke(() => { RenderSmile(); });
-        vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName is nameof(OptionsViewModel.ShowVolume) or nameof(OptionsViewModel.ShowOi)
-                or nameof(OptionsViewModel.ShowIv) or nameof(OptionsViewModel.ShowDelta)
-                or nameof(OptionsViewModel.ShowGamma) or nameof(OptionsViewModel.ShowTheta)
-                or nameof(OptionsViewModel.ShowVega) or nameof(OptionsViewModel.ShowSpread) or nameof(OptionsViewModel.ShowDistance))
-                Dispatcher.Invoke(RebuildColumns);
-        };
     }
 
     private OptionsViewModel Vm => (OptionsViewModel)DataContext;

@@ -578,4 +578,6 @@
     <sys:String x:Key="Op_Distance">vs spot</sys:String>
     <sys:String x:Key="Op_SpreadTip">Bid/ask spread as a share of the mid price; greyed out above 10% (and wider than 0.05), meaning poor liquidity and fills that may be far from mid</sys:String>
     <sys:String x:Key="Op_DistanceTip">Strike relative to the underlying price (positive = above)</sys:String>
+    <sys:String x:Key="Op_Compact">Compact</sys:String>
+    <sys:String x:Key="Op_CompactTip">For small or scaled screens: narrower columns, with volume, gamma, theta and vega hidden (each can be turned back on)</sys:String>
 </ResourceDictionary>

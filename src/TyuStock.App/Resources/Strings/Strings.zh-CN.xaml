@@ -578,4 +578,6 @@
     <sys:String x:Key="Op_Distance">距现价</sys:String>
     <sys:String x:Key="Op_SpreadTip">买卖价差占中间价的比例；超过 10% 且价差大于 0.05 时置灰，表示流动性差、成交价可能明显偏离中间价</sys:String>
     <sys:String x:Key="Op_DistanceTip">行权价相对标的价的距离（正数为高于标的价）</sys:String>
+    <sys:String x:Key="Op_Compact">精简列</sys:String>
+    <sys:String x:Key="Op_CompactTip">小屏或高缩放时使用：列宽收窄，并隐藏成交量、Gamma、Theta、Vega（可单独再勾选）</sys:String>
 </ResourceDictionary>

@@ -62,6 +62,7 @@ public sealed class AppSettings
     public AlertSettings Alerts { get; set; } = new();
     public PricingSettings Pricing { get; set; } = new();
     public ChartSettings Charts { get; set; } = new();
+    public OptionsPageSettings Options { get; set; } = new();
     /// <summary>D4: what the window's close button does. <see cref="CloseAction.Ask"/> until the user has chosen.</summary>
     public CloseAction CloseAction { get; set; } = CloseAction.Ask;
 
@@ -127,6 +128,13 @@ public sealed class ChartSettings
 {
     /// <summary>F7: request dividend-adjusted (adjclose, total-return) daily+ bars instead of split-only.</summary>
     public bool DividendAdjusted { get; set; }
+}
+
+/// <summary>Options page preferences.</summary>
+public sealed class OptionsPageSettings
+{
+    /// <summary>E6: compact T-table preset (narrow columns; volume/gamma/theta/vega hidden) for small or scaled screens.</summary>
+    public bool CompactColumns { get; set; }
 }
 
 /// <summary>F5: risk-free rate for locally computed IV / Greeks / strategy curves.</summary>

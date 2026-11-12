@@ -1,3 +1,6 @@
+using System.Windows.Controls;
+using TyuStock.App.Views.Pages;
+using TyuStock.Core.Settings;
 using TyuStock.App.Services;
 using TyuStock.App.ViewModels;
 
@@ -73,6 +76,48 @@ public class OptionTableTests
                 Assert.All(vm.Rows, r => Assert.Equal(1.0, r.Call!.OiRatio)); // fake chain: equal OI everywhere
             }
             finally { vm.Deactivate(); }
+        });
+    }
+}
+
+/// <summary>E6: the compact preset fits a 1920×1080 laptop at 150 % (1280 logical px, navigation pane open).</summary>
+public class CompactColumnsTests
+{
+    [Fact]
+    public void Compact_preset_fits_1280_logical_at_150_percent()
+    {
+        WpfHost.Run(async () =>
+        {
+            var vm = AppServices.Get<OptionsViewModel>();
+            var store = AppServices.Get<SettingsStore>();
+            try
+            {
+                vm.SymbolText = "SPY";
+                var page = new OptionsPage();
+                using var host = new OffscreenHost(page, 1280 - 232, 720);   // window width minus the open navigation pane
+                await ScreenRenderTests.Settle(2);
+                await vm.LoadAsync();
+                double Overflow()
+                {
+                    host.Layout();
+                    var sv = UiAudit.Descendants<ScrollViewer>((ListView)page.FindName("ChainList")).First();
+                    return sv.ExtentWidth - sv.ViewportWidth;
+                }
+                vm.CompactColumns = false;
+                Assert.True(Overflow() > 0, "the full table is expected to need horizontal scrolling at this width");
+                vm.CompactColumns = true;
+                await ScreenRenderTests.Settle(2);
+                Assert.True(Overflow() <= 0, $"compact table overflows by {Overflow():0} px");
+                Assert.False(vm.ShowVolume || vm.ShowGamma || vm.ShowTheta || vm.ShowVega);
+                Assert.True(store.Current.Options.CompactColumns);
+                if (Environment.GetEnvironmentVariable("MEILI_RENDER_DIR") is { Length: > 0 } dir)
+                    host.SavePng(System.IO.Path.Combine(dir, "options-compact-150.png"), 1.5);
+            }
+            finally
+            {
+                vm.CompactColumns = false;
+                vm.Deactivate();
+            }
         });
     }
 }

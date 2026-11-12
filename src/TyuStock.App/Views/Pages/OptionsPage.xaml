@@ -125,6 +125,7 @@
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Vega}" IsChecked="{Binding ShowVega}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_SpreadPct}" IsChecked="{Binding ShowSpread}" ToolTip="{DynamicResource Op_SpreadTip}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Distance}" IsChecked="{Binding ShowDistance}" ToolTip="{DynamicResource Op_DistanceTip}" />
+                <CheckBox Style="{StaticResource ColCheck}" Margin="12,0,0,0" Content="{DynamicResource Op_Compact}" IsChecked="{Binding CompactColumns}" ToolTip="{DynamicResource Op_CompactTip}" AutomationProperties.AutomationId="OptionsCompact" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Smile}" IsChecked="{Binding ShowSmile}" />
             </WrapPanel>
 

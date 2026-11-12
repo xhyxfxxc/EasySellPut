@@ -63,7 +63,10 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] public partial bool ShowDistance { get; set; } = true;
 
     /// <summary>H1: the column check boxes as one value for <see cref="OptionColumns"/>.</summary>
-    public OptionColumnSet ColumnSet => new(ShowVolume, ShowOi, ShowIv, ShowDelta, ShowGamma, ShowTheta, ShowVega, ShowSpread, ShowDistance);
+    /// <summary>E6: compact preset — narrow columns, and volume/gamma/theta/vega switched off (they can be switched back on).</summary>
+    [ObservableProperty] public partial bool CompactColumns { get; set; }
+
+    public OptionColumnSet ColumnSet => new(ShowVolume, ShowOi, ShowIv, ShowDelta, ShowGamma, ShowTheta, ShowVega, ShowSpread, ShowDistance, CompactColumns);
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "";
@@ -80,11 +83,13 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] public partial OptionStrikeRow? SelectedRow { get; set; }
 
     public event EventHandler? TableChanged;
+    private readonly SettingsStore _settings;
 
     public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
-        TyuStock.Core.Pricing.RiskFreeRateProvider rates)
+        TyuStock.Core.Pricing.RiskFreeRateProvider rates, SettingsStore settings)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates; _settings = settings;
+        CompactColumns = settings.Current.Options.CompactColumns;
         _rate = rates.Current;
         ModelText = PricingText.Model(_rate, loc);
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
@@ -227,6 +232,13 @@ public partial class OptionsViewModel : ObservableObject
     partial void OnShowSmileChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowSpreadChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowDistanceChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
+
+    partial void OnCompactColumnsChanged(bool value)
+    {
+        ShowVolume = ShowGamma = ShowTheta = ShowVega = !value;
+        if (_settings.Current.Options.CompactColumns != value) _settings.Update(s => s.Options.CompactColumns = value);
+        TableChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     public async Task LoadAsync(bool refreshOnly = false)
     {
