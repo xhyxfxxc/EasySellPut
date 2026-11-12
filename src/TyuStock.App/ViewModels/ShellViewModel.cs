@@ -19,10 +19,14 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty] public partial Brush? SessionBrush { get; set; }
     [ObservableProperty] public partial string NetworkText { get; set; } = "";
     [ObservableProperty] public partial string DataDirText { get; set; } = "";
+    [ObservableProperty] public partial string SourcesText { get; set; } = "";
+    [ObservableProperty] public partial Brush? SourcesBrush { get; set; }
+    private readonly TyuStock.Data.Routing.HealthTracker _health;
 
-    public ShellViewModel(LocalizationService loc, DataDirectoryInfo dataDir)
+    public ShellViewModel(LocalizationService loc, DataDirectoryInfo dataDir, TyuStock.Data.DataServices data)
     {
         _loc = loc;
+        _health = data.Health;
         _dataDir = dataDir;
         var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(1) };
         timer.Tick += (_, _) => Tick();
@@ -51,6 +55,12 @@ public partial class ShellViewModel : ObservableObject
         }) as Brush;
         NetworkText = string.IsNullOrEmpty(NetworkDescription) ? "" : $"{_loc["Status_Proxy"]}: {NetworkDescription}";
         DataDirText = $"{_loc["Status_DataDir"]}: {_dataDir.Path}";
+        var hnow = _health.Now;
+        var states = _health.All.Select(h => h.State(hnow)).ToList();
+        var ok = states.Count(s => s == TyuStock.Data.Routing.HealthState.Healthy);
+        var bad = states.Count(s => s == TyuStock.Data.Routing.HealthState.Down);
+        SourcesText = string.Format(_loc["Status_Sources"], ok, states.Count);
+        SourcesBrush = Application.Current.TryFindResource(bad > 0 ? "DegradedBrush" : ok > 0 ? "HealthyBrush" : "UnknownBrush") as Brush;
     }
 
     private static TimeZoneInfo FindBeijing()

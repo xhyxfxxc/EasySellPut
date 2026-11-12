@@ -129,4 +129,13 @@
     <sys:String x:Key="Src_sina">Sina</sys:String>
     <sys:String x:Key="Src_tencent">Tencent</sys:String>
     <sys:String x:Key="Src_yahoo">Yahoo</sys:String>
+    <sys:String x:Key="SrcFull_cboe">CBOE</sys:String>
+    <sys:String x:Key="SrcFull_cnbc">CNBC</sys:String>
+    <sys:String x:Key="SrcFull_eastmoney">Eastmoney</sys:String>
+    <sys:String x:Key="SrcFull_nasdaq">Nasdaq</sys:String>
+    <sys:String x:Key="SrcFull_sec">SEC EDGAR</sys:String>
+    <sys:String x:Key="SrcFull_sina">Sina Finance</sys:String>
+    <sys:String x:Key="SrcFull_tencent">Tencent Finance</sys:String>
+    <sys:String x:Key="SrcFull_yahoo">Yahoo Finance</sys:String>
+    <sys:String x:Key="Status_Sources">Sources {0}/{1} healthy</sys:String>
 </ResourceDictionary>

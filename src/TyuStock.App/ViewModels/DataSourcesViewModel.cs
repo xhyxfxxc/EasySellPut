@@ -92,7 +92,7 @@ public sealed record FailoverRowViewModel(string Capability, string Chain);
 public partial class SourceRowViewModel(SourceHealth health, bool domestic) : ObservableObject
 {
     public string Id => health.Id;
-    public string DisplayName => health.DisplayName;
+    [ObservableProperty] public partial string DisplayName { get; set; } = health.DisplayName;
     public bool IsDomestic { get; } = domestic;
     public HealthState State { get; private set; }
     [ObservableProperty] public partial string StateText { get; set; } = "";
@@ -105,10 +105,13 @@ public partial class SourceRowViewModel(SourceHealth health, bool domestic) : Ob
     [ObservableProperty] public partial string LastErrorText { get; set; } = "";
     [ObservableProperty] public partial bool HasError { get; set; }
     [ObservableProperty] public partial string RegionText { get; set; } = "";
+    [ObservableProperty] public partial string CircuitText { get; set; } = "";
+    [ObservableProperty] public partial bool IsCircuitOpen { get; set; }
 
     public void Refresh(DateTimeOffset now, LocalizationService loc)
     {
         State = health.State(now);
+        DisplayName = loc.Get($"SrcFull_{health.Id}") is var dn && dn != $"SrcFull_{health.Id}" ? dn : health.DisplayName;
         StateText = loc[$"Ds_{State switch { HealthState.Healthy => "Healthy", HealthState.Degraded => "Degraded", HealthState.Down => "Down", _ => "Unknown" }}"];
         StateBrush = Application.Current.TryFindResource(State switch
         {
@@ -125,6 +128,7 @@ public partial class SourceRowViewModel(SourceHealth health, bool domestic) : Ob
         HasError = recentError;
         LastErrorText = recentError ? $"{health.LastErrorAt?.ToLocalTime():HH:mm:ss}  {health.LastError}" : "";
         RegionText = loc[IsDomestic ? "Ds_Domestic" : "Ds_Overseas"];
-        if (health.CircuitOpenUntil is { } c && c > now) LastErrorText += $"\n{string.Format(loc["Ds_Circuit"], (int)(c - now).TotalSeconds)}";
+        IsCircuitOpen = health.CircuitOpenUntil is { } c && c > now;
+        CircuitText = IsCircuitOpen ? string.Format(loc["Ds_Circuit"], (int)Math.Ceiling((health.CircuitOpenUntil!.Value - now).TotalSeconds)) : "";
     }
 }

@@ -129,4 +129,13 @@
     <sys:String x:Key="Src_sina">新浪</sys:String>
     <sys:String x:Key="Src_tencent">腾讯</sys:String>
     <sys:String x:Key="Src_yahoo">Yahoo</sys:String>
+    <sys:String x:Key="SrcFull_cboe">CBOE 芝加哥期权交易所</sys:String>
+    <sys:String x:Key="SrcFull_cnbc">CNBC</sys:String>
+    <sys:String x:Key="SrcFull_eastmoney">东方财富</sys:String>
+    <sys:String x:Key="SrcFull_nasdaq">纳斯达克 Nasdaq</sys:String>
+    <sys:String x:Key="SrcFull_sec">美国证监会 SEC EDGAR</sys:String>
+    <sys:String x:Key="SrcFull_sina">新浪财经</sys:String>
+    <sys:String x:Key="SrcFull_tencent">腾讯财经</sys:String>
+    <sys:String x:Key="SrcFull_yahoo">Yahoo 财经</sys:String>
+    <sys:String x:Key="Status_Sources">数据源 {0}/{1} 正常</sys:String>
 </ResourceDictionary>
