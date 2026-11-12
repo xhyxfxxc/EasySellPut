@@ -36,6 +36,5 @@ public abstract class PlaceholderPage : Page
     }
 }
 
-public sealed class StrategyPage() : PlaceholderPage("Nav_Strategy", SymbolRegular.DataTrending24, "M6");
 public sealed class NewsPage() : PlaceholderPage("Nav_News", SymbolRegular.News24, "M7");
 public sealed class AlertsPage() : PlaceholderPage("Nav_Alerts", SymbolRegular.Alert24, "M8");
