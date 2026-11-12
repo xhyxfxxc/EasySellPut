@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.NewsPage"
+             x:DataType="vm:NewsViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,20,32,8">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Nf_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Nf_Desc}" Margin="0,0,0,12" />
+            <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding ExportCommand}" ToolTip.Tip="{DynamicResource Nf_Export}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⤓" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Nf_Export}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding RefreshCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="↻" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Nf_Refresh}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="14,6" Margin="8,0,0,0"
+                           Command="{Binding LoadFromBoxCommand}" Content="{DynamicResource Nf_Load}" />
+                <controls:SymbolBox x:Name="SymbolInput" AutomationProperties.AutomationId="NewsSymbol" MinWidth="200"
+                          Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}" CommitCommand="{Binding LoadFromBoxCommand}" />
+            </DockPanel>
+            <DockPanel Margin="0,0,0,6" LastChildFill="True">
+                <TextBlock Classes="CardTitle" FontSize="18" Text="{Binding Headline}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <TextBlock DockPanel.Dock="Right" FontSize="16" FontWeight="SemiBold" FontFamily="{StaticResource NumberFont}"
+                           Text="{Binding ChangeText}" Foreground="{Binding ChangeBrush}" VerticalAlignment="Center" Margin="16,0,0,0" />
+            </DockPanel>
+            <TextBlock Classes="Caption" Text="{Binding MetaText}" Margin="0,0,0,6" />
+            <DockPanel LastChildFill="True" Margin="0,0,0,4">
+                <ProgressBar IsIndeterminate="True" DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,8,0" IsIndeterminate="True"
+                                 IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" />
+            </DockPanel>
+        </StackPanel>
+
+        <Grid Margin="16,0,16,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.25*" MinWidth="420" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" MinWidth="320" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Classes="PageScroller" Grid.Column="0">
+                <StackPanel Margin="16,0,8,8">
+                    <TextBlock Classes="CardTitle" Text="{DynamicResource Nf_Stats}" Margin="0,0,0,8" />
+                    <ItemsControl ItemsSource="{Binding Stats}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Width="150" Margin="0,0,16,12">
+                                    <TextBlock Classes="Caption" Text="{Binding Label}" />
+                                    <TextBlock Classes="StatValue" Text="{Binding Value}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Classes="CardTitle" Text="{DynamicResource Nf_Profile}" Margin="0,8,0,8" />
+                    <TextBlock Classes="Secondary" Text="{DynamicResource Nf_NoProfile}"
+                               IsVisible="{Binding !HasProfile}" />
+                    <StackPanel IsVisible="{Binding HasProfile}">
+                        <TextBlock Classes="Caption" Margin="0,0,0,4"
+                                   IsVisible="{Binding HasWebsite}">
+                            <Run Text="{DynamicResource Nf_Website}" />
+                            <Run Text="  " />
+                            <Hyperlink Command="{Binding OpenWebsiteCommand}">
+                                <Run Text="{Binding WebsiteText}" />
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock Classes="Body" Text="{Binding Description}" TextWrapping="Wrap" FontSize="14" />
+                    </StackPanel>
+
+                    <DockPanel Margin="0,16,0,8">
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Nf_Financials}" VerticalAlignment="Center" />
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Classes="RangeChip" Content="{DynamicResource Nf_Annual}" Tag="annual" Click="OnPeriodClick" />
+                            <Button Classes="RangeChip" Content="{DynamicResource Nf_Quarterly}" Tag="quarterly" Click="OnPeriodClick" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Classes="Secondary" Text="{DynamicResource Nf_NoFinancials}"
+                               IsVisible="{Binding !HasFinancials}" />
+                    <StackPanel IsVisible="{Binding HasFinancials}">
+                        <ContentPresenter Content="{Binding Income}" ContentTemplate="{StaticResource StatementTemplate}" Margin="0,0,0,12" />
+                        <ContentPresenter Content="{Binding Balance}" ContentTemplate="{StaticResource StatementTemplate}" Margin="0,0,0,12" />
+                        <ContentPresenter Content="{Binding CashFlow}" ContentTemplate="{StaticResource StatementTemplate}" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <DockPanel Grid.Column="2">
+                <TextBlock DockPanel.Dock="Top" Classes="CardTitle" Text="{DynamicResource Nf_News}" Margin="0,0,0,8" />
+                <TextBlock DockPanel.Dock="Top" Classes="Secondary" Text="{DynamicResource Nf_NoNews}"
+                           IsVisible="{Binding !HasNews}" />
+                <ListView x:Name="NewsList"
+                      Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}" AutomationProperties.AutomationId="NewsList"
+                          ItemsSource="{Binding News}" BorderThickness="0"
+                          IsVisible="{Binding HasNews}"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          MouseDoubleClick="OnNewsDoubleClick">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="8,10" />
+                            <Setter Property="Margin" Value="0,0,0,4" />
+                            <Setter Property="Cursor" Value="Hand" />
+                            <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel LastChildFill="True">
+                                <Button DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Top"
+                                        Command="{Binding DataContext.OpenArticleCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="13" Padding="10,6" Content="{DynamicResource Nf_OpenArticle}" />
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <TextBlock Classes="Caption" Margin="0,4,0,0" ToolTip.Tip="{Binding TimeTip}">
+                                        <Run Text="{Binding Publisher}" />
+                                        <Run Text="  ·  " />
+                                        <Run Text="{Binding TimeText}" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</UserControl>

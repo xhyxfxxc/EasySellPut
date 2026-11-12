@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.AlertsPage"
+             x:DataType="vm:AlertsViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,24,32,12">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Nav_Alerts}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Mac_AlDesc}" Margin="0,0,0,16" />
+
+            <!-- F10: monitoring interrupted -->
+            <Border Classes="ErrorBar" IsVisible="{Binding MonitorDown}" Margin="0,0,0,12"
+                    AutomationProperties.AutomationId="AlertsMonitorDown">
+                <StackPanel>
+                    <TextBlock Classes="CardTitle" Text="{DynamicResource Al_MonitorDownTitle}" />
+                    <TextBlock Classes="Body" Text="{Binding MonitorText}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="Card" Padding="16,16,16,12">
+                <WrapPanel Orientation="Horizontal">
+                    <StackPanel Margin="0,0,16,10" MinWidth="180">
+                        <TextBlock Classes="Caption" Text="{DynamicResource Al_Symbol}" Margin="0,0,0,4" />
+                        <AutoCompleteBox x:Name="SymbolInput" AutomationProperties.AutomationId="AlertsSymbol" MinWidth="180"
+                                         FilterMode="StartsWith" Text="{Binding SymbolText}" ItemsSource="{Binding WatchSymbols}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,10" MinWidth="220">
+                        <TextBlock Classes="Caption" Text="{DynamicResource Al_Kind}" Margin="0,0,0,4" />
+                        <ComboBox ItemsSource="{Binding KindOptions}"
+                                  SelectedItem="{Binding SelectedKind}"
+                                  DisplayMemberBinding="{Binding Title, x:DataType=vm:KindOption}"
+                                  FontSize="14" MinHeight="32" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,10" MinWidth="140">
+                        <TextBlock Classes="Caption" Text="{DynamicResource Al_Threshold}" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding ThresholdText}"
+                                    Watermark="{Binding ThresholdHint}"
+                                    FontSize="14" Padding="10,6,10,6" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,10" MinWidth="140">
+                        <TextBlock Classes="Caption" Text="{DynamicResource Al_Repeat}" Margin="0,0,0,4" />
+                        <ComboBox ItemsSource="{Binding RepeatOptions}"
+                                  SelectedItem="{Binding SelectedRepeat}"
+                                  DisplayMemberBinding="{Binding Title, x:DataType=vm:RepeatOption}"
+                                  FontSize="14" MinHeight="32" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,10" MinWidth="120">
+                        <TextBlock Classes="Caption" Text="{DynamicResource Al_Cooldown}" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding CooldownText}"
+                                    FontSize="14" Padding="10,6,10,6" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,16,10" MinWidth="180">
+                        <TextBlock Classes="Caption" Text="{DynamicResource Al_Note}" Margin="0,0,0,4" />
+                        <TextBox Text="{Binding NoteText}"
+                                    FontSize="14" Padding="10,6,10,6" />
+                    </StackPanel>
+                    <StackPanel Margin="0,8,16,10" VerticalAlignment="Bottom">
+                        <CheckBox Content="{DynamicResource Al_Extended}"
+                                  IsChecked="{Binding IncludeExtendedHours}" IsEnabled="{Binding IsQuoteKind}"
+                                  FontSize="14" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,10" VerticalAlignment="Bottom">
+                        <Button Classes="accent" Padding="16,6" Margin="0,0,8,0"
+                                   Command="{Binding AddCommand}" Content="{DynamicResource Al_Add}" FontSize="14" />
+                        <Button Padding="16,6" Margin="0,0,8,0"
+                                   Command="{Binding SaveCommand}" IsEnabled="{Binding HasSelection}"
+                                   Content="{DynamicResource Al_Save}" FontSize="14" />
+                        <Button Padding="16,6"
+                                   Command="{Binding DeleteCommand}" IsEnabled="{Binding HasSelection}"
+                                   Content="{DynamicResource Al_Delete}" FontSize="14" />
+                    </StackPanel>
+                </WrapPanel>
+            </Border>
+
+            <DockPanel Margin="0,10,0,0" LastChildFill="True">
+                <!-- F3: alerts ignore quotes older than this -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <TextBlock Classes="Caption" Text="{DynamicResource Al_MaxDelay}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox ItemsSource="{Binding MaxDelayChoices}" SelectedItem="{Binding MaxDelayMinutes}" FontSize="14" MinWidth="80"
+                              AutomationProperties.AutomationId="AlertsMaxDelay" />
+                    <TextBlock Classes="Caption" Text="{DynamicResource Al_Minutes}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </StackPanel>
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </DockPanel>
+            <TextBlock Classes="Caption" Text="{Binding StaleNote}" Margin="0,6,0,0" TextWrapping="Wrap"
+                       Foreground="{DynamicResource DegradedBrush}"
+                       IsVisible="{Binding HasStaleNote}" />
+            <!-- B1: latest IV readings for IV alerts -->
+            <TextBlock Classes="Caption" Text="{Binding IvNote}" Margin="0,6,0,0" TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="AlertsIvNote"
+                       IsVisible="{Binding HasIvNote}" />
+        </StackPanel>
+
+        <Grid Margin="32,0,32,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" MinHeight="180" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="0.55*" MinHeight="140" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0">
+                <TextBlock DockPanel.Dock="Top" Classes="SectionTitle"
+                           Text="{DynamicResource Al_Title}" Margin="0,0,0,8" />
+                <TextBlock DockPanel.Dock="Top" Classes="Secondary"
+                           Text="{DynamicResource Al_Empty}" Margin="0,12,0,0"
+                           IsVisible="{Binding IsEmpty}" />
+                <DataGrid x:Name="AlertList" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}"
+                          BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                          IsVisible="{Binding !IsEmpty}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn local:Loc.Header="Al_ColEnabled" Width="72">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="vm:AlertRowViewModel">
+                                    <CheckBox IsChecked="{Binding Enabled}" HorizontalAlignment="Center"
+                                              Command="{Binding $parent[UserControl].((vm:AlertsViewModel)DataContext).ToggleEnabledCommand}"
+                                              CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn local:Loc.Header="Al_ColSymbol" x:DataType="vm:AlertRowViewModel" Binding="{Binding Symbol}" Width="90" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColCondition" x:DataType="vm:AlertRowViewModel" Binding="{Binding ConditionText}" Width="180" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColThreshold" x:DataType="vm:AlertRowViewModel" Binding="{Binding ThresholdText}" Width="100" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColRepeat" x:DataType="vm:AlertRowViewModel" Binding="{Binding RepeatText}" Width="100" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColLast" x:DataType="vm:AlertRowViewModel" Binding="{Binding LastFiredText}" Width="180" />
+                        <DataGridTextColumn local:Loc.Header="Al_Note" x:DataType="vm:AlertRowViewModel" Binding="{Binding Note}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+
+            <DockPanel Grid.Row="1" Margin="0,16,0,8">
+                <Button DockPanel.Dock="Right" Padding="12,6"
+                           Command="{Binding ClearHistoryCommand}"
+                           Content="{DynamicResource Al_ClearHistory}" FontSize="14"
+                           IsEnabled="{Binding !HistoryEmpty}" />
+                <TextBlock Classes="SectionTitle" Text="{DynamicResource Al_History}" Margin="0" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <DockPanel Grid.Row="2">
+                <TextBlock DockPanel.Dock="Top" Classes="Secondary"
+                           Text="{DynamicResource Al_HistoryEmpty}"
+                           IsVisible="{Binding HistoryEmpty}" />
+                <DataGrid ItemsSource="{Binding History}"
+                          BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                          IsVisible="{Binding !HistoryEmpty}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn local:Loc.Header="Al_ColTime" x:DataType="vm:HistoryRowViewModel" Binding="{Binding TimeText}" Width="180" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColSymbol" x:DataType="vm:HistoryRowViewModel" Binding="{Binding Symbol}" Width="90" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColCondition" x:DataType="vm:HistoryRowViewModel" Binding="{Binding ConditionText}" Width="240" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColValue" x:DataType="vm:HistoryRowViewModel" Binding="{Binding ValueText}" Width="110" />
+                        <DataGridTextColumn local:Loc.Header="Al_ColSource" x:DataType="vm:HistoryRowViewModel" Binding="{Binding SourceText}" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</UserControl>

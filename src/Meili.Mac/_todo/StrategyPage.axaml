@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.StrategyPage"
+             x:DataType="vm:StrategyViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,20,32,8">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource St_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource St_Desc}" Margin="0,0,0,12" />
+            <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding RefreshCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="↻" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource St_Refresh}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="14,6" Margin="8,0,0,0"
+                           Command="{Binding LoadFromBoxCommand}" Content="{DynamicResource St_Load}" />
+                <ComboBox x:Name="ExpirationBox" AutomationProperties.AutomationId="StrategyExpiration"
+                          DockPanel.Dock="Right" MinWidth="200" FontSize="14" Margin="8,0,0,0"
+                          ItemsSource="{Binding Expirations}"
+                          SelectedItem="{Binding SelectedExpiration}"
+                          DisplayMemberPath="Label" />
+                <TextBlock DockPanel.Dock="Right" Classes="Caption" VerticalAlignment="Center"
+                           Margin="12,0,0,0" Text="{DynamicResource St_Expiration}" />
+                <controls:SymbolBox x:Name="SymbolInput" AutomationProperties.AutomationId="StrategySymbol" MinWidth="160"
+                          Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}" CommitCommand="{Binding LoadFromBoxCommand}" />
+            </DockPanel>
+            <!-- F8: chain underlying (in sync with options) + latest stock price for comparison; wraps on narrow windows -->
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding Headline}" VerticalAlignment="Center" Margin="0,2,0,2" />
+                <TextBlock Classes="Caption" Text="{Binding LivePriceText}" VerticalAlignment="Center" Margin="12,2,0,2"
+                           ToolTip.Tip="{DynamicResource Op_LivePriceTip}" AutomationProperties.AutomationId="LivePrice" />
+                <Border Margin="12,2,0,2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        IsVisible="{Binding HasDelay}">
+                    <TextBlock Classes="Caption" Text="{Binding DelayText}" />
+                </Border>
+                <!-- F5: pricing model and risk-free rate used for local IV / Greeks -->
+                <Border Margin="8,2,0,2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}" ToolTip.Tip="{DynamicResource Px_ModelTip}">
+                    <TextBlock Classes="Caption" Text="{Binding ModelText}" />
+                </Border>
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8" VerticalAlignment="Center">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_Preset}" />
+                <ComboBox MinWidth="200" FontSize="14" Margin="0,0,16,0"
+                          ItemsSource="{Binding Presets}"
+                          SelectedItem="{Binding SelectedPreset}"
+                          DisplayMemberPath="Label" />
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_Quantity}" />
+                <NumericUpDown Value="{Binding Quantity}" Minimum="1" Maximum="1000" FontSize="14" Width="90" Margin="0,0,16,0" />
+                <Button Padding="12,6" Command="{Binding ApplyPresetCommand}"
+                           Content="{DynamicResource St_ApplyPreset}" />
+            </WrapPanel>
+            <!-- B7: saved strategies (strategies.json) -->
+            <WrapPanel Margin="0,0,0,8" VerticalAlignment="Center">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_SavedList}" />
+                <ComboBox MinWidth="200" MaxWidth="320" FontSize="14" Margin="0,0,8,0" AutomationProperties.AutomationId="SavedStrategies"
+                          ItemsSource="{Binding Saved}" SelectedItem="{Binding SelectedSaved}" DisplayMemberPath="Name" />
+                <Button Padding="10,6" Margin="0,0,8,0" Command="{Binding LoadSavedCommand}" Content="{DynamicResource St_LoadSaved}" />
+                <Button Padding="10,6" Margin="0,0,16,0" Command="{Binding DeleteSavedCommand}" Content="{DynamicResource St_DeleteSaved}" />
+                <TextBox Width="180" FontSize="14" Margin="0,0,8,0" Watermark="{DynamicResource St_SaveName}"
+                            Text="{Binding SaveName}" />
+                <Button Classes="accent" Padding="12,6" Command="{Binding SaveStrategyCommand}" Content="{DynamicResource St_Save}" />
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource St_Horizon}" />
+                <Button Classes="RangeChip" Content="{DynamicResource St_TnNow}" Tag="0" Click="OnHorizonClick" />
+                <Button Classes="RangeChip" Content="{DynamicResource St_Tn7}" Tag="7" Click="OnHorizonClick" />
+                <Button Classes="RangeChip" Content="{DynamicResource St_Tn14}" Tag="14" Click="OnHorizonClick" />
+                <Button Classes="RangeChip" Content="{DynamicResource St_Tn30}" Tag="30" Click="OnHorizonClick" />
+            </WrapPanel>
+            <DockPanel LastChildFill="True" Margin="0,0,0,6">
+                <ProgressBar IsIndeterminate="True" DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,8,0" IsIndeterminate="True"
+                                 IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                <TextBlock Classes="Caption" Text="{Binding LocalNote}" VerticalAlignment="Center" />
+            </DockPanel>
+        </StackPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="32,0,32,8" LastChildFill="True">
+            <TextBlock DockPanel.Dock="Top" Classes="CardTitle" Text="{DynamicResource St_Legs}" Margin="0,0,0,6" />
+            <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                <Button Padding="10,6" Margin="0,0,8,0" Command="{Binding AddCallCommand}" Content="{DynamicResource St_AddCall}" />
+                <Button Padding="10,6" Margin="0,0,8,0" Command="{Binding AddPutCommand}" Content="{DynamicResource St_AddPut}" />
+                <Button Padding="10,6" Margin="0,0,8,0" Command="{Binding AddStockCommand}" Content="{DynamicResource St_AddStock}" />
+                <Button Padding="10,6" Command="{Binding RemoveLegCommand}" Content="{DynamicResource St_RemoveLeg}" />
+            </WrapPanel>
+            <DataGrid x:Name="LegsGrid" AutomationProperties.AutomationId="StrategyLegs"
+                      ItemsSource="{Binding Legs}" SelectedItem="{Binding SelectedLeg}"
+                      MaxHeight="220">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="{DynamicResource St_Type}" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding TypeLabel}" FontSize="13" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox FontSize="13"
+                                          ItemsSource="{Binding DataContext.TypeChoices, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                          SelectedValue="{Binding Type}"
+                                          DisplayMemberPath="Label" SelectedValuePath="Value" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="{DynamicResource St_Side}" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding SideLabel}" FontSize="13" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox FontSize="13"
+                                          ItemsSource="{Binding DataContext.SideChoices, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                          SelectedValue="{Binding Side}"
+                                          DisplayMemberPath="Label" SelectedValuePath="Value" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="{DynamicResource St_Strike}" Binding="{Binding StrikeText, UpdateSourceTrigger=LostFocus}" Width="90" />
+                    <DataGridTextColumn Header="{DynamicResource St_Premium}" Binding="{Binding PremiumText, UpdateSourceTrigger=LostFocus}" Width="90" />
+                    <DataGridTextColumn Header="{DynamicResource St_IV}" Binding="{Binding IvText, UpdateSourceTrigger=LostFocus}" Width="70" />
+                    <DataGridTextColumn Header="{DynamicResource St_Qty}" Binding="{Binding QtyText, UpdateSourceTrigger=LostFocus}" Width="70" />
+                    <DataGridTextColumn Header="{DynamicResource St_Expiry}" Binding="{Binding ExpiryText, UpdateSourceTrigger=LostFocus}" Width="120" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+        <UniformGrid DockPanel.Dock="Top" Margin="32,0,32,8" Columns="4" Rows="2">
+            <StackPanel Margin="0,0,16,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Cost}" />
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding CostText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_MaxProfit}" />
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding MaxProfitText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_MaxLoss}" />
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding MaxLossText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Breakeven}" />
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding BreakevenText}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8" ToolTip.Tip="{DynamicResource St_PopTip}" AutomationProperties.AutomationId="Pop">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Pop}" />
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding PopText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8" ToolTip.Tip="{Binding MarginTip}" AutomationProperties.AutomationId="Margin">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Margin}" />
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding MarginText}" />
+            </StackPanel>
+            <TextBlock Classes="Caption" Text="{Binding RewardText}" />
+            <TextBlock Classes="Caption" Text="{Binding GreeksText}" />
+        </UniformGrid>
+        <Grid Margin="16,0,16,16">
+            <TextBlock Classes="Secondary" VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Text="{DynamicResource St_NoLegs}"
+                       IsVisible="{Binding !HasCurve}" />
+            <scottplot:WpfPlot x:Name="PayoffPlot" AutomationProperties.AutomationId="StrategyChart"
+                               IsVisible="{Binding HasCurve}" />
+        </Grid>
+    </DockPanel>
+</UserControl>

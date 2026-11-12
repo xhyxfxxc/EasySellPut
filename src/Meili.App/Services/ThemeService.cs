@@ -88,22 +88,23 @@ public sealed class ThemeService : IThemeController
     }
 }
 
-/// <summary>E4: theme-specific tones for price direction and health states (all ≥ 4.5:1 on the theme's page and card backgrounds).</summary>
+/// <summary>E4: the shared <see cref="SemanticColors"/> as WPF colours.</summary>
 public sealed record SemanticPalette(Color Red, Color Green, Color Healthy, Color Degraded, Color DownState, Color Unknown, Color RowHighlight,
     Color ItmTint, Color Placeholder)
 {
-    private static Color C(uint rgb) => Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
+    private static Color C(uint argb) => Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);
 
-    public static readonly SemanticPalette Light = new(C(0xB8282E), C(0x0F6B45), C(0x2563B8), C(0x8F5E00), C(0x5E6875), C(0x6B6B6B), C(0xEADCF2),
-        Color.FromArgb(0x0F, 0, 0, 0), Color.FromArgb(0xA8, 0, 0, 0));
-    public static readonly SemanticPalette Dark = new(C(0xF89CA0), C(0x45C98E), C(0x6AA6EC), C(0xD99A1E), C(0x9AA4B2), C(0xA0A0A0), C(0x3E2F48),
-        Color.FromArgb(0x17, 0xFF, 0xFF, 0xFF), Color.FromArgb(0xB8, 0xFF, 0xFF, 0xFF));
+    private static SemanticPalette From(SemanticColors c) => new(C(c.Red), C(c.Green), C(c.Healthy), C(c.Degraded), C(c.DownState),
+        C(c.Unknown), C(c.RowHighlight), C(c.ItmTint), C(c.Placeholder));
+
+    public static readonly SemanticPalette Light = From(SemanticColors.Light);
+    public static readonly SemanticPalette Dark = From(SemanticColors.Dark);
 
     /// <summary>Badge fill behind dark (#1A1A1A) text, e.g. the "stale" tag; the same in both themes.</summary>
-    public static readonly Color Badge = C(0xD99A1E);
+    public static readonly Color Badge = C(SemanticColors.Badge);
 
     /// <summary>Alpha of the up/down tag fills behind up/down text.</summary>
-    public const byte TintAlpha = 0x1A;
+    public const byte TintAlpha = SemanticColors.TintAlpha;
 
     public static SemanticPalette For(bool dark) => dark ? Dark : Light;
 }

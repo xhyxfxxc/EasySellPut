@@ -1,0 +1,78 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Meili.Shared.ViewModels"
+        x:Class="Meili.Mac.MainWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="{DynamicResource App_Title}"
+        Width="1320" Height="840" MinWidth="980" MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource ApplicationBackgroundBrush}"
+        FontFamily="{StaticResource AppFont}" FontSize="14"
+        Icon="avares://MeiliMac/Assets/app-256.png">
+    <Grid RowDefinitions="*,Auto" ColumnDefinitions="220,*">
+        <!-- Navigation (⌘1…⌘9 in this order) -->
+        <DockPanel Grid.Row="0" Grid.Column="0" Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8" Spacing="6">
+                <Button x:Name="LanguageButton" Classes="Subtle" MinWidth="40" FontWeight="SemiBold"
+                        Content="{DynamicResource Title_LanguageButton}" ToolTip.Tip="{DynamicResource Title_ToggleLanguage}"
+                        Click="OnToggleLanguage" />
+                <Button x:Name="ThemeButton" Classes="Subtle" MinWidth="40" Content="◐"
+                        ToolTip.Tip="{DynamicResource Title_ToggleTheme}" Click="OnToggleTheme" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="16,14,12,10" Spacing="10">
+                <Image Source="avares://MeiliMac/Assets/app-64.png" Width="22" Height="22" />
+                <TextBlock Text="{DynamicResource Mac_AppShort}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+            <ListBox x:Name="Nav" Classes="Nav" SelectionMode="Single" SelectionChanged="OnNavSelected" />
+        </DockPanel>
+
+        <!-- Page host -->
+        <Panel Grid.Row="0" Grid.Column="1">
+            <ContentControl x:Name="PageHost" />
+
+            <!-- In-app alert / error banner (always shown, even when notifications are off) -->
+            <Border x:Name="Banner" IsVisible="False" Classes="InfoBar" Margin="24,12" MaxWidth="640"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" BoxShadow="0 4 16 0 #40000000"
+                    AutomationProperties.AutomationId="Banner">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="Subtle" VerticalAlignment="Top" Content="{DynamicResource Mac_Dismiss}" Click="OnDismissBanner" />
+                    <StackPanel Margin="0,0,12,0">
+                        <TextBlock x:Name="BannerTitle" Classes="CardTitle" TextWrapping="Wrap" />
+                        <TextBlock x:Name="BannerBody" Classes="Secondary" Margin="0,4,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- D2: keyboard wizard — type a symbol anywhere (or ⌘F), Return opens its K-line, Esc closes -->
+            <Border x:Name="Wizard" IsVisible="False" Classes="Card" Padding="14,10" MinWidth="380"
+                    HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BoxShadow="0 4 16 0 #40000000"
+                    AutomationProperties.AutomationId="KeyboardWizard">
+                <StackPanel>
+                    <TextBlock Classes="Caption" Text="{DynamicResource Kb_WizardTitle}" Margin="0,0,0,6" />
+                    <AutoCompleteBox x:Name="WizardBox" MinWidth="350" FilterMode="StartsWith"
+                                     AutomationProperties.AutomationId="KeyboardWizardSymbol" />
+                </StackPanel>
+            </Border>
+        </Panel>
+
+        <!-- Status bar -->
+        <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="16,6" BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                Background="{DynamicResource LayerFillColorDefaultBrush}">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Margin="0,0,8,0" Fill="{Binding SessionBrush}" />
+                    <TextBlock Classes="Caption" Text="{Binding SessionText}" FontWeight="SemiBold" Margin="0,0,14,0" />
+                    <TextBlock Classes="Caption" Text="{Binding ClockText}" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Margin="0,0,6,0" Fill="{Binding SourcesBrush}" />
+                    <TextBlock Classes="Caption" Text="{Binding SourcesText}" Margin="0,0,18,0" />
+                    <TextBlock Classes="Caption" Text="{Binding NetworkText}" Margin="0,0,18,0" />
+                    <TextBlock Classes="Caption" Text="{Binding DataDirText}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

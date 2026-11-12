@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Headless Avalonia tests for the macOS front end: run on any OS (no window, no screen). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="Meili.Shared.Services" />
+    <Using Include="Meili.Shared.ViewModels" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meili.Mac\Meili.Mac.csproj" />
+    <!-- Same offline market data, IV and network fakes as the Windows UI tests. -->
+    <Compile Include="..\Meili.App.Tests\FakeMarketDataService.cs" Link="FakeMarketDataService.cs" />
+  </ItemGroup>
+</Project>

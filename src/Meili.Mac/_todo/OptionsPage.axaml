@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.OptionsPage"
+             x:DataType="vm:OptionsViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,20,32,8">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Op_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Op_Desc}" Margin="0,0,0,12" />
+
+            <DockPanel Margin="0,0,0,10" LastChildFill="True">
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding ExportCommand}" ToolTip.Tip="{DynamicResource Op_Export}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⤓" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Op_Export}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding RefreshCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="↻" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Op_Refresh}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="14,6" Margin="8,0,0,0"
+                           Command="{Binding LoadFromBoxCommand}" Content="{DynamicResource Op_Load}" />
+                <ComboBox x:Name="ExpirationBox" AutomationProperties.AutomationId="OptionsExpiration" DockPanel.Dock="Right" MinWidth="220" FontSize="14" Margin="8,0,0,0"
+                          ItemsSource="{Binding Expirations}"
+                          SelectedItem="{Binding SelectedExpiration}"
+                          DisplayMemberPath="Label" />
+                <TextBlock DockPanel.Dock="Right" Classes="Caption" VerticalAlignment="Center"
+                           Margin="12,0,0,0" Text="{DynamicResource Op_Expiration}" />
+                <controls:SymbolBox x:Name="SymbolInput" AutomationProperties.AutomationId="OptionsSymbol" MinWidth="200"
+                          Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}" CommitCommand="{Binding LoadFromBoxCommand}" />
+            </DockPanel>
+
+            <!-- F8: chain underlying (in sync with options) + latest stock price for comparison; wraps on narrow windows -->
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding Headline}" VerticalAlignment="Center" Margin="0,2,0,2" />
+                <TextBlock Classes="Caption" Text="{Binding LivePriceText}" VerticalAlignment="Center" Margin="12,2,0,2"
+                           ToolTip.Tip="{DynamicResource Op_LivePriceTip}" AutomationProperties.AutomationId="LivePrice" />
+                <Border Margin="12,2,0,2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        IsVisible="{Binding HasDelay}">
+                    <TextBlock Classes="Caption" Text="{Binding DelayText}" />
+                </Border>
+                <!-- F5: pricing model and risk-free rate used for local IV / Greeks -->
+                <Border Margin="8,2,0,2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}" ToolTip.Tip="{DynamicResource Px_ModelTip}">
+                    <TextBlock Classes="Caption" Text="{Binding ModelText}" />
+                </Border>
+                <!-- B6: IV Rank from the IV history recorded on this computer -->
+                <Border Margin="8,2,0,2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center" ToolTip.Tip="{Binding IvRankTip}"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}" IsVisible="{Binding IvRankText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Classes="Caption" Text="{Binding IvRankText}" AutomationProperties.AutomationId="OptionsIvRank" />
+                </Border>
+            </WrapPanel>
+
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource Op_Range}" />
+                <Button Classes="RangeChip" Content="{DynamicResource Op_Range5}" Tag="Near5" Click="OnWindowClick" />
+                <Button Classes="RangeChip" Content="{DynamicResource Op_Range10}" Tag="Near10" Click="OnWindowClick" />
+                <Button Classes="RangeChip" Content="{DynamicResource Op_Range20}" Tag="Near20" Click="OnWindowClick" />
+                <Button Classes="RangeChip" Content="{DynamicResource Op_RangeAll}" Tag="All" Click="OnWindowClick" />
+            </WrapPanel>
+
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource Op_Columns}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Volume}" IsChecked="{Binding ShowVolume}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_OI}" IsChecked="{Binding ShowOi}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_OiChange}" IsChecked="{Binding ShowOiChange}" ToolTip.Tip="{DynamicResource Op_OiChangeTip}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_IV}" IsChecked="{Binding ShowIv}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Delta}" IsChecked="{Binding ShowDelta}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Gamma}" IsChecked="{Binding ShowGamma}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Theta}" IsChecked="{Binding ShowTheta}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Vega}" IsChecked="{Binding ShowVega}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_SpreadPct}" IsChecked="{Binding ShowSpread}" ToolTip.Tip="{DynamicResource Op_SpreadTip}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Distance}" IsChecked="{Binding ShowDistance}" ToolTip.Tip="{DynamicResource Op_DistanceTip}" />
+                <CheckBox Classes="ColCheck" Margin="12,0,0,0" Content="{DynamicResource Op_Compact}" IsChecked="{Binding CompactColumns}" ToolTip.Tip="{DynamicResource Op_CompactTip}" AutomationProperties.AutomationId="OptionsCompact" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Smile}" IsChecked="{Binding ShowSmile}" />
+                <CheckBox Classes="ColCheck" Content="{DynamicResource Op_Term}" IsChecked="{Binding ShowTerm}" ToolTip.Tip="{DynamicResource Op_TermTip}"
+                          IsEnabled="{Binding ShowSmile}" AutomationProperties.AutomationId="OptionsTerm" />
+            </WrapPanel>
+
+            <DockPanel LastChildFill="True" Margin="0,0,0,6">
+                <ProgressBar IsIndeterminate="True" DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,8,0" IsIndeterminate="True"
+                                 IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                <TextBlock Classes="Caption" Text="{Binding LocalNote}" VerticalAlignment="Center" />
+            </DockPanel>
+        </StackPanel>
+
+        <scottplot:WpfPlot x:Name="SmilePlot" DockPanel.Dock="Bottom" Height="150" Margin="16,0,16,12"
+                           IsVisible="{Binding ShowSmile}" />
+
+        <Grid Margin="16,0,16,16">
+            <TextBlock Classes="Secondary" VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Text="{DynamicResource Op_Empty}"
+                       IsVisible="{Binding !HasRows}" />
+            <ListView x:Name="ChainList"
+                      Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}" AutomationProperties.AutomationId="OptionsChain"
+                      ItemsSource="{Binding Rows}"
+                      SelectedItem="{Binding SelectedRow}"
+                      BorderThickness="0"
+                      IsVisible="{Binding HasRows}"
+                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                        <MenuItem Header="{DynamicResource Op_BuildStrategy}">
+                            <MenuItem Header="{DynamicResource Op_SeedLongCall}" Command="{Binding BuildStrategyCommand}" CommandParameter="LC" />
+                            <MenuItem Header="{DynamicResource Op_SeedShortCall}" Command="{Binding BuildStrategyCommand}" CommandParameter="SC" />
+                            <MenuItem Header="{DynamicResource Op_SeedLongPut}" Command="{Binding BuildStrategyCommand}" CommandParameter="LP" />
+                            <MenuItem Header="{DynamicResource Op_SeedShortPut}" Command="{Binding BuildStrategyCommand}" CommandParameter="SP" />
+                        </MenuItem>
+                    </ContextMenu>
+                </ListView.ContextMenu>
+                <ListView.View>
+                    <GridView x:Name="ChainView" AllowsColumnReorder="False">
+                        <!-- Call side (filled in code so column show/hide stays in sync) -->
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Grid>
+    </DockPanel>
+</UserControl>

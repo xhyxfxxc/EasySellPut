@@ -1,0 +1,350 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.WatchlistPage"
+             x:DataType="vm:WatchlistViewModel">
+    <DockPanel>
+        <DockPanel.Resources>
+            <Style x:Key="GroupChip" TargetType="Button">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Padding" Value="12,6" />
+                <Setter Property="Margin" Value="0,0,8,0" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </DockPanel.Resources>
+
+        <StackPanel DockPanel.Dock="Top" Margin="32,24,32,12">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Wl_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Wl_Desc}" Margin="0,0,0,16" />
+
+            <!-- Groups -->
+            <DockPanel Margin="0,0,0,12" LastChildFill="False">
+                <ItemsControl ItemsSource="{Binding Groups}" DockPanel.Dock="Left">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Classes="GroupChip"
+                                    Command="{Binding DataContext.SelectGroupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                    CommandParameter="{Binding Id}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Count, StringFormat='({0})'}" FontSize="12" Margin="8,0,0,0" Opacity="0.85" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button DockPanel.Dock="Right" Padding="10,6" Margin="4,0,0,0"
+                           Command="{Binding RemoveGroupCommand}" IsEnabled="{Binding CanRemoveGroup}" ToolTip.Tip="{DynamicResource Wl_RemoveGroup}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🗑" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Wl_RemoveGroup}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="10,6" Margin="4,0,0,0"
+                           Command="{Binding BeginRenameGroupCommand}" ToolTip.Tip="{DynamicResource Wl_RenameGroup}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="✎" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Wl_RenameGroup}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="10,6"
+                           Command="{Binding BeginAddGroupCommand}" ToolTip.Tip="{DynamicResource Wl_AddGroup}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="+" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Wl_AddGroup}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+            </DockPanel>
+
+            <DockPanel Margin="0,0,0,12" LastChildFill="True"
+                        IsVisible="{Binding IsAddingGroup}">
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding CancelGroupEditCommand}" Content="{DynamicResource Wl_Cancel}" />
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="12,6" Command="{Binding ConfirmGroupEditCommand}" Content="{DynamicResource Wl_Ok}" />
+                <TextBox Text="{Binding GroupNameDraft}"
+                            Watermark="{DynamicResource Wl_GroupNameHint}" FontSize="14" />
+            </DockPanel>
+            <DockPanel Margin="0,0,0,12" LastChildFill="True"
+                        IsVisible="{Binding IsRenamingGroup}">
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0" Command="{Binding CancelGroupEditCommand}" Content="{DynamicResource Wl_Cancel}" />
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="12,6" Command="{Binding ConfirmGroupEditCommand}" Content="{DynamicResource Wl_Ok}" />
+                <TextBox Text="{Binding GroupNameDraft}"
+                            Watermark="{DynamicResource Wl_GroupNameHint}" FontSize="14" />
+            </DockPanel>
+
+            <!-- Search + actions -->
+            <DockPanel Margin="0,0,0,8" LastChildFill="True">
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0"
+                           Command="{Binding ExportCommand}" ToolTip.Tip="{DynamicResource Wl_Export}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⤓" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Wl_Export}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0"
+                           Command="{Binding RefreshCommand}" ToolTip.Tip="{DynamicResource Wl_Refresh}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="↻" Margin="0,0,6,0" />
+                        <TextBlock Text="{DynamicResource Wl_Refresh}" FontSize="14" />
+                    </StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0"
+                           Command="{Binding MoveDownCommand}" ToolTip.Tip="{DynamicResource Wl_MoveDown}">
+                    
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0"
+                           Command="{Binding MoveUpCommand}" ToolTip.Tip="{DynamicResource Wl_MoveUp}">
+                    
+                </Button>
+                <Button DockPanel.Dock="Right" Padding="12,6" Margin="8,0,0,0"
+                           Command="{Binding RemoveSelectedCommand}" ToolTip.Tip="{DynamicResource Wl_Remove}">
+                    <TextBlock Text="🗑" Margin="0,0,6,0" />
+                </Button>
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="14,6" Margin="8,0,0,0"
+                           Command="{Binding AddCommand}" Content="{DynamicResource Wl_Add}" />
+                <Grid>
+                    <TextBox x:Name="QueryBox"
+                                Text="{Binding Query}"
+                                Watermark="{DynamicResource Wl_SymbolHint}"
+                                FontSize="14"
+                                KeyDown="OnQueryKeyDown" />
+                    <Popup IsOpen="{Binding ShowSuggestions}" PlacementTarget="{Binding ElementName=QueryBox}"
+                           Placement="Bottom" StaysOpen="True" AllowsTransparency="True">
+                        <Border Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
+                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                BorderThickness="1" CornerRadius="6" Padding="0,4" MinWidth="360" MaxHeight="280"
+                                Margin="0,4,0,0">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Bottom" Classes="Caption" Margin="12,6"
+                                           Text="{DynamicResource Wl_SearchEmpty}"
+                                           IsVisible="{Binding ShowSearchEmpty}" />
+                                <ListBox x:Name="SuggestionList" ItemsSource="{Binding Suggestions}"
+                                         BorderThickness="0" Background="Transparent"
+                                         MouseLeftButtonUp="OnSuggestionClick" PreviewKeyDown="OnSuggestionKeyDown">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type models:SymbolMatch}">
+                                            <StackPanel Orientation="Horizontal" Margin="4,2">
+                                                <TextBlock Text="{Binding Symbol}" FontSize="14" FontWeight="SemiBold" Width="88" />
+                                                <TextBlock Text="{Binding Name}" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxWidth="200" />
+                                                <TextBlock Text="{Binding Exchange}" FontSize="12" Margin="12,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </DockPanel>
+
+            <DockPanel LastChildFill="False" Margin="0,0,0,8">
+                <ProgressBar IsIndeterminate="True" DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,8,0" IsIndeterminate="True"
+                                 IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" />
+            </DockPanel>
+            <!-- D8 -->
+            <Border Classes="ErrorBar" IsVisible="{Binding AllSourcesFailed}" Margin="0,0,0,8" AutomationProperties.AutomationId="WatchAllFailed">
+<StackPanel>
+<TextBlock Classes="CardTitle" Text="{DynamicResource Dash_AllFailedTitle}" />
+<TextBlock Classes="Body" Text="{DynamicResource Dash_AllFailedBody}" Margin="0,4,0,0" />
+<ContentControl Margin="0,8,0,0">
+                <Button Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" Padding="10,4" />
+            </ContentControl>
+</StackPanel>
+</Border>
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Top" Classes="Secondary" Margin="32,24,32,0"
+                   Text="{DynamicResource Wl_Empty}"
+                   IsVisible="{Binding !HasRows}" />
+
+        <ListView x:Name="QuoteList"
+                      Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                  ItemsSource="{Binding Rows}"
+                  SelectedItem="{Binding SelectedRow}"
+                  Margin="32,0,32,24"
+                  BorderThickness="0"
+                  FontSize="14"
+                  AllowDrop="True"
+                  PreviewMouseLeftButtonDown="OnListPreviewMouseLeftButtonDown"
+                  MouseMove="OnListMouseMove"
+                  Drop="OnListDrop"
+                  MouseDoubleClick="OnListDoubleClick"
+                  IsVisible="{Binding HasRows}">
+            <ListView.Resources>
+                <Style TargetType="GridViewColumnHeader">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="FontSize" Value="12" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                    <Setter Property="Padding" Value="8,8" />
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                </Style>
+                <Style x:Key="NumHeader" TargetType="GridViewColumnHeader" BasedOn="{StaticResource {x:Type GridViewColumnHeader}}">
+                    <Setter Property="HorizontalContentAlignment" Value="Right" />
+                </Style>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="MinHeight" Value="44" />
+                    <Setter Property="Padding" Value="0,4" />
+                    <Setter Property="FontSize" Value="14" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsFlashing}" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ListView.Resources>
+            <ListView.ContextMenu>
+                <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                    <MenuItem Header="{DynamicResource Wl_OpenChart}" Command="{Binding OpenChartCommand}" InputGestureText="{DynamicResource Wl_DoubleClick}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenOptions}" Command="{Binding OpenOptionsCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenStrategy}" Command="{Binding OpenStrategyCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenNews}" Command="{Binding OpenNewsCommand}" />
+                    <Separator />
+                    <MenuItem Header="{DynamicResource Wl_MoveUp}" Command="{Binding MoveUpCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_MoveDown}" Command="{Binding MoveDownCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_Remove}" Command="{Binding RemoveSelectedCommand}" />
+                    <Separator />
+                    <MenuItem Header="{DynamicResource Wl_SetAlert}" Command="{Binding SetAlertCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_Export}" Command="{Binding ExportCommand}" />
+                </ContextMenu>
+            </ListView.ContextMenu>
+            <ListView.View>
+                <GridView AllowsColumnReorder="False">
+                    <GridViewColumn Width="110">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColSymbol}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Symbol}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="180">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColName}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <!-- E2: numeric columns are right-aligned with tabular digits -->
+                    <GridViewColumn Width="100" HeaderContainerClasses="NumHeader">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColPrice}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding PriceText}" FontFamily="{StaticResource NumberFont}" FontSize="16" FontWeight="SemiBold"
+                                           HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <!-- D8: quote time + stale marker -->
+                    <GridViewColumn Width="120">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColTime}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding PriceTimeText}" FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip.Tip="{Binding TimingTip}" />
+                                    <Border Margin="6,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="6,1" Background="{StaticResource StaleBadgeBrush}"
+                                            IsVisible="{Binding IsStale}" ToolTip.Tip="{Binding StaleTip}"
+                                            AutomationProperties.AutomationId="StaleBadge">
+                                        <TextBlock Text="{DynamicResource Quote_Stale}" FontSize="12" FontWeight="SemiBold" Foreground="#1A1A1A" />
+                                    </Border>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="100" HeaderContainerClasses="NumHeader">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColChange}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <TextBlock Text="{Binding ChangeText}" FontFamily="{StaticResource NumberFont}" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{Binding ChangeBrush}" />
+                                </Border>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="100" HeaderContainerClasses="NumHeader">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColChangePct}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="4" Padding="8,2" Background="{Binding ChangeBackground}" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <TextBlock Text="{Binding ChangePctText}" FontFamily="{StaticResource NumberFont}" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{Binding ChangeBrush}" />
+                                </Border>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="200">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColExt}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ExtText}" FontFamily="{StaticResource NumberFont}" FontSize="13" VerticalAlignment="Center" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="90" HeaderContainerClasses="NumHeader">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColVolume}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding VolumeText}" FontFamily="{StaticResource NumberFont}" FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="200">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource Wl_ColSource}" FontSize="12" FontWeight="SemiBold" />
+                        </GridViewColumn.Header>
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding SourceText}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding TimingTip}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </DockPanel>
+</UserControl>

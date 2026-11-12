@@ -1,0 +1,200 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.SettingsPage"
+             x:DataType="vm:SettingsViewModel">
+    <ScrollViewer Classes="PageScroller">
+        <StackPanel MaxWidth="1000">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Nav_Settings}" />
+
+            <!-- Appearance -->
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_Appearance}" />
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox MinWidth="200" SelectedIndex="{Binding LanguageIndex}">
+                    <ComboBoxItem Content="简体中文" />
+                    <ComboBoxItem Content="English" />
+                </ComboBox>
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_Language}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_LanguageDesc}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox MinWidth="200" SelectedIndex="{Binding ThemeIndex}">
+                    <ComboBoxItem Content="{DynamicResource Set_ThemeSystem}" />
+                    <ComboBoxItem Content="{DynamicResource Set_ThemeLight}" />
+                    <ComboBoxItem Content="{DynamicResource Set_ThemeDark}" />
+                </ComboBox>
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_Theme}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_ThemeDesc}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox MinWidth="200" SelectedIndex="{Binding UpDownIndex}">
+                    <ComboBoxItem Content="{DynamicResource Set_RedUp}" />
+                    <ComboBoxItem Content="{DynamicResource Set_GreenUp}" />
+                </ComboBox>
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_UpDown}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_UpDownDesc}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+
+            <!-- Network -->
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_Network}" />
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox MinWidth="240" SelectedIndex="{Binding ProxyModeIndex}">
+                    <ComboBoxItem Content="{DynamicResource Set_ProxyAuto}" />
+                    <ComboBoxItem Content="{DynamicResource Set_ProxySystem}" />
+                    <ComboBoxItem Content="{DynamicResource Set_ProxyManual}" />
+                    <ComboBoxItem Content="{DynamicResource Set_ProxyDirect}" />
+                </ComboBox>
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_ProxyMode}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_ProxyModeDesc}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4" IsEnabled="{Binding IsManualProxy}">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <TextBox MinWidth="260" Watermark="http://127.0.0.1:7890" Text="{Binding ManualProxy}" />
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_ManualProxy}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_ManualProxyDesc}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <Button Classes="accent" Content="{DynamicResource Set_ProxyApply}" Command="{Binding ApplyProxyCommand}" MinWidth="140" />
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_ProxyEffective}" />
+                        <TextBlock Classes="Caption" Text="{Binding EffectiveProxy}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+
+            <!-- D4: no close-action choice on macOS — the red button hides the window (the app stays in the Dock), ⌘Q quits. -->
+
+            <!-- Keyboard (D2) -->
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_Shortcuts}" />
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_ShortcutsTitle}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Mac_ShortcutsDesc}" TextWrapping="Wrap" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+
+            <!-- Pricing (F5) -->
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_Pricing}" />
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox MinWidth="240" SelectedIndex="{Binding RateModeIndex}" AutomationProperties.AutomationId="SettingsRateMode">
+                    <ComboBoxItem Content="{DynamicResource Set_RateTreasury}" />
+                    <ComboBoxItem Content="{DynamicResource Set_RateFixedItem}" />
+                </ComboBox>
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_RateMode}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_RateModeDesc}" TextWrapping="Wrap" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <TextBox MinWidth="120" Text="{Binding FixedRateText}" AutomationProperties.AutomationId="SettingsFixedRate" />
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_FixedRate}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_FixedRateDesc}" TextWrapping="Wrap" />
+                        <TextBlock Classes="Caption" Text="{Binding FixedRateError}" Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+
+            <!-- Storage -->
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_Storage}" />
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <Button Content="{DynamicResource Set_OpenFolder}" Command="{Binding OpenDataFolderCommand}" MinWidth="120" />
+            </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_DataDir}" />
+                        <TextBlock Classes="Body" Text="{Binding DataDirectory}" Margin="0,2,0,2" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_DataDirDesc}" />
+                    </StackPanel>
+                
+</DockPanel>
+</Border>
+
+            <!-- About -->
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_About}" />
+            <Border Classes="Card" Padding="20">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Image Source="avares://MeiliMac/Assets/app-64.png" Width="40" Height="40" Margin="0,0,12,0" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Classes="CardTitle" FontSize="16" Text="{DynamicResource App_Title}" />
+                            <TextBlock Classes="Caption">
+                                <Run Text="{DynamicResource Set_Company}" />
+                                <Run Text="  ·  " />
+                                <Run Text="{DynamicResource Set_Version}" />
+                                <Run Text=" " />
+                                <Run Text="{Binding Version, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Classes="Secondary" Text="{DynamicResource Set_AboutDesc}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

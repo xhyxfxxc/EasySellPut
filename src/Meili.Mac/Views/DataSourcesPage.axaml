@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.DataSourcesPage"
+             x:DataType="vm:DataSourcesViewModel">
+    <ScrollViewer Classes="PageScroller">
+        <StackPanel MaxWidth="1200">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Ds_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Ds_Desc}" Margin="0,0,0,16" />
+
+            <DockPanel LastChildFill="False" Margin="0,0,0,12">
+                <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <TextBlock Classes="CardTitle" Text="{Binding SummaryText}" />
+                    <TextBlock Classes="Caption" Text="{Binding NetworkText}" Margin="0,2,0,0" />
+                </StackPanel>
+                <Button DockPanel.Dock="Right" Classes="accent" Padding="14,7" Command="{Binding TestAllCommand}" IsEnabled="{Binding !IsTesting}">
+                    <StackPanel Orientation="Horizontal">
+                        
+                        <TextBlock Text="{Binding TestButtonText}" />
+                    </StackPanel>
+                </Button>
+                <ProgressBar DockPanel.Dock="Right" IsIndeterminate="True" Width="60" MinWidth="60" Height="4" Margin="0,0,12,0"
+                                 IsVisible="{Binding IsTesting}" />
+            </DockPanel>
+
+            <ItemsControl ItemsSource="{Binding Sources}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SourceRowViewModel">
+                        <Border Classes="Card" Margin="0,0,8,8" Padding="18,14" VerticalAlignment="Stretch">
+                            <StackPanel>
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding StateIcon, Converter={x:Static local:MacConverters.HealthGlyph}}" FontSize="16"
+                                               Foreground="{Binding StateBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding DisplayName}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <Border DockPanel.Dock="Left" Margin="10,0,0,0" CornerRadius="4" Padding="6,1" VerticalAlignment="Center"
+                                            Background="{DynamicResource ControlFillColorSecondaryBrush}">
+                                        <TextBlock Classes="Caption" Text="{Binding RegionText}" />
+                                    </Border>
+                                    <Border DockPanel.Dock="Right" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                                            BorderThickness="1" BorderBrush="{Binding StateBrush}">
+                                        <TextBlock Text="{Binding StateText}" FontSize="12" FontWeight="SemiBold" Foreground="{Binding StateBrush}" />
+                                    </Border>
+                                </DockPanel>
+                                <TextBlock Classes="Caption" Margin="0,8,0,12" Text="{Binding CapabilitiesText}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Classes="Caption" Text="{DynamicResource Ds_Latency}" />
+                                        <TextBlock Classes="CardTitle" FontFamily="{StaticResource NumberFont}" Text="{Binding LatencyText}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Classes="Caption" Text="{DynamicResource Ds_Success}" />
+                                        <TextBlock Classes="CardTitle" FontFamily="{StaticResource NumberFont}" Text="{Binding SuccessText}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Classes="Caption" Text="{DynamicResource Ds_Failures}" />
+                                        <TextBlock Classes="CardTitle" FontFamily="{StaticResource NumberFont}" Text="{Binding FailureText}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3">
+                                        <TextBlock Classes="Caption" Text="{DynamicResource Ds_LastUsed}" />
+                                        <TextBlock Classes="CardTitle" FontFamily="{StaticResource NumberFont}" Text="{Binding LastUsedText}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Border Margin="0,12,0,0" Padding="10,6" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource DegradedBrush}"
+                                        IsVisible="{Binding IsCircuitOpen}">
+                                    <StackPanel Orientation="Horizontal">
+                                        
+                                        <TextBlock Classes="Caption" Text="{Binding CircuitText}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Margin="0,12,0,0" Padding="10,6" CornerRadius="4" Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                        IsVisible="{Binding HasError}">
+                                    <StackPanel>
+                                        <TextBlock Classes="Caption" FontWeight="SemiBold" Text="{DynamicResource Ds_LastError}" />
+                                        <TextBlock Classes="Caption" Text="{Binding LastErrorText}" TextTrimming="CharacterEllipsis" MaxHeight="54"
+                                                   ToolTip.Tip="{Binding LastErrorText}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Classes="SectionTitle" Text="{DynamicResource Ds_Failover}" />
+            <Border Classes="Card" Padding="18,10">
+                <ItemsControl ItemsSource="{Binding Failover}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FailoverRowViewModel">
+                            <Grid Margin="0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Classes="CardTitle" Text="{Binding Capability}" />
+                                <TextBlock Grid.Column="1" Classes="Secondary" Text="{Binding Chain}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

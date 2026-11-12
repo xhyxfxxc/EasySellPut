@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- macOS front end (Avalonia). Plain net10.0 so it builds on any OS; build/pack-mac.sh publishes osx-arm64 / osx-x64
+       and wraps the output in an .app bundle. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Meili.Mac</RootNamespace>
+    <AssemblyName>MeiliMac</AssemblyName>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" />
+    <PackageReference Include="ScottPlot.Avalonia" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meili.Core\Meili.Core.csproj" />
+    <ProjectReference Include="..\Meili.Data\Meili.Data.csproj" />
+    <ProjectReference Include="..\Meili.Analytics\Meili.Analytics.csproj" />
+    <ProjectReference Include="..\Meili.Shared\Meili.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaXaml Remove="_todo\**" />
+    <None Remove="_todo\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Meili.Shared.Services" />
+    <Using Include="Meili.Shared.ViewModels" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meili.Mac.Tests" />
+  </ItemGroup>
+</Project>

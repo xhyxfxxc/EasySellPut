@@ -5,6 +5,7 @@
     <Project Path="src/Meili.App/Meili.App.csproj" />
     <Project Path="src/Meili.Analytics/Meili.Analytics.csproj" />
     <Project Path="src/Meili.Shared/Meili.Shared.csproj" />
+    <Project Path="src/Meili.Mac/Meili.Mac.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Meili.Core.Tests/Meili.Core.Tests.csproj" />
@@ -12,5 +13,6 @@
     <Project Path="tests/Meili.Analytics.Tests/Meili.Analytics.Tests.csproj" />
     <Project Path="tests/Meili.App.Tests/Meili.App.Tests.csproj" />
     <Project Path="tests/Meili.Shared.Tests/Meili.Shared.Tests.csproj" />
+    <Project Path="tests/Meili.Mac.Tests/Meili.Mac.Tests.csproj" />
   </Folder>
 </Solution>
