@@ -7,7 +7,6 @@ public enum WatchlistError
     None = 0,
     InvalidSymbol,
     DuplicateInGroup,
-    AlreadyOnWatchlist,
     GroupNotFound,
     LastGroup,
     EmptyName,
@@ -36,16 +35,9 @@ public sealed class WatchlistStore
     public WatchlistGroup? FindGroup(string id) =>
         Groups.FirstOrDefault(g => g.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-    public (WatchlistGroup Group, int Index)? FindSymbol(string symbol)
-    {
-        var needle = symbol.Trim().ToUpperInvariant();
-        foreach (var g in Groups)
-        {
-            var i = g.Symbols.FindIndex(s => s.Equals(needle, StringComparison.OrdinalIgnoreCase));
-            if (i >= 0) return (g, i);
-        }
-        return null;
-    }
+    /// <summary>D6: a symbol may sit in several groups; these are the ones holding it, in tab order.</summary>
+    public IReadOnlyList<WatchlistGroup> GroupsContaining(string symbol) =>
+        Groups.Where(g => g.Symbols.Contains(symbol, StringComparer.OrdinalIgnoreCase)).ToList();
 
     public static bool TryNormalizeSymbol(string? raw, out string symbol, out WatchlistError error)
     {
@@ -69,31 +61,28 @@ public sealed class WatchlistStore
         if (g is null) return WatchlistError.GroupNotFound;
         if (g.Symbols.Any(s => s.Equals(normalized, StringComparison.OrdinalIgnoreCase)))
             return WatchlistError.DuplicateInGroup;
-        if (FindSymbol(normalized) is not null) return WatchlistError.AlreadyOnWatchlist;
         g.Symbols.Add(normalized);
         Persist();
         return WatchlistError.None;
     }
 
-    public bool RemoveSymbol(string symbol)
+    /// <summary>D6: removes the symbol from this group only; other groups keep it.</summary>
+    public bool RemoveSymbol(string groupId, string symbol)
     {
-        if (FindSymbol(symbol) is not { } hit) return false;
-        hit.Group.Symbols.RemoveAt(hit.Index);
+        var g = FindGroup(groupId);
+        var i = g?.Symbols.FindIndex(s => s.Equals(symbol, StringComparison.OrdinalIgnoreCase)) ?? -1;
+        if (i < 0) return false;
+        g!.Symbols.RemoveAt(i);
         Persist();
         return true;
     }
 
-    /// <summary>Move a symbol up (<paramref name="delta"/> = -1) or down (+1) inside its group.</summary>
-    public bool MoveSymbol(string symbol, int delta)
+    /// <summary>Move a symbol up (<paramref name="delta"/> = -1) or down (+1) inside the given group.</summary>
+    public bool MoveSymbol(string groupId, string symbol, int delta)
     {
-        if (delta == 0 || FindSymbol(symbol) is not { } hit) return false;
-        var to = hit.Index + delta;
-        if (to < 0 || to >= hit.Group.Symbols.Count) return false;
-        var item = hit.Group.Symbols[hit.Index];
-        hit.Group.Symbols.RemoveAt(hit.Index);
-        hit.Group.Symbols.Insert(to, item);
-        Persist();
-        return true;
+        var g = FindGroup(groupId);
+        var i = g?.Symbols.FindIndex(s => s.Equals(symbol, StringComparison.OrdinalIgnoreCase)) ?? -1;
+        return i >= 0 && Reorder(groupId, i, i + delta);
     }
 
     /// <summary>Reorder within a group by index (used by drag-and-drop).</summary>

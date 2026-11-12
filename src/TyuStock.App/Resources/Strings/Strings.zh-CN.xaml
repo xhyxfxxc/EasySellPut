@@ -164,7 +164,6 @@
     <sys:String x:Key="Wl_Missing">部分标的暂无报价：{0}</sys:String>
     <sys:String x:Key="Wl_Err_InvalidSymbol">代码格式不正确。</sys:String>
     <sys:String x:Key="Wl_Err_DuplicateInGroup">该代码已在当前分组中。</sys:String>
-    <sys:String x:Key="Wl_Err_AlreadyOnWatchlist">该代码已在其他分组中。</sys:String>
     <sys:String x:Key="Wl_Err_GroupNotFound">找不到这个分组。</sys:String>
     <sys:String x:Key="Wl_Err_LastGroup">至少需要保留一个分组。</sys:String>
     <sys:String x:Key="Wl_Err_EmptyName">请输入分组名称。</sys:String>
@@ -618,4 +617,5 @@
     <sys:String x:Key="St_DeleteSaved">删除</sys:String>
     <sys:String x:Key="St_SavedOk">已保存「{0}」</sys:String>
     <sys:String x:Key="St_SavedBad">「{0}」无法载入：{1}</sys:String>
+    <sys:String x:Key="Wl_AddedAlsoIn">已添加 {0}（它也在分组：{1}）</sys:String>
 </ResourceDictionary>

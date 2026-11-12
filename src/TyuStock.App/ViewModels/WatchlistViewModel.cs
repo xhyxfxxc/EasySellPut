@@ -303,7 +303,10 @@ public partial class WatchlistViewModel : ObservableObject
             return;
         }
         Query = "";
-        _statusHint = string.Format(_loc["Wl_Added"], symbol);
+        var others = _store.GroupsContaining(symbol).Where(g => g.Id != SelectedGroupId).Select(g => string.IsNullOrEmpty(g.Name) ? _loc["Wl_DefaultGroup"] : g.Name).ToList();
+        _statusHint = others.Count == 0
+            ? string.Format(_loc["Wl_Added"], symbol)
+            : string.Format(_loc["Wl_AddedAlsoIn"], symbol, string.Join("、", others));
         UpdateStatus();
     }
 
@@ -312,7 +315,7 @@ public partial class WatchlistViewModel : ObservableObject
     {
         if (SelectedRow is null) return;
         var symbol = SelectedRow.Symbol;
-        if (_store.RemoveSymbol(symbol))
+        if (_store.RemoveSymbol(SelectedGroupId, symbol))
         {
             _statusHint = string.Format(_loc["Wl_Removed"], symbol);
             UpdateStatus();
@@ -322,13 +325,13 @@ public partial class WatchlistViewModel : ObservableObject
     [RelayCommand]
     private void MoveUp()
     {
-        if (SelectedRow is not null) _store.MoveSymbol(SelectedRow.Symbol, -1);
+        if (SelectedRow is not null) _store.MoveSymbol(SelectedGroupId, SelectedRow.Symbol, -1);
     }
 
     [RelayCommand]
     private void MoveDown()
     {
-        if (SelectedRow is not null) _store.MoveSymbol(SelectedRow.Symbol, 1);
+        if (SelectedRow is not null) _store.MoveSymbol(SelectedGroupId, SelectedRow.Symbol, 1);
     }
 
     public void ReorderRows(string fromSymbol, string toSymbol)
