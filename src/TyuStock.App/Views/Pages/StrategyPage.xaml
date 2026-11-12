@@ -123,6 +123,17 @@
                 <ui:Button Appearance="Secondary" Padding="12,6" Command="{Binding ApplyPresetCommand}"
                            Content="{DynamicResource St_ApplyPreset}" />
             </WrapPanel>
+            <!-- B7: saved strategies (strategies.json) -->
+            <WrapPanel Margin="0,0,0,8" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_SavedList}" />
+                <ComboBox MinWidth="200" MaxWidth="320" FontSize="14" Margin="0,0,8,0" AutomationProperties.AutomationId="SavedStrategies"
+                          ItemsSource="{Binding Saved}" SelectedItem="{Binding SelectedSaved}" DisplayMemberPath="Name" />
+                <ui:Button Appearance="Secondary" Padding="10,6" Margin="0,0,8,0" Command="{Binding LoadSavedCommand}" Content="{DynamicResource St_LoadSaved}" />
+                <ui:Button Appearance="Secondary" Padding="10,6" Margin="0,0,16,0" Command="{Binding DeleteSavedCommand}" Content="{DynamicResource St_DeleteSaved}" />
+                <ui:TextBox Width="180" FontSize="14" Margin="0,0,8,0" PlaceholderText="{DynamicResource St_SaveName}"
+                            Text="{Binding SaveName, UpdateSourceTrigger=PropertyChanged}" />
+                <ui:Button Appearance="Primary" Padding="12,6" Command="{Binding SaveStrategyCommand}" Content="{DynamicResource St_Save}" />
+            </WrapPanel>
             <WrapPanel Margin="0,0,0,8">
                 <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource St_Horizon}" />
                 <Button Style="{StaticResource RangeChip}" Content="{DynamicResource St_TnNow}" Tag="0" Click="OnHorizonClick" />
@@ -204,6 +215,14 @@
             <StackPanel Margin="0,0,0,8">
                 <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource St_Breakeven}" />
                 <TextBlock Style="{StaticResource CardTitle}" FontSize="16" Text="{Binding BreakevenText}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8" ToolTip="{DynamicResource St_PopTip}" AutomationProperties.AutomationId="Pop">
+                <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource St_Pop}" />
+                <TextBlock Style="{StaticResource CardTitle}" FontSize="16" Text="{Binding PopText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8" ToolTip="{Binding MarginTip}" AutomationProperties.AutomationId="Margin">
+                <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource St_Margin}" />
+                <TextBlock Style="{StaticResource CardTitle}" FontSize="16" Text="{Binding MarginText}" />
             </StackPanel>
             <TextBlock Style="{StaticResource Caption}" Text="{Binding RewardText}" />
             <TextBlock Style="{StaticResource Caption}" Text="{Binding GreeksText}" />

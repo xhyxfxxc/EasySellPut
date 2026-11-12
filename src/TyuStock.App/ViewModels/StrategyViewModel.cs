@@ -37,6 +37,7 @@ public partial class StrategyViewModel : ObservableObject
     private readonly LocalizationService _loc;
     private readonly SymbolContext _context;
     private readonly TyuStock.Core.Pricing.RiskFreeRateProvider _rates;
+    private readonly StrategyStore _store;
     private TyuStock.Core.Pricing.RiskFreeRate _rate;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = RefreshCadence.OptionChain }; // C3
     private CancellationTokenSource? _cts;
@@ -53,6 +54,8 @@ public partial class StrategyViewModel : ObservableObject
     public ObservableCollection<StrategyLegRow> Legs { get; } = [];
     public ObservableCollection<EnumChoice<LegType>> TypeChoices { get; } = [];
     public ObservableCollection<EnumChoice<PositionSide>> SideChoices { get; } = [];
+    /// <summary>B7: strategies saved to strategies.json, newest first.</summary>
+    public ObservableCollection<SavedStrategy> Saved { get; } = [];
 
     [ObservableProperty] public partial string SymbolText { get; set; } = "";
     [ObservableProperty] public partial ExpirationChoice? SelectedExpiration { get; set; }
@@ -78,6 +81,13 @@ public partial class StrategyViewModel : ObservableObject
     [ObservableProperty] public partial double? Spot { get; set; }
     [ObservableProperty] public partial StrategyLegRow? SelectedLeg { get; set; }
     [ObservableProperty] public partial bool HasCurve { get; set; }
+    /// <summary>B7: lognormal probability of profit at the earliest expiry.</summary>
+    [ObservableProperty] public partial string PopText { get; set; } = "";
+    /// <summary>B7: rough Reg-T initial margin.</summary>
+    [ObservableProperty] public partial string MarginText { get; set; } = "";
+    [ObservableProperty] public partial string MarginTip { get; set; } = "";
+    [ObservableProperty] public partial string SaveName { get; set; } = "";
+    [ObservableProperty] public partial SavedStrategy? SelectedSaved { get; set; }
 
     public PayoffCurve? Curve { get; private set; }
     public PayoffAnalysis? ExpiryAnalysis { get; private set; }
@@ -85,9 +95,10 @@ public partial class StrategyViewModel : ObservableObject
     public event EventHandler? ChartChanged;
 
     public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
-        TyuStock.Core.Pricing.RiskFreeRateProvider rates)
+        TyuStock.Core.Pricing.RiskFreeRateProvider rates, StrategyStore store)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates; _store = store;
+        foreach (var x in store.All) Saved.Add(x);
         _rate = rates.Current;
         ModelText = PricingText.Model(_rate, loc);
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
@@ -177,6 +188,58 @@ public partial class StrategyViewModel : ObservableObject
         HorizonDays = days;
         Recompute();
         ChartChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>B7: save the current legs under <see cref="SaveName"/> (or "SYMBOL strategy date").</summary>
+    [RelayCommand]
+    private void SaveStrategy()
+    {
+        if (!TryCompile(out var strategy, out var err))
+        {
+            StatusText = err ?? _loc["St_NoLegs"];
+            return;
+        }
+        var name = SaveName.Trim();
+        if (name.Length == 0) name = $"{SymbolText} {strategy!.Name} {DateTime.Now:yyyy-MM-dd HH:mm}";
+        var saved = new SavedStrategy(name, SymbolText, strategy!.Kind, strategy.Legs.Select(SavedLeg.From).ToList(), DateTimeOffset.Now);
+        _store.Save(saved);
+        Saved.Clear();
+        foreach (var x in _store.All) Saved.Add(x);
+        SelectedSaved = Saved[0];
+        SaveName = "";
+        StatusText = string.Format(_loc["St_SavedOk"], name);
+    }
+
+    /// <summary>B7: load a saved strategy: its symbol's chain first, then its own legs (custom, so later refreshes keep them).</summary>
+    [RelayCommand]
+    private async Task LoadSavedAsync()
+    {
+        if (SelectedSaved is not { } saved) return;
+        List<StrategyLeg> legs;
+        try { legs = saved.Legs.Select(l => l.ToLeg()).ToList(); }
+        catch (ArgumentException ex)   // strategies.json edited by hand
+        {
+            StatusText = string.Format(_loc["St_SavedBad"], saved.Name, ex.Message);
+            return;
+        }
+        SymbolText = saved.Symbol;
+        _manualLegs = true;
+        _suppress = true;
+        try { SelectedPreset = Presets.FirstOrDefault(p => p.Kind == StrategyKind.Custom) ?? SelectedPreset; }
+        finally { _suppress = false; }
+        await LoadAsync();
+        ReplaceLegs(legs);
+        Recompute();
+        ChartChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    [RelayCommand]
+    private void DeleteSaved()
+    {
+        if (SelectedSaved is not { } saved) return;
+        _store.Delete(saved.Name);
+        Saved.Remove(saved);
+        SelectedSaved = Saved.FirstOrDefault();
     }
 
     [RelayCommand]
@@ -473,6 +536,7 @@ public partial class StrategyViewModel : ObservableObject
         LocalNote = "";
         RewardText = "";
         GreeksText = "";
+        PopText = MarginText = MarginTip = "";
         HorizonLabel = HorizonDays <= 0 ? _loc["St_CurrentCurve"] : string.Format(_loc["St_TnCurve"], HorizonDays);
         if (!TryCompile(out var strategy, out var err))
         {
@@ -518,6 +582,13 @@ public partial class StrategyViewModel : ObservableObject
                 if (double.IsFinite(g.Delta))
                     GreeksText = string.Format(_loc["St_Delta"], g.Delta.ToString("0.00", CultureInfo.InvariantCulture));
             }
+            var pop = Spot is { } sp
+                ? StrategyRisk.ProbabilityOfProfit(strategy, sp, StrategyRisk.RepresentativeVolatility(strategy, DefaultVolatility), nowVal)
+                : double.NaN;
+            PopText = double.IsNaN(pop) ? "—" : (pop * 100).ToString("0.0", CultureInfo.InvariantCulture) + " %";
+            var margin = StrategyRisk.RegTMargin(strategy, spot);
+            MarginText = margin.Amount.ToString("N0", Culture());
+            MarginTip = _loc[margin.DefinedRisk ? "St_MarginDefinedTip" : "St_MarginTip"];
             if (usedDefaultIv && overlay is not null)
                 LocalNote = string.Format(_loc["St_UsedDefaultIv"], DefaultVolatility);
             if (_lastError is null && _hasChain == false && Legs.Count > 0)
