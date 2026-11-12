@@ -44,6 +44,15 @@ public sealed class AppSettings
     public AppThemeMode Theme { get; set; } = AppThemeMode.System;
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public UpDownColorMode UpDownColors { get; set; } = UpDownColorMode.RedUp;
+    /// <summary>
+    /// E1: true once the user picked up/down colours. Until then the colours follow the interface language
+    /// (Chinese → red up, English → green up, the US convention).
+    /// </summary>
+    public bool UpDownColorsChosen { get; set; }
+
+    /// <summary>E1: colours to use for <paramref name="language"/> (default: the saved language).</summary>
+    public UpDownColorMode EffectiveUpDownColors(string? language = null) =>
+        UpDownColorsChosen ? UpDownColors : (language ?? Language) == "en-US" ? UpDownColorMode.GreenUp : UpDownColorMode.RedUp;
     public NetworkSettings Network { get; set; } = new();
     /// <summary>Flattened symbol list (kept in sync with <see cref="WatchlistGroups"/> for older files and the dashboard).</summary>
     public List<string> Watchlist { get; set; } = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA"];
@@ -70,6 +79,9 @@ public sealed class AppSettings
         Pricing.FixedRatePercent = Math.Clamp(Pricing.FixedRatePercent, -1, 20);
         if (!Enum.IsDefined(Pricing.RateMode)) Pricing.RateMode = RiskFreeRateMode.Treasury13Week;
         if (!Enum.IsDefined(CloseAction)) CloseAction = CloseAction.Ask;
+        if (!Enum.IsDefined(UpDownColors)) UpDownColors = UpDownColorMode.RedUp;
+        // Files from before E1: a non-default choice can only have come from the user.
+        if (UpDownColors != UpDownColorMode.RedUp) UpDownColorsChosen = true;
         Alerts ??= new AlertSettings();
         Alerts.MaxQuoteDelayMinutes = Math.Clamp(Alerts.MaxQuoteDelayMinutes, 1, 240);
         Alerts.FailureThreshold = Math.Clamp(Alerts.FailureThreshold, 1, 20);

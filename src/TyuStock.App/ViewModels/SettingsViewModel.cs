@@ -41,7 +41,7 @@ public partial class SettingsViewModel : ObservableObject
         var s = store.Current;
         LanguageIndex = s.Language == "en-US" ? 1 : 0;
         ThemeIndex = (int)s.Theme;
-        UpDownIndex = (int)s.UpDownColors;
+        UpDownIndex = (int)s.EffectiveUpDownColors();
         ProxyModeIndex = Math.Max(0, Array.IndexOf(ProxyModes, s.Network.ProxyMode));
         ManualProxy = s.Network.ManualProxy;
         DataDirectory = dataDir.Path;
@@ -73,7 +73,7 @@ public partial class SettingsViewModel : ObservableObject
         if (!_ready) return;
         var mode = (UpDownColorMode)Math.Clamp(value, 0, 1);
         ThemeService.ApplyUpDownColors(mode);
-        _store.Update(s => s.UpDownColors = mode);
+        _store.Update(s => { s.UpDownColors = mode; s.UpDownColorsChosen = true; });
     }
 
     partial void OnProxyModeIndexChanged(int value)

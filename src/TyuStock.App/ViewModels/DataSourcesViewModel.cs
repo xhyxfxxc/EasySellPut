@@ -107,6 +107,8 @@ public partial class SourceRowViewModel(SourceHealth health, bool domestic) : Ob
     [ObservableProperty] public partial string RegionText { get; set; } = "";
     [ObservableProperty] public partial string CircuitText { get; set; } = "";
     [ObservableProperty] public partial bool IsCircuitOpen { get; set; }
+    /// <summary>E1: the state is told by icon shape too, not by colour alone.</summary>
+    [ObservableProperty] public partial Wpf.Ui.Controls.SymbolRegular StateIcon { get; set; } = Wpf.Ui.Controls.SymbolRegular.QuestionCircle24;
 
     public void Refresh(DateTimeOffset now, LocalizationService loc)
     {
@@ -117,6 +119,7 @@ public partial class SourceRowViewModel(SourceHealth health, bool domestic) : Ob
         {
             HealthState.Healthy => "HealthyBrush", HealthState.Degraded => "DegradedBrush", HealthState.Down => "DownStateBrush", _ => "UnknownBrush",
         }) as Brush;
+        StateIcon = HealthVisuals.Icon(State);
         CapabilitiesText = string.Join("  ·  ", Enum.GetValues<DataCapability>()
             .Where(c => c != DataCapability.None && health.Capabilities.HasFlag(c)).Select(c => loc[$"Cap_{c}"]));
         var lat = health.AverageLatency ?? health.LastLatency;
@@ -131,4 +134,15 @@ public partial class SourceRowViewModel(SourceHealth health, bool domestic) : Ob
         IsCircuitOpen = health.CircuitOpenUntil is { } c && c > now;
         CircuitText = IsCircuitOpen ? string.Format(loc["Ds_Circuit"], (int)Math.Ceiling((health.CircuitOpenUntil!.Value - now).TotalSeconds)) : "";
     }
+}
+/// <summary>E1: icon per health state.</summary>
+public static class HealthVisuals
+{
+    public static Wpf.Ui.Controls.SymbolRegular Icon(HealthState state) => state switch
+    {
+        HealthState.Healthy => Wpf.Ui.Controls.SymbolRegular.CheckmarkCircle24,
+        HealthState.Degraded => Wpf.Ui.Controls.SymbolRegular.Warning24,
+        HealthState.Down => Wpf.Ui.Controls.SymbolRegular.ErrorCircle24,
+        _ => Wpf.Ui.Controls.SymbolRegular.QuestionCircle24,
+    };
 }

@@ -18,9 +18,11 @@
     <SolidColorBrush x:Key="DownBrush" Color="#22A06B" />
     <SolidColorBrush x:Key="UpBackgroundBrush" Color="#26E5484D" />
     <SolidColorBrush x:Key="DownBackgroundBrush" Color="#2622A06B" />
-    <SolidColorBrush x:Key="HealthyBrush" Color="#22A06B" />
-    <SolidColorBrush x:Key="DegradedBrush" Color="#E2A03F" />
-    <SolidColorBrush x:Key="DownStateBrush" Color="#E5484D" />
+    <!-- E1: health/status colours are neutral (blue / amber / slate / grey) so they never read as "up" or "down",
+         whichever up/down colour convention is active. State is also shown by an icon and a word. -->
+    <SolidColorBrush x:Key="HealthyBrush" Color="#3B82D6" />
+    <SolidColorBrush x:Key="DegradedBrush" Color="#B07408" />
+    <SolidColorBrush x:Key="DownStateBrush" Color="#7A8594" />
     <SolidColorBrush x:Key="UnknownBrush" Color="#8A8A8A" />
 
     <Style x:Key="PageTitle" TargetType="TextBlock">

@@ -34,7 +34,10 @@ public partial class App : Application
 
         var settings = AppServices.Get<SettingsStore>().Load();
         AppServices.Get<LocalizationService>().Apply(settings.Language);
-        ThemeService.ApplyUpDownColors(settings.UpDownColors);
+        ThemeService.ApplyUpDownColors(settings.EffectiveUpDownColors());
+        // E1: until the user picks colours, they follow the interface language.
+        var loc = AppServices.Get<LocalizationService>();
+        loc.LanguageChanged += (_, _) => ThemeService.ApplyUpDownColors(AppServices.Get<SettingsStore>().Current.EffectiveUpDownColors(loc.Language));
 
         var window = new MainWindow();
         MainWindow = window;
