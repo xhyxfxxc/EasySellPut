@@ -5,8 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Version>0.2.0</Version>
-    <Company>tyuStockApp</Company>
-    <Product>tyuStockApp</Product>
+    <Company>美丽稻谷</Company>
+    <Product>美丽稻谷卖方绿泡群专用终端</Product>
+    <AssemblyTitle>美丽稻谷卖方绿泡群专用终端</AssemblyTitle>
     <Copyright>Personal use</Copyright>
     <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
     <NoWarn>$(NoWarn);CA1416</NoWarn>

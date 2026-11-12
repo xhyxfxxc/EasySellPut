@@ -50,7 +50,8 @@ public partial class App : Application
             File.AppendAllText(Path.Combine(log, "crash.log"), $"[{DateTime.Now:O}] {e.Exception}\n\n");
         }
         catch { }
-        System.Windows.MessageBox.Show(e.Exception.Message, "tyuStockApp", MessageBoxButton.OK, MessageBoxImage.Warning);
+                var title = TryFindResource("App_Title") as string ?? "美丽稻谷卖方绿泡群专用终端";
+        System.Windows.MessageBox.Show(e.Exception.Message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }
 }

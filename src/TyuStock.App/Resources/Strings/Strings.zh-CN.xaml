@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <sys:String x:Key="App_Title">tyu 美股行情</sys:String>
+    <sys:String x:Key="App_Title">美丽稻谷卖方绿泡群专用终端</sys:String>
     <sys:String x:Key="App_Subtitle">美股 · ETF · 期权 —— 免费多数据源，自动切换</sys:String>
 
     <sys:String x:Key="Nav_Dashboard">概览</sys:String>
@@ -27,7 +27,7 @@
     <sys:String x:Key="Status_DataDir">数据目录</sys:String>
     <sys:String x:Key="Status_Proxy">网络</sys:String>
 
-    <sys:String x:Key="Dash_Welcome">欢迎使用</sys:String>
+    <sys:String x:Key="Dash_Welcome">欢迎使用美丽稻谷卖方绿泡群专用终端</sys:String>
     <sys:String x:Key="Dash_WelcomeBody">实时行情、K 线、期权链与希腊值、策略盈亏、提醒与导出，全部来自免费且无需注册的数据源。某个数据源不可用时会自动切换到下一个。</sys:String>
     <sys:String x:Key="Dash_Watchlist">我的自选</sys:String>
     <sys:String x:Key="Dash_Market">市场概览</sys:String>

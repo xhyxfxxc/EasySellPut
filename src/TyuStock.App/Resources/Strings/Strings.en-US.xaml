@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <sys:String x:Key="App_Title">tyu US Stocks</sys:String>
+    <sys:String x:Key="App_Title">Meili Daogu Seller Green-Bubble Group Terminal</sys:String>
     <sys:String x:Key="App_Subtitle">US stocks · ETFs · Options — free multi-source data with automatic failover</sys:String>
 
     <sys:String x:Key="Nav_Dashboard">Overview</sys:String>
@@ -27,7 +27,7 @@
     <sys:String x:Key="Status_DataDir">Data folder</sys:String>
     <sys:String x:Key="Status_Proxy">Network</sys:String>
 
-    <sys:String x:Key="Dash_Welcome">Welcome</sys:String>
+    <sys:String x:Key="Dash_Welcome">Welcome to Meili Daogu Seller Green-Bubble Group Terminal</sys:String>
     <sys:String x:Key="Dash_WelcomeBody">Live quotes, K-line charts, option chains with Greeks, strategy P/L, alerts and export — all from free sources that need no account. If one source fails, the next one takes over automatically.</sys:String>
     <sys:String x:Key="Dash_Watchlist">My watchlist</sys:String>
     <sys:String x:Key="Dash_Market">Market overview</sys:String>
