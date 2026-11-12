@@ -1,0 +1,252 @@
+using Meili.Core.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+using H.NotifyIcon;
+using Microsoft.Toolkit.Uwp.Notifications;
+using Meili.Core.Alerts;
+using Meili.Core.Settings;
+
+namespace Meili.App.Services;
+
+/// <summary>Tray icon plus Windows toast notifications. Failures are written to the log folder, never shown as dialogs.</summary>
+public sealed class NotificationService : IDisposable
+{
+    public const string AppUserModelId = "MeiliDaogu.SellerTerminal";
+
+    private readonly LocalizationService _loc;
+    private readonly AppLaunchOptions _options;
+    private readonly DataDirectoryInfo _dataDir;
+    private readonly NavigationHub _nav;
+    private TaskbarIcon? _tray;
+    private bool _disposed;
+
+    public event EventHandler? ExitRequested;
+
+    public NotificationService(LocalizationService loc, AppLaunchOptions options, DataDirectoryInfo dataDir, NavigationHub nav)
+    {
+        _loc = loc;
+        _options = options;
+        _dataDir = dataDir;
+        _nav = nav;
+        _loc.LanguageChanged += (_, _) => UpdateTooltip();
+        // --no-alerts (UI checks, tests) must not touch the toast COM/AUMID registration at all.
+        if (!_options.NoAlerts)
+        {
+            try { ToastNotificationManagerCompat.OnActivated += OnToastActivated; } catch (Exception ex) { Log(ex); }
+        }
+    }
+
+    public void Attach(Window window)
+    {
+        if (_options.NoAlerts || _tray is not null) return;
+        try
+        {
+            TrySetAppUserModelId();
+            _tray = new TaskbarIcon
+            {
+                ToolTipText = _loc["App_Title"],
+                IconSource = new BitmapImage(new Uri("pack://application:,,,/Assets/app.ico")),
+                ContextMenu = BuildMenu(),
+                NoLeftClickDelay = true,
+            };
+            _tray.TrayLeftMouseUp += (_, _) => Restore(window);
+        }
+        catch (Exception ex)
+        {
+            Log(ex);
+        }
+    }
+
+    public void UpdateTooltip()
+    {
+        if (_tray is null) return;
+        try
+        {
+            _tray.ToolTipText = _loc["App_Title"];
+            if (_tray.ContextMenu is not null)
+                _tray.ContextMenu = BuildMenu();
+        }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    public void ShowAlertToast(PriceAlert alert, AlertEvalResult result, Meili.Core.Models.Quote? quote = null)
+    {
+        if (_options.NoAlerts || !result.Fired) return;
+        try
+        {
+            var title = string.Format(_loc["Al_FiredToastTitle"], alert.Symbol);
+            var body = FormatBody(alert, result);
+            if (result.UsedExtended) body += " " + _loc["Al_UsedExtended"];
+            // F3: say where the price came from and how old it may be.
+            var timing = quote is null ? null : FreshnessText.SourceAndTiming(quote, _loc, DateTimeOffset.Now);
+            var toast = new ToastContentBuilder()
+                .AddText(title)
+                .AddText(body);
+            if (!string.IsNullOrEmpty(timing)) toast.AddText(timing);
+            toast
+                .AddArgument("action", "open")
+                .AddArgument("symbol", alert.Symbol)
+                .Show();
+        }
+        catch (Exception ex)
+        {
+            Log(ex);
+        }
+    }
+
+    /// <summary>B1: IV alert toast; the third line says what was measured (IV30 index or ATM IV of which expiry).</summary>
+    public void ShowIvAlertToast(PriceAlert alert, AlertEvalResult result, IvSample sample)
+    {
+        if (_options.NoAlerts || !result.Fired) return;
+        try
+        {
+            new ToastContentBuilder()
+                .AddText(string.Format(_loc["Al_FiredToastTitle"], alert.Symbol))
+                .AddText(FormatBody(alert, result))
+                .AddText(IvBasisText(sample, _loc))
+                .AddArgument("action", "open")
+                .AddArgument("symbol", alert.Symbol)
+                .Show();
+        }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    public static string IvBasisText(IvSample sample, LocalizationService loc)
+    {
+        var src = Meili.App.ViewModels.SourceNames.Display(sample.Source, loc);
+        var text = sample.Basis == IvBasis.Iv30
+            ? string.Format(loc["Al_IvBasisIv30"], src)
+            : string.Format(loc["Al_IvBasisAtm"], src, sample.Expiration?.ToString("yyyy-MM-dd") ?? "—", sample.DaysToExpiry ?? 0);
+        if (sample.AsOf is { } t) text += " · " + t.ToLocalTime().ToString("MM-dd HH:mm");
+        return text;
+    }
+
+    private bool _hiddenHintShown;
+
+    /// <summary>D4: once per session, say that the app keeps running (and alerts keep working) in the tray.</summary>
+    public void ShowHiddenToTray()
+    {
+        if (_hiddenHintShown || _options.NoAlerts || _tray is null) return;
+        _hiddenHintShown = true;
+        try { _tray.ShowNotification(_loc["Close_HiddenTitle"], _loc["Close_HiddenBody"]); }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    /// <summary>F10: tray balloon when alert monitoring stops getting quotes (once per interruption).</summary>
+    public void ShowMonitorInterrupted(MonitorHealth health)
+    {
+        if (_options.NoAlerts || _tray is null) return;
+        try
+        {
+            _tray.ShowNotification(_loc["Al_MonitorDownTitle"],
+                string.Format(_loc["Al_MonitorDownBody"], health.ConsecutiveFailures, health.FailingSince?.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture) ?? ""));
+        }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    public void ShowMonitorRecovered()
+    {
+        if (_options.NoAlerts || _tray is null) return;
+        try { _tray.ShowNotification(_loc["Al_MonitorUpTitle"], _loc["Al_MonitorUpBody"]); }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    public void Restore(Window? window = null)
+    {
+        window ??= Application.Current?.MainWindow;
+        if (window is null) return;
+        window.Dispatcher.Invoke(() =>
+        {
+            window.Show();
+            window.ShowInTaskbar = true;
+            if (window.WindowState == WindowState.Minimized)
+                window.WindowState = WindowState.Normal;
+            window.Activate();
+            window.Topmost = true;
+            window.Topmost = false;
+        });
+    }
+
+    public string FormatBody(PriceAlert alert, AlertEvalResult result)
+    {
+        var value = FormatValue(alert.Kind, result.Value ?? 0);
+        var key = alert.Kind switch
+        {
+            AlertKind.PriceAbove => "Al_FiredPriceAbove",
+            AlertKind.PriceBelow => "Al_FiredPriceBelow",
+            AlertKind.PercentUp => "Al_FiredPercentUp",
+            AlertKind.PercentDown => "Al_FiredPercentDown",
+            AlertKind.VolumeAbove => "Al_FiredVolumeAbove",
+            AlertKind.IvAbove => "Al_FiredIvAbove",
+            AlertKind.IvBelow => "Al_FiredIvBelow",
+            _ => "Al_FiredPriceAbove",
+        };
+        return string.Format(_loc[key], value, FormatValue(alert.Kind, alert.Threshold));
+    }
+
+    public static string FormatValue(AlertKind kind, double value) => kind switch
+    {
+        AlertKind.PercentUp or AlertKind.PercentDown => value.ToString("0.##", CultureInfo.InvariantCulture),
+        AlertKind.IvAbove or AlertKind.IvBelow => value.ToString("0.0", CultureInfo.InvariantCulture),
+        AlertKind.VolumeAbove => value.ToString("N0", CultureInfo.InvariantCulture),
+        _ => Meili.Core.Models.NumberDisplay.Price(value),
+    };
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        if (!_options.NoAlerts)
+        {
+            try { ToastNotificationManagerCompat.OnActivated -= OnToastActivated; } catch (Exception ex) { Log(ex); }
+        }
+        try { _tray?.Dispose(); } catch (Exception ex) { Log(ex); }
+        _tray = null;
+    }
+
+    private ContextMenu BuildMenu()
+    {
+        var show = new MenuItem { Header = _loc["Tray_Show"], FontSize = 14 };
+        show.Click += (_, _) => Restore();
+        var exit = new MenuItem { Header = _loc["Tray_Exit"], FontSize = 14 };
+        exit.Click += (_, _) =>
+        {
+            if (ExitRequested is not null) ExitRequested.Invoke(this, EventArgs.Empty);
+            else Application.Current?.Shutdown();
+        };
+        return new ContextMenu { Items = { show, exit }, FontSize = 14 };
+    }
+
+    private void OnToastActivated(ToastNotificationActivatedEventArgsCompat e)
+    {
+        try
+        {
+            var args = ToastArguments.Parse(e.Argument);
+            var symbol = args.TryGetValue("symbol", out var s) ? s : null;
+            var disp = Application.Current?.Dispatcher;
+            if (disp is null) return;
+            disp.BeginInvoke(() =>
+            {
+                Restore();
+                if (!string.IsNullOrWhiteSpace(symbol))
+                    _nav.Go(typeof(Views.Pages.ChartsPage), symbol);
+            });
+        }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    private void TrySetAppUserModelId()
+    {
+        try { _ = SetCurrentProcessExplicitAppUserModelID(AppUserModelId); } catch (Exception ex) { Log(ex); }
+    }
+
+    /// <summary>H2: notification failures go to the shared app log (previously a separate alerts.log).</summary>
+    private static void Log(Exception ex) => AppLog.Warn("notify", "notification failed", ex);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SetCurrentProcessExplicitAppUserModelID(string appID);
+}

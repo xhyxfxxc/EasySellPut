@@ -27,8 +27,8 @@ $PayloadDir = Join-Path $Root "build\out\payload"
 $PortableDir = Join-Path $Root "dist\$PortableLabel"
 $DistDir = Join-Path $Root "dist"
 $Iscc = Join-Path $Root "tools\InnoSetup\ISCC.exe"
-$AppProj = Join-Path $Root "src\TyuStock.App\TyuStock.App.csproj"
-$Sln = Join-Path $Root "TyuStockApp.slnx"
+$AppProj = Join-Path $Root "src\Meili.App\Meili.App.csproj"
+$Sln = Join-Path $Root "MeiliTerminal.slnx"
 
 function Write-Utf8([string]$Path, [string]$Content, [bool]$Bom = $true) {
     $enc = New-Object System.Text.UTF8Encoding $Bom

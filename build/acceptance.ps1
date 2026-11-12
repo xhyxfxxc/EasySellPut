@@ -21,7 +21,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-if (-not $Exe) { $Exe = Join-Path $Root "src\TyuStock.App\bin\Debug\net10.0-windows10.0.19041.0\MeiliTerminal.exe" }
+if (-not $Exe) { $Exe = Join-Path $Root "src\Meili.App\bin\Debug\net10.0-windows10.0.19041.0\MeiliTerminal.exe" }
 $Exe = (Resolve-Path $Exe).Path
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $Work = Join-Path $Root "scratch\acceptance\$stamp"

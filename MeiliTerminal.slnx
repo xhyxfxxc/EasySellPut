@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Meili.Core/Meili.Core.csproj" />
+    <Project Path="src/Meili.Data/Meili.Data.csproj" />
+    <Project Path="src/Meili.App/Meili.App.csproj" />
+    <Project Path="src/Meili.Analytics/Meili.Analytics.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Meili.Core.Tests/Meili.Core.Tests.csproj" />
+    <Project Path="tests/Meili.Data.Tests/Meili.Data.Tests.csproj" />
+    <Project Path="tests/Meili.Analytics.Tests/Meili.Analytics.Tests.csproj" />
+    <Project Path="tests/Meili.App.Tests/Meili.App.Tests.csproj" />
+  </Folder>
+</Solution>

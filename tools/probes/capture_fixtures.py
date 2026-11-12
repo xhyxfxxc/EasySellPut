@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """Capture real responses as unit-test fixtures (trimmed to keep the repo small).
-Usage: python tools/probes/capture_fixtures.py   -> writes tests/TyuStock.Data.Tests/Fixtures/*"""
+Usage: python tools/probes/capture_fixtures.py   -> writes tests/Meili.Data.Tests/Fixtures/*"""
 import os, json, gzip, re, time, urllib.request, http.cookiejar, datetime as dt
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OUT = os.path.join(ROOT, "tests", "TyuStock.Data.Tests", "Fixtures")
+OUT = os.path.join(ROOT, "tests", "Meili.Data.Tests", "Fixtures")
 os.makedirs(OUT, exist_ok=True)
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 B = {"User-Agent": UA, "Accept": "application/json, text/plain, */*", "Accept-Language": "en-US,en;q=0.9", "Accept-Encoding": "gzip"}

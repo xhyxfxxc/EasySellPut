@@ -3,7 +3,7 @@
 import os, json, re, shutil
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 RAW = os.path.join(ROOT, "scratch", "fixtures-raw")
-OUT = os.path.join(ROOT, "tests", "TyuStock.Data.Tests", "Fixtures")
+OUT = os.path.join(ROOT, "tests", "Meili.Data.Tests", "Fixtures")
 
 def rd(n): return open(os.path.join(RAW, n), "rb").read()
 def js(n): return json.loads(rd(n).decode("utf-8-sig"))
