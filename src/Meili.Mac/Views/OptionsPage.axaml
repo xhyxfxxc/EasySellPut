@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:controls="using:Meili.Mac.Views.Controls"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             x:Class="Meili.Mac.Views.OptionsPage"
+             x:DataType="vm:OptionsViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.OptCell">
+            <Setter Property="Padding" Value="6,4" />
+        </Style>
+        <Style Selector="Border.OptCell.Compact">
+            <Setter Property="Padding" Value="4,3" />
+        </Style>
+        <Style Selector="Border.OptCell.Itm">
+            <Setter Property="Background" Value="{DynamicResource ItmBrush}" />
+        </Style>
+        <Style Selector="Border.OptCell TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+        <Style Selector="Border.OptCell TextBlock.Wide">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="FontStyle" Value="Italic" />
+        </Style>
+        <Style Selector="DataGridRow.Atm">
+            <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="DataGrid#ChainList DataGridColumnHeader">
+            <Setter Property="Padding" Value="6,0,2,0" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="DataGrid#ChainList DataGridCell">
+            <Setter Property="Padding" Value="0" />
+        </Style>
+    </UserControl.Styles>
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,20,32,8">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Op_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Op_Desc}" Margin="0,0,0,12" />
+            <DockPanel Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding ExportCommand}" Content="{DynamicResource Op_Export}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding RefreshCommand}" Content="{DynamicResource Op_Refresh}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Classes="Accent" Command="{Binding LoadFromBoxCommand}" Content="{DynamicResource Op_Load}" />
+                <ComboBox x:Name="ExpirationBox" DockPanel.Dock="Right" MinWidth="220" Margin="8,0,0,0"
+                          ItemsSource="{Binding Expirations}" SelectedItem="{Binding SelectedExpiration}" DisplayMemberBinding="{Binding Label, x:DataType=vm:ExpirationChoice}" />
+                <TextBlock DockPanel.Dock="Right" Classes="Caption" VerticalAlignment="Center" Margin="12,0,0,0" Text="{DynamicResource Op_Expiration}" />
+                <controls:SymbolBox x:Name="SymbolInput" MinWidth="200" Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}"
+                                    CommitCommand="{Binding LoadFromBoxCommand}" />
+            </DockPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding Headline}" VerticalAlignment="Center" Margin="0,2" />
+                <TextBlock Classes="Caption" Text="{Binding LivePriceText}" VerticalAlignment="Center" Margin="12,2,0,2" ToolTip.Tip="{DynamicResource Op_LivePriceTip}" />
+                <Border Classes="Tag" Margin="12,2,0,2" VerticalAlignment="Center" IsVisible="{Binding HasDelay}">
+                    <TextBlock Classes="Caption" Text="{Binding DelayText}" />
+                </Border>
+                <Border Classes="Tag" Margin="8,2,0,2" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Px_ModelTip}">
+                    <TextBlock Classes="Caption" Text="{Binding ModelText}" />
+                </Border>
+                <Border Classes="Tag" Margin="8,2,0,2" VerticalAlignment="Center" ToolTip.Tip="{Binding IvRankTip}"
+                        IsVisible="{Binding IvRankText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Classes="Caption" Text="{Binding IvRankText}" />
+                </Border>
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource Op_Range}" />
+                <Button x:Name="Near5" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource Op_Range5}"
+                        Command="{Binding SelectWindowCommand}" CommandParameter="{x:Static vm:StrikeWindowKind.Near5}" />
+                <Button x:Name="Near10" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource Op_Range10}"
+                        Command="{Binding SelectWindowCommand}" CommandParameter="{x:Static vm:StrikeWindowKind.Near10}" />
+                <Button x:Name="Near20" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource Op_Range20}"
+                        Command="{Binding SelectWindowCommand}" CommandParameter="{x:Static vm:StrikeWindowKind.Near20}" />
+                <Button x:Name="All" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource Op_RangeAll}"
+                        Command="{Binding SelectWindowCommand}" CommandParameter="{x:Static vm:StrikeWindowKind.All}" />
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource Op_Columns}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Volume}" IsChecked="{Binding ShowVolume}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_OI}" IsChecked="{Binding ShowOi}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_OiChange}" IsChecked="{Binding ShowOiChange}" ToolTip.Tip="{DynamicResource Op_OiChangeTip}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_IV}" IsChecked="{Binding ShowIv}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Delta}" IsChecked="{Binding ShowDelta}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Gamma}" IsChecked="{Binding ShowGamma}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Theta}" IsChecked="{Binding ShowTheta}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Vega}" IsChecked="{Binding ShowVega}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_SpreadPct}" IsChecked="{Binding ShowSpread}" ToolTip.Tip="{DynamicResource Op_SpreadTip}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Distance}" IsChecked="{Binding ShowDistance}" ToolTip.Tip="{DynamicResource Op_DistanceTip}" />
+                <CheckBox Margin="12,0,12,0" Content="{DynamicResource Op_Compact}" IsChecked="{Binding CompactColumns}" ToolTip.Tip="{DynamicResource Op_CompactTip}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Smile}" IsChecked="{Binding ShowSmile}" />
+                <CheckBox Margin="0,0,12,0" Content="{DynamicResource Op_Term}" IsChecked="{Binding ShowTerm}" ToolTip.Tip="{DynamicResource Op_TermTip}" IsEnabled="{Binding ShowSmile}" />
+            </WrapPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <ProgressBar IsIndeterminate="True" Width="60" Margin="0,0,8,0" IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                <TextBlock Classes="Caption" Text="{Binding LocalNote}" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
+        <sp:AvaPlot x:Name="SmilePlot" DockPanel.Dock="Bottom" Height="150" Margin="16,0,16,12" IsVisible="{Binding ShowSmile}" />
+        <Panel Margin="16,0,16,16">
+            <TextBlock Classes="Secondary" Margin="16,8" Text="{DynamicResource Op_Empty}" IsVisible="{Binding !HasRows}" />
+            <DataGrid x:Name="ChainList" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" IsVisible="{Binding HasRows}"
+                      SelectionMode="Single" GridLinesVisibility="Horizontal" CanUserSortColumns="False">
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{DynamicResource Op_BuildStrategy}">
+                            <MenuItem Header="{DynamicResource Op_SeedLongCall}" Command="{Binding BuildStrategyCommand}" CommandParameter="LC" />
+                            <MenuItem Header="{DynamicResource Op_SeedShortCall}" Command="{Binding BuildStrategyCommand}" CommandParameter="SC" />
+                            <MenuItem Header="{DynamicResource Op_SeedLongPut}" Command="{Binding BuildStrategyCommand}" CommandParameter="LP" />
+                            <MenuItem Header="{DynamicResource Op_SeedShortPut}" Command="{Binding BuildStrategyCommand}" CommandParameter="SP" />
+                        </MenuItem>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+            </DataGrid>
+        </Panel>
+    </DockPanel>
+</UserControl>
