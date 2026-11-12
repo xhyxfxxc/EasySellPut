@@ -98,7 +98,7 @@ public partial class OptionsPage : Page
         if (itm is not null)
         {
             var trigger = new DataTrigger { Binding = new Binding(itm), Value = true };
-            trigger.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("ControlFillColorSecondaryBrush")));
+            trigger.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("ItmBrush")));
             style.Triggers.Add(trigger);
         }
         if (side is null)

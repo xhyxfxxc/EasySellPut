@@ -91,6 +91,32 @@ public class SemanticPaletteTests
         Assert.True(UiAudit.Contrast(text, p.RowHighlight) >= 7);
     }
 
+    private static Color Over(Color fg, Color bg)
+    {
+        var a = fg.A / 255.0;
+        byte M(byte f, byte b) => (byte)Math.Round(f * a + b * (1 - a));
+        return Color.FromRgb(M(fg.R, bg.R), M(fg.G, bg.G), M(fg.B, bg.B));
+    }
+
+    /// <summary>E4 final pass: the ITM shade is visible on plain and highlighted rows; placeholders keep 4.5:1.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Itm_shade_and_placeholder_read_in_both_themes(bool dark)
+    {
+        var p = SemanticPalette.For(dark);
+        var text = dark ? Colors.White : Color.FromRgb(0x1C, 0x1C, 0x1C);
+        foreach (var row in (dark ? DarkBacks : LightBacks).Append(p.RowHighlight))
+        {
+            var shaded = Over(p.ItmTint, row);
+            Assert.True(UiAudit.Contrast(shaded, row) >= 1.05, $"ITM shade invisible on {row}");
+            Assert.True(UiAudit.Contrast(text, shaded) >= 7);
+        }
+        // Inputs: page backgrounds plus the hovered dark input (#4D4D4D) the audit flagged.
+        foreach (var bg in dark ? DarkBacks.Append(Color.FromRgb(0x4D, 0x4D, 0x4D)) : LightBacks)
+            Assert.True(UiAudit.Contrast(Over(p.Placeholder, bg), bg) >= 4.5, $"placeholder on {bg}");
+    }
+
     [Fact]
     public void Badge_fill_reads_with_dark_text()
         => Assert.True(UiAudit.Contrast(Color.FromRgb(0x1A, 0x1A, 0x1A), SemanticPalette.Badge) >= 4.5);

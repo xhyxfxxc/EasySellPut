@@ -69,6 +69,10 @@ public sealed class ThemeService
         Set("DownStateBrush", p.DownState);
         Set("UnknownBrush", p.Unknown);
         Set("RowHighlightBrush", p.RowHighlight);
+        // E4 final pass: a translucent ITM shade shows on plain and highlighted rows in both themes (the WPF-UI
+        // secondary fill is near-white in light mode), and placeholders keep 4.5:1 even on hovered dark inputs.
+        Set("ItmBrush", p.ItmTint);
+        Set("TextControlPlaceholderForeground", p.Placeholder);
         ColorsChanged?.Invoke(null, EventArgs.Empty);
     }
 
@@ -82,12 +86,15 @@ public sealed class ThemeService
 }
 
 /// <summary>E4: theme-specific tones for price direction and health states (all ≥ 4.5:1 on the theme's page and card backgrounds).</summary>
-public sealed record SemanticPalette(Color Red, Color Green, Color Healthy, Color Degraded, Color DownState, Color Unknown, Color RowHighlight)
+public sealed record SemanticPalette(Color Red, Color Green, Color Healthy, Color Degraded, Color DownState, Color Unknown, Color RowHighlight,
+    Color ItmTint, Color Placeholder)
 {
     private static Color C(uint rgb) => Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
 
-    public static readonly SemanticPalette Light = new(C(0xB8282E), C(0x0F6B45), C(0x2563B8), C(0x8F5E00), C(0x5E6875), C(0x6B6B6B), C(0xEADCF2));
-    public static readonly SemanticPalette Dark = new(C(0xF89CA0), C(0x45C98E), C(0x6AA6EC), C(0xD99A1E), C(0x9AA4B2), C(0xA0A0A0), C(0x3E2F48));
+    public static readonly SemanticPalette Light = new(C(0xB8282E), C(0x0F6B45), C(0x2563B8), C(0x8F5E00), C(0x5E6875), C(0x6B6B6B), C(0xEADCF2),
+        Color.FromArgb(0x0F, 0, 0, 0), Color.FromArgb(0xA8, 0, 0, 0));
+    public static readonly SemanticPalette Dark = new(C(0xF89CA0), C(0x45C98E), C(0x6AA6EC), C(0xD99A1E), C(0x9AA4B2), C(0xA0A0A0), C(0x3E2F48),
+        Color.FromArgb(0x17, 0xFF, 0xFF, 0xFF), Color.FromArgb(0xB8, 0xFF, 0xFF, 0xFF));
 
     /// <summary>Badge fill behind dark (#1A1A1A) text, e.g. the "stale" tag; the same in both themes.</summary>
     public static readonly Color Badge = C(0xD99A1E);
