@@ -14,6 +14,7 @@ public static class AppComposition
         s.AddSingleton(dataDir);
         s.AddSingleton(new SettingsStore(dataDir.Path));
         s.AddSingleton(new AlertStore(dataDir.Path));
+        s.AddSingleton(new ChartDrawingStore(dataDir.Path));
         s.AddSingleton<LocalizationService>();
         s.AddSingleton<ThemeService>();
         s.AddSingleton<WatchlistStore>();

@@ -81,6 +81,17 @@ public partial class ChartsViewModel : ObservableObject
     [ObservableProperty] public partial string RsiLabel { get; set; } = "";
     [ObservableProperty] public partial string KdjLabel { get; set; } = "";
     private IndicatorSettings _ind = new();
+
+    // B5: user drawings (per symbol, saved) and one rebased comparison symbol.
+    [ObservableProperty] public partial DrawingKind? DrawMode { get; set; }
+    [ObservableProperty] public partial IReadOnlyList<ChartDrawing> Drawings { get; set; } = [];
+    [ObservableProperty] public partial string CompareText { get; set; } = "";
+    [ObservableProperty] public partial string CompareStatus { get; set; } = "";
+    /// <summary>Comparison closes rescaled so its first shared bar starts at the main symbol's close.</summary>
+    public (DateTimeOffset[] Time, double[] Close)? CompareLine { get; private set; }
+    public string CompareLabel { get; private set; } = "";
+    private (DateTimeOffset Time, double Price)? _trendStart;
+    private readonly ChartDrawingStore _drawings;
     private bool _loadingInd;
     private OhlcvBar[] _bars = [];
     private bool[] _incomplete = [];
@@ -110,9 +121,10 @@ public partial class ChartsViewModel : ObservableObject
         && a.Bars[0].Time == b.Bars[0].Time
         && a.Bars[^1] == b.Bars[^1];
 
-    public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context, SettingsStore settings)
+    public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context, SettingsStore settings,
+        ChartDrawingStore drawings)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _settings = settings;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _settings = settings; _drawings = drawings;
         ApplyIndicators(settings.Current.Charts.Indicators.Normalized());
         DividendAdjusted = settings.Current.Charts.DividendAdjusted;
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
@@ -267,6 +279,8 @@ public partial class ChartsViewModel : ObservableObject
             _bars = bars;
             _incomplete = series.Bars.Select(b => b.Incomplete || !b.IsConsistent()).ToArray();
             Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars, IndicatorOptions(_ind), _incomplete);
+            Drawings = _drawings.For(symbol);
+            await LoadCompareAsync(request, series, _cts.Token);
             CrosshairText = "";
             Headline = string.IsNullOrWhiteSpace(symbol) ? "" : symbol;
             _lastError = series.Bars.Count == 0 ? _loc["Ch_Empty"] : null;
@@ -296,6 +310,98 @@ public partial class ChartsViewModel : ObservableObject
     {
         if (_settings.Current.Charts.DividendAdjusted != value) _settings.Update(s => s.Charts.DividendAdjusted = value);
         if (Series is not null) _ = LoadAsync();
+    }
+
+    [RelayCommand]
+    private void StartDrawing(DrawingKind kind)
+    {
+        DrawMode = DrawMode == kind ? null : kind;
+        _trendStart = null;
+        StatusText = DrawMode switch
+        {
+            DrawingKind.HorizontalLine => _loc["Ch_DrawHLineHint"],
+            DrawingKind.TrendLine => _loc["Ch_DrawTrendHint1"],
+            _ => StatusText,
+        };
+    }
+
+    [RelayCommand]
+    private void ClearDrawings()
+    {
+        if (Series is null) return;
+        _drawings.Clear(Series.Symbol);
+        Drawings = [];
+        PlotChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>B5: a click on the price chart while drawing. Returns true when the click was used for drawing.</summary>
+    public bool AddDrawingPoint(DateTimeOffset time, double price)
+    {
+        if (DrawMode is not { } mode || Series is null) return false;
+        if (mode == DrawingKind.TrendLine && _trendStart is null)
+        {
+            _trendStart = (time, price);
+            StatusText = _loc["Ch_DrawTrendHint2"];
+            return true;
+        }
+        var drawing = mode == DrawingKind.HorizontalLine
+            ? new ChartDrawing(mode, price)
+            : new ChartDrawing(mode, _trendStart!.Value.Price, _trendStart.Value.Time, price, time);
+        _drawings.Add(Series.Symbol, drawing);
+        Drawings = _drawings.For(Series.Symbol).ToList();
+        DrawMode = null;
+        _trendStart = null;
+        UpdateStatus();
+        PlotChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    [RelayCommand]
+    private async Task ApplyCompareAsync()
+    {
+        if (Series is null) return;
+        await LoadCompareAsync(BuildRequest(Series.Symbol, Range) with { Adjust = DividendAdjusted ? AdjustMode.Total : AdjustMode.Split }, Series, CancellationToken.None);
+        PlotChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async Task LoadCompareAsync(BarRequest request, BarSeries main, CancellationToken ct)
+    {
+        CompareLine = null;
+        CompareLabel = "";
+        CompareStatus = "";
+        if (string.IsNullOrWhiteSpace(CompareText)) return;
+        if (!WatchlistStore.TryNormalizeSymbol(CompareText, out var cmp, out _)) { CompareStatus = _loc["Ch_InvalidSymbol"]; return; }
+        CompareText = cmp;
+        try
+        {
+            var other = await _data.GetBarsAsync(request with { Symbol = cmp }, ct);
+            CompareLine = Rebase(main, other);
+            if (CompareLine is null) CompareStatus = string.Format(_loc["Ch_CompareNoOverlap"], cmp);
+            else CompareLabel = string.Format(_loc["Ch_CompareLabel"], cmp);
+        }
+        catch (AllSourcesFailedException ex)
+        {
+            AppLog.Warn("charts", $"compare {cmp} failed", ex);
+            CompareStatus = string.Format(_loc["Ch_CompareFailed"], cmp);
+        }
+    }
+
+    /// <summary>B5: comparison closes on shared bar times, scaled so the first shared bar equals the main close.</summary>
+    public static (DateTimeOffset[] Time, double[] Close)? Rebase(BarSeries main, BarSeries other)
+    {
+        var byTime = new Dictionary<DateTimeOffset, double>();
+        foreach (var b in other.Bars) if (b.Close > 0) byTime[b.Time] = b.Close;
+        var times = new List<DateTimeOffset>();
+        var closes = new List<double>();
+        double? scale = null;
+        foreach (var b in main.Bars)
+        {
+            if (b.Close <= 0 || !byTime.TryGetValue(b.Time, out var c)) continue;
+            scale ??= b.Close / c;
+            times.Add(b.Time);
+            closes.Add(c * scale.Value);
+        }
+        return times.Count < 2 ? null : (times.ToArray(), closes.ToArray());
     }
 
     private static KlineIndicatorOptions IndicatorOptions(IndicatorSettings i) => new()

@@ -587,4 +587,16 @@
     <sys:String x:Key="Ch_PKdjM1">KDJ M1</sys:String>
     <sys:String x:Key="Ch_PKdjM2">KDJ M2</sys:String>
     <sys:String x:Key="Ch_PReset">Reset to defaults</sys:String>
+    <sys:String x:Key="Ch_DrawHLine">Horizontal line</sys:String>
+    <sys:String x:Key="Ch_DrawTrend">Trend line</sys:String>
+    <sys:String x:Key="Ch_DrawClear">Clear lines</sys:String>
+    <sys:String x:Key="Ch_DrawHLineHint">Click the price chart to place a horizontal line</sys:String>
+    <sys:String x:Key="Ch_DrawTrendHint1">Click the trend line start on the price chart</sys:String>
+    <sys:String x:Key="Ch_DrawTrendHint2">Now click the trend line end</sys:String>
+    <sys:String x:Key="Ch_Compare">Compare</sys:String>
+    <sys:String x:Key="Ch_ComparePlaceholder">e.g. QQQ</sys:String>
+    <sys:String x:Key="Ch_CompareApply">Overlay</sys:String>
+    <sys:String x:Key="Ch_CompareLabel">{0} (rebased)</sys:String>
+    <sys:String x:Key="Ch_CompareNoOverlap">{0} has no bars in common with this symbol</sys:String>
+    <sys:String x:Key="Ch_CompareFailed">Could not load bars for {0}</sys:String>
 </ResourceDictionary>

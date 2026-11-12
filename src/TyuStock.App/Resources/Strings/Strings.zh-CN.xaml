@@ -587,4 +587,16 @@
     <sys:String x:Key="Ch_PKdjM1">KDJ M1</sys:String>
     <sys:String x:Key="Ch_PKdjM2">KDJ M2</sys:String>
     <sys:String x:Key="Ch_PReset">恢复默认</sys:String>
+    <sys:String x:Key="Ch_DrawHLine">水平线</sys:String>
+    <sys:String x:Key="Ch_DrawTrend">趋势线</sys:String>
+    <sys:String x:Key="Ch_DrawClear">清除画线</sys:String>
+    <sys:String x:Key="Ch_DrawHLineHint">在价格图上点击一处放置水平线</sys:String>
+    <sys:String x:Key="Ch_DrawTrendHint1">在价格图上点击趋势线的起点</sys:String>
+    <sys:String x:Key="Ch_DrawTrendHint2">再点击趋势线的终点</sys:String>
+    <sys:String x:Key="Ch_Compare">对比</sys:String>
+    <sys:String x:Key="Ch_ComparePlaceholder">如 QQQ</sys:String>
+    <sys:String x:Key="Ch_CompareApply">叠加</sys:String>
+    <sys:String x:Key="Ch_CompareLabel">{0}（按起点折算）</sys:String>
+    <sys:String x:Key="Ch_CompareNoOverlap">{0} 与当前标的没有重叠的K线</sys:String>
+    <sys:String x:Key="Ch_CompareFailed">{0} 的K线加载失败</sys:String>
 </ResourceDictionary>

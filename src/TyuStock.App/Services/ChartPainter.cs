@@ -7,6 +7,7 @@ using TyuStock.App.ViewModels;
 using TyuStock.Core.Models;
 using BarSeries = TyuStock.Core.Models.BarSeries;
 using TyuStock.Core.Time;
+using TyuStock.Core.Settings;
 using Color = ScottPlot.Color;
 
 namespace TyuStock.App.Services;
@@ -89,10 +90,36 @@ public sealed class ChartPainter
             AddLine(p, time, snap.Bollinger.Upper, boll.WithAlpha(160), null);
             AddLine(p, time, snap.Bollinger.Lower, boll.WithAlpha(160), null);
         }
+        // B5: rebased comparison symbol and the user's drawings.
+        if (vm.CompareLine is { } cmp)
+        {
+            var line = p.Add.Scatter(cmp.Time.Select(ToX).ToArray(), cmp.Close);
+            line.Color = Color.FromHex("#14B8A6");
+            line.LineWidth = 1.6f;
+            line.MarkerSize = 0;
+            line.LegendText = vm.CompareLabel;
+        }
+        var ink = Color.FromHex("#E879F9");
+        foreach (var d in vm.Drawings)
+        {
+            if (d.Kind == DrawingKind.HorizontalLine)
+            {
+                var h = p.Add.HorizontalLine(d.Price1);
+                h.LineColor = ink;
+                h.LineWidth = 1.2f;
+                h.LabelText = NumberDisplay.Price(d.Price1);
+            }
+            else if (d.Time1 is { } t1 && d.Time2 is { } t2)
+            {
+                var l = p.Add.Line(ToX(t1), d.Price1, ToX(t2), d.Price2);
+                l.LineColor = ink;
+                l.LineWidth = 1.4f;
+            }
+        }
         p.Axes.DateTimeTicksBottom();
         p.Axes.Left.Label.Text = Label(vm, "Ch_Price");
         p.Axes.Bottom.Label.Text = "";
-        p.Legend.IsVisible = vm.ShowMa || vm.ShowEma || vm.ShowBoll;
+        p.Legend.IsVisible = vm.ShowMa || vm.ShowEma || vm.ShowBoll || vm.CompareLine is not null;
         p.Legend.Alignment = Alignment.UpperLeft;
         p.Title(string.Empty);
         plot.Refresh();

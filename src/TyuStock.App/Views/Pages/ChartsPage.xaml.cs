@@ -40,6 +40,7 @@ public partial class ChartsPage : Page
     {
         if (_wired) return;
         _wired = true;
+        PricePlot.PreviewMouseLeftButtonUp += OnPriceClick;
         foreach (var plot in AllPlots())
         {
             plot.MouseMove += OnPlotMouseMove;
@@ -51,6 +52,16 @@ public partial class ChartsPage : Page
                     _painter.SyncX(PricePlot, VolumePlot, MacdPlot, RsiPlot, KdjPlot);
             };
         }
+    }
+
+    // B5: while a drawing tool is active, a click on the price chart places a point (snapped to the nearest bar's time).
+    private void OnPriceClick(object sender, MouseButtonEventArgs e)
+    {
+        if (Vm.DrawMode is null || Vm.Series is not { } series) return;
+        var pos = e.GetPosition(PricePlot);
+        var c = PricePlot.Plot.GetCoordinates((float)pos.X, (float)pos.Y);
+        var i = ChartPainter.IndexFromX(series, c.X);
+        if (i >= 0 && Vm.AddDrawingPoint(series.Bars[i].Time, c.Y)) e.Handled = true;
     }
 
     private IEnumerable<WpfPlot> AllPlots() => [PricePlot, VolumePlot, MacdPlot, RsiPlot, KdjPlot];

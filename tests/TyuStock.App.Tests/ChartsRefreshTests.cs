@@ -85,3 +85,67 @@ public class IndicatorParamsTests
         });
     }
 }
+
+/// <summary>B5: drawings are placed by clicks, saved per symbol, and a comparison symbol is rebased onto the main close.</summary>
+public class DrawingAndCompareTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 11, 2, 21, 0, 0, TimeSpan.Zero);
+
+    [Fact]
+    public void Rebase_starts_the_comparison_at_the_main_close_on_shared_bars()
+    {
+        BarSeries S(string sym, params double[] closes) => new()
+        {
+            Symbol = sym, Interval = BarInterval.Day1, Source = "x",
+            Bars = closes.Select((c, i) => Bar.FromSource(T0.AddDays(i), c, c, c, c, 1)).ToList(),
+        };
+        var main = S("AAPL", 200, 210, 220);
+        var other = S("QQQ", 400, 440, 420) with { Bars = S("QQQ", 400, 440, 420).Bars.Skip(1).ToList() };   // starts one bar later
+        var r = ChartsViewModel.Rebase(main, other)!.Value;
+        Assert.Equal([T0.AddDays(1), T0.AddDays(2)], r.Time);
+        Assert.Equal(210, r.Close[0], 6);
+        Assert.Equal(210 * 420.0 / 440, r.Close[1], 6);
+        Assert.Null(ChartsViewModel.Rebase(main, S("X") with { Bars = [] }));
+    }
+
+    [Fact]
+    public void Clicks_place_lines_that_are_saved_per_symbol()
+    {
+        WpfHost.Run(async () =>
+        {
+            var vm = AppServices.Get<ChartsViewModel>();
+            var store = AppServices.Get<TyuStock.Core.Settings.ChartDrawingStore>();
+            try
+            {
+                vm.SymbolText = "AAPL";
+                await vm.LoadAsync();
+                var bars = vm.Series!.Bars;
+                Assert.False(vm.AddDrawingPoint(bars[0].Time, 100));                 // no tool active: ignored
+                vm.StartDrawingCommand.Execute(TyuStock.Core.Settings.DrawingKind.HorizontalLine);
+                Assert.True(vm.AddDrawingPoint(bars[0].Time, 101.5));
+                vm.StartDrawingCommand.Execute(TyuStock.Core.Settings.DrawingKind.TrendLine);
+                Assert.True(vm.AddDrawingPoint(bars[1].Time, 100));
+                Assert.Single(vm.Drawings);                                          // trend line waits for its second point
+                Assert.True(vm.AddDrawingPoint(bars[5].Time, 110));
+                Assert.Equal(2, vm.Drawings.Count);
+                Assert.Null(vm.DrawMode);
+                var reloaded = new TyuStock.Core.Settings.ChartDrawingStore(System.IO.Path.GetDirectoryName(store.FilePath)!);
+                Assert.Equal(vm.Drawings, reloaded.For("aapl"));
+
+                vm.CompareText = "qqq";
+                await vm.ApplyCompareCommand.ExecuteAsync(null);
+                Assert.Equal("QQQ", vm.CompareText);
+                Assert.NotNull(vm.CompareLine);
+                Assert.Contains("QQQ", vm.CompareLabel);
+            }
+            finally
+            {
+                vm.ClearDrawingsCommand.Execute(null);
+                vm.CompareText = "";
+                await vm.ApplyCompareCommand.ExecuteAsync(null);
+                vm.Deactivate();
+            }
+            Assert.Empty(store.For("AAPL"));
+        });
+    }
+}
