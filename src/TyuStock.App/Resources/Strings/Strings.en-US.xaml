@@ -494,4 +494,5 @@
     <sys:String x:Key="Al_StaleSkipped">Quotes older than {1} minutes were not used for alerts this time: {0}</sys:String>
     <sys:String x:Key="Al_MaxDelay">Ignore quotes older than</sys:String>
     <sys:String x:Key="Al_Minutes">minutes</sys:String>
+    <sys:String x:Key="Ch_OfflineCache">Offline — showing cached data (downloaded {0})</sys:String>
 </ResourceDictionary>

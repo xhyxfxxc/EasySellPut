@@ -118,6 +118,11 @@ public sealed record BarSeries : SourcedData
     public required string Symbol { get; init; }
     public required BarInterval Interval { get; init; }
     public required IReadOnlyList<Bar> Bars { get; init; }
+    /// <summary>
+    /// B2: true when the network fetch failed and these bars come only from the local cache (offline view).
+    /// <see cref="SourcedData.FetchedAt"/> then is when the cached data was downloaded.
+    /// </summary>
+    public bool OfflineCache { get; init; }
 }
 
 public sealed record BarRequest(string Symbol, BarInterval Interval, DateTimeOffset? From = null, DateTimeOffset? To = null);

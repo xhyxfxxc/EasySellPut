@@ -494,4 +494,5 @@
     <sys:String x:Key="Al_StaleSkipped">以下代码的行情延迟超过 {1} 分钟，本次未参与提醒判定：{0}</sys:String>
     <sys:String x:Key="Al_MaxDelay">行情延迟超过</sys:String>
     <sys:String x:Key="Al_Minutes">分钟不触发提醒</sys:String>
+    <sys:String x:Key="Ch_OfflineCache">网络不可用，显示本地缓存（抓取于 {0}）</sys:String>
 </ResourceDictionary>

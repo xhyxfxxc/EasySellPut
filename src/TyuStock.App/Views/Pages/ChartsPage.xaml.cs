@@ -15,6 +15,7 @@ public partial class ChartsPage : Page
     private readonly ChartPainter _painter = new();
     private readonly ThemeService _theme = AppServices.Get<ThemeService>();
     private bool _wired;
+    private bool _userView;   // C2: the user zoomed or panned since the last fit
 
     public ChartsPage()
     {
@@ -42,6 +43,8 @@ public partial class ChartsPage : Page
         foreach (var plot in AllPlots())
         {
             plot.MouseMove += OnPlotMouseMove;
+            plot.PreviewMouseWheel += (_, _) => _userView = true;
+            plot.PreviewMouseDown += (_, _) => _userView = true;
             plot.Plot.RenderManager.RenderFinished += (_, _) =>
             {
                 if (PricePlot.IsVisible)
@@ -92,6 +95,8 @@ public partial class ChartsPage : Page
             return;
         }
 
+        // C2: keep the user's zoom/pan across refreshes; fit the data after a new symbol or range.
+        var keep = vm.PreserveView && _userView ? PricePlot.Plot.Axes.GetLimits() : (AxisLimits?)null;
         var (up, down, text, muted, grid, bg, dataBg) = Colors();
         foreach (var p in AllPlots()) _painter.ApplyTheme(p, _theme.IsDark, up, down, text, muted, grid, bg, dataBg);
 
@@ -112,6 +117,17 @@ public partial class ChartsPage : Page
             if (!p.IsVisible) continue;
             _painter.FinishAxis(p, p == last ? bottomLabel : "", p != last);
         }
+        if (keep is { } limits)
+        {
+            PricePlot.Plot.Axes.SetLimitsX(limits.Left, limits.Right);
+            PricePlot.Plot.Axes.SetLimitsY(limits.Bottom, limits.Top);
+        }
+        else
+        {
+            foreach (var p in AllPlots()) if (p.IsVisible) p.Plot.Axes.AutoScale();
+            _userView = false;
+        }
+        foreach (var p in AllPlots()) if (p.IsVisible) p.Refresh();
         _painter.SyncX(PricePlot, VolumePlot, MacdPlot, RsiPlot, KdjPlot);
     }
 

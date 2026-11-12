@@ -61,6 +61,23 @@ public partial class ChartsViewModel : ObservableObject
 
     public event EventHandler? PlotChanged;
 
+    /// <summary>
+    /// C2: false right after a symbol/range load (the view should fit the new data); true for timer refreshes and
+    /// indicator toggles, where the user's zoom/pan must be kept.
+    /// </summary>
+    public bool PreserveView { get; private set; } = true;
+
+    /// <summary>C2: count of refreshes that brought nothing new and were not re-rendered (diagnostics/tests).</summary>
+    public int UnchangedRefreshes { get; private set; }
+
+    /// <summary>Same bars as already shown (count, first and last bar, source): a refresh with nothing new.</summary>
+    internal static bool SameData(BarSeries a, BarSeries b) =>
+        a.Bars.Count == b.Bars.Count && a.Bars.Count > 0
+        && string.Equals(a.Source, b.Source, StringComparison.OrdinalIgnoreCase)
+        && a.OfflineCache == b.OfflineCache
+        && a.Bars[0].Time == b.Bars[0].Time
+        && a.Bars[^1] == b.Bars[^1];
+
     public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
     {
         _watchlist = watchlist; _data = data; _loc = loc; _context = context;
@@ -196,10 +213,18 @@ public partial class ChartsViewModel : ObservableObject
         IsBusy = true;
         if (!refreshOnly || Series is null) StatusText = _loc["Ch_Loading"];
         _cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        var unchanged = false;
         try
         {
             var request = BuildRequest(symbol, Range);
+            // C2: the cache layer turns a refresh into a short tail download; nothing new → no recompute, no redraw.
             var series = await _data.GetBarsAsync(request, _cts.Token);
+            if (refreshOnly && Series is { } shown && SameData(shown, series))
+            {
+                unchanged = true;
+                UnchangedRefreshes++;
+                return;
+            }
             var bars = series.Bars.Select(b => new OhlcvBar(b.Time, b.Open, b.High, b.Low, b.Close, b.Volume)).ToArray();
             Series = series;
             Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars, null, series.Bars.Select(b => b.Incomplete || !b.IsConsistent()).ToArray());
@@ -217,7 +242,12 @@ public partial class ChartsViewModel : ObservableObject
             ArmTimer();
             if (_active) _timer.Start();
             UpdateStatus();
-            PlotChanged?.Invoke(this, EventArgs.Empty);
+            if (!unchanged)
+            {
+                PreserveView = refreshOnly;
+                PlotChanged?.Invoke(this, EventArgs.Empty);
+                PreserveView = true;
+            }
         }
     }
 
@@ -278,6 +308,8 @@ public partial class ChartsViewModel : ObservableObject
         {
             var src = SourceNames.Display(s.Source, _loc);
             StatusText = string.Format(_loc["Ch_Source"], src, s.Bars.Count);
+            if (s.OfflineCache)
+                StatusText = string.Format(_loc["Ch_OfflineCache"], s.FetchedAt?.ToLocalTime().ToString("MM-dd HH:mm", CultureInfo.InvariantCulture) ?? "?") + "  ·  " + StatusText;
             var bad = s.Bars.Count(b => b.Incomplete || !b.IsConsistent());
             if (bad > 0) StatusText += "  ·  " + string.Format(_loc["Ch_IncompleteCount"], bad);
         }

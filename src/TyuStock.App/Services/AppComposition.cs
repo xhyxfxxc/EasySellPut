@@ -24,7 +24,10 @@ public static class AppComposition
         s.AddSingleton<ShellViewModel>();
         s.AddSingleton(sp => new DataServices(sp.GetRequiredService<SettingsStore>().Current.Network));
         s.AddSingleton(sp => sp.GetRequiredService<DataServices>().Router);
-        s.AddSingleton<IMarketDataService>(sp => sp.GetRequiredService<DataServices>().Router);
+        // B2: K-line history is cached in SQLite in the data folder; everything else goes straight to the router.
+        s.AddSingleton(sp => new TyuStock.Data.Cache.MarketDb(System.IO.Path.Combine(dataDir.Path, "cache", "market.db")));
+        s.AddSingleton<IMarketDataService>(sp => new TyuStock.Data.Cache.CachedMarketData(
+            sp.GetRequiredService<DataServices>().Router, sp.GetRequiredService<TyuStock.Data.Cache.MarketDb>()));
         s.AddSingleton(sp => new TyuStock.Core.Quotes.QuoteHub(sp.GetRequiredService<IMarketDataService>()));
         s.AddSingleton<QuotePump>();
         s.AddSingleton<NetworkController>();

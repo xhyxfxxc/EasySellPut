@@ -4,6 +4,9 @@
     <RootNamespace>TyuStock.Data</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TyuStock.Core\TyuStock.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
