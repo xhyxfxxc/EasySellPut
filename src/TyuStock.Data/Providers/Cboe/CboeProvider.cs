@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using TyuStock.Core.Abstractions;
 using TyuStock.Core.Models;
+using TyuStock.Core.Time;
 using TyuStock.Data.Http;
 using TyuStock.Data.Json;
 
@@ -126,7 +127,7 @@ public sealed class CboeProvider(HttpGateway http, ResponseCache cache) : Provid
     private Task<OptionChain> GetFullChainAsync(string symbol, CancellationToken ct)
     {
         var sym = ToCboe(symbol);
-        return Cache.GetOrAddAsync($"cboe:opt:{sym}", TimeSpan.FromSeconds(60), async c =>
+        return Cache.GetOrAddAsync($"cboe:opt:{sym}", RefreshCadence.OptionChainCache, async c =>
         {
             var payload = await GetAsync($"{Base}/options/{Enc(sym)}.json", c, timeout: TimeSpan.FromSeconds(45)).ConfigureAwait(false);
             // Large (AAPL ~1.5 MB, SPX ~14 MB): parse off the UI thread.

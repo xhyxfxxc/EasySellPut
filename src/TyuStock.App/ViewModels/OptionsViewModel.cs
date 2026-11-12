@@ -28,7 +28,7 @@ public partial class OptionsViewModel : ObservableObject
     private readonly SymbolContext _context;
     private readonly TyuStock.Core.Pricing.RiskFreeRateProvider _rates;
     private TyuStock.Core.Pricing.RiskFreeRate _rate;
-    private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(45) };
+    private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = RefreshCadence.OptionChain }; // C3
     private CancellationTokenSource? _cts;
     private bool _active;
     private string? _lastError;

@@ -155,3 +155,42 @@ public class NasdaqTests
         Assert.All(news, x => Assert.StartsWith("https://www.nasdaq.com/", x.Url));
     }
 }
+/// <summary>C3: chain refresh cadence and the .NET parse cost of an AAPL-sized CBOE chain.</summary>
+public class CboeChainCostTests(Xunit.Abstractions.ITestOutputHelper output)
+{
+    [Fact]
+    public void Cache_expires_just_before_each_refresh_tick()
+    {
+        Assert.InRange(RefreshCadence.OptionChain.TotalSeconds, 60, 120);
+        Assert.True(RefreshCadence.OptionChainCache < RefreshCadence.OptionChain);
+        Assert.True(RefreshCadence.OptionChainCache > RefreshCadence.OptionChain / 2);
+    }
+
+    [Fact]
+    public void Parses_an_aapl_sized_chain_quickly()
+    {
+        // 3,492 contracts ≈ 1.5 MB, the size measured for AAPL on 2026-11-12.
+        var sb = new System.Text.StringBuilder("{\"timestamp\":\"2026-11-12 20:00:00\",\"data\":{\"current_price\":230.5,\"options\":[");
+        var n = 0;
+        for (var e = 0; e < 18 && n < 3492; e++)
+            for (var k = 0; k < 97 && n < 3492; k++)
+                foreach (var r in "CP")
+                {
+                    if (n > 0) sb.Append(',');
+                    var exp = new DateOnly(2026, 11, 20).AddDays(7 * e);
+                    var strike = 150 + k * 2.5;
+                    sb.Append($"{{\"option\":\"AAPL{exp:yyMMdd}{r}{(int)(strike * 1000):00000000}\",\"bid\":1.25,\"bid_size\":10,\"ask\":1.35,\"ask_size\":12,\"iv\":0.2834,\"open_interest\":1520,\"volume\":340,\"delta\":0.4512,\"gamma\":0.0213,\"vega\":0.1834,\"theta\":-0.0712,\"rho\":0.0341,\"theo\":1.3,\"change\":0.05,\"percent_change\":3.85,\"last_trade_price\":1.31,\"last_trade_time\":\"2026-11-12T15:59:58\",\"tick\":\"up\",\"prev_day_close\":1.26,\"high\":1.4,\"low\":1.1,\"open\":1.2}}");
+                    n++;
+                }
+        sb.Append("]}}");
+        var json = sb.ToString();
+        CboeProvider.ParseOptions(System.Text.Json.JsonDocument.Parse(json).RootElement, "AAPL", new DateOnly(2026, 11, 12)); // warm-up (JIT)
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var chain = CboeProvider.ParseOptions(doc.RootElement, "AAPL", new DateOnly(2026, 11, 12));
+        var ms = sw.Elapsed.TotalMilliseconds;
+        output.WriteLine($"C3 baseline: {json.Length:N0} chars, {chain.Contracts.Count} contracts, parse {ms:0} ms");
+        Assert.Equal(3492, chain.Contracts.Count);
+        Assert.True(ms < 1500, $"parse took {ms:0} ms");
+    }
+}
