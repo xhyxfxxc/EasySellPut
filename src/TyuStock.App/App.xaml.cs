@@ -68,6 +68,7 @@ public partial class App : Application
     {
         try { AppServices.Get<NotificationService>().Dispose(); } catch (Exception ex) { AppLog.Warn("app", "notification shutdown failed", ex); }
         try { AppServices.Get<AlertMonitor>().Dispose(); } catch (Exception ex) { AppLog.Warn("app", "alert monitor shutdown failed", ex); }
+        try { AppServices.Get<IvAlertSampler>().Dispose(); AppServices.Get<AlertStore>().Flush(); } catch (Exception ex) { AppLog.Warn("app", "alert state flush failed", ex); }
         AppLog.Info("app", $"exit code {e.ApplicationExitCode}");
         (AppServices.Provider as IDisposable)?.Dispose();
         base.OnExit(e);

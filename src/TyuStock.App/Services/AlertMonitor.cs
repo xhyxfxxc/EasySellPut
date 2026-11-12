@@ -57,6 +57,7 @@ public sealed class AlertMonitor : IDisposable
         _store.Changed -= OnStoreChanged;
         _hub.Updated -= OnBatch;
         _hub.Unsubscribe(Owner);
+        _store.Flush(); // C4: persist in-memory LastSeen* state
     }
 
     public void Dispose() => Stop();

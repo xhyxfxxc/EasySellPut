@@ -24,6 +24,23 @@ public sealed class AlertStore
 
     public event EventHandler? Changed;
 
+    /// <summary>
+    /// C4: evaluator bookkeeping (LastSeen*, HasSeenQuote) changes on every quote batch. Writing alerts.json each time
+    /// wore the disk for nothing, so those updates stay in memory and are flushed at most every <see cref="FlushInterval"/>
+    /// (and on shutdown). Fires, rule edits and history changes are still written immediately.
+    /// </summary>
+    public static readonly TimeSpan FlushInterval = TimeSpan.FromMinutes(2);
+
+    public Func<DateTimeOffset> Clock { get; set; } = () => DateTimeOffset.UtcNow;
+
+    /// <summary>True when in-memory bookkeeping has not been written yet.</summary>
+    public bool IsDirty { get { lock (_gate) return _dirtySince is not null; } }
+
+    /// <summary>Number of times alerts.json was written (diagnostics / tests).</summary>
+    public int WriteCount { get; private set; }
+
+    private DateTimeOffset? _dirtySince;
+
     public AlertStore(string dataDirectory)
     {
         Directory.CreateDirectory(dataDirectory);
@@ -62,8 +79,48 @@ public sealed class AlertStore
             var tmp = FilePath + ".tmp";
             File.WriteAllText(tmp, JsonSerializer.Serialize(Current, Json));
             File.Move(tmp, FilePath, overwrite: true);
+            _dirtySince = null;
+            WriteCount++;
         }
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>C4: write pending bookkeeping now (shutdown, monitor stop). No-op when clean.</summary>
+    public void Flush()
+    {
+        lock (_gate)
+        {
+            if (_dirtySince is null) return;
+            WriteQuietly();
+        }
+    }
+
+    /// <summary>C4: write pending bookkeeping once it has waited <see cref="FlushInterval"/>.</summary>
+    public bool FlushIfDue()
+    {
+        lock (_gate)
+        {
+            if (_dirtySince is not { } since || Clock() - since < FlushInterval) return false;
+            WriteQuietly();
+            return true;
+        }
+    }
+
+    // Bookkeeping-only write: no Changed event (nothing a listener needs to re-read), errors logged not thrown.
+    private void WriteQuietly()
+    {
+        try
+        {
+            var tmp = FilePath + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(Current, Json));
+            File.Move(tmp, FilePath, overwrite: true);
+            _dirtySince = null;
+            WriteCount++;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.AppLog.Warn("alerts", "could not flush alert state, will retry", ex);
+        }
     }
 
     public IReadOnlyList<PriceAlert> Alerts
@@ -158,24 +215,26 @@ public sealed class AlertStore
     public void ApplyResults(IReadOnlyList<(PriceAlert Next, AlertHistoryEntry? History)> results)
     {
         if (results.Count == 0) return;
-        var changed = false;
+        var important = false;
+        var touched = false;
         lock (_gate)
         {
             foreach (var (next, history) in results)
             {
                 var i = Current.Alerts.FindIndex(a => a.Id == next.Id);
                 if (i < 0) continue;
+                var before = Current.Alerts[i];
+                if (history is not null || before.Enabled != next.Enabled || before.LastFiredAt != next.LastFiredAt)
+                    important = true;
                 Current.Alerts[i] = NormalizeAlert(next.Clone());
-                if (history is not null)
-                {
-                    Current.History.Insert(0, history);
-                    changed = true;
-                }
-                changed = true;
+                if (history is not null) Current.History.Insert(0, history);
+                touched = true;
             }
-            if (changed) TrimHistory(Current);
+            if (important) TrimHistory(Current);
+            else if (touched) _dirtySince ??= Clock();
         }
-        if (changed) Save();
+        if (important) Save();
+        else if (touched) FlushIfDue();
     }
 
     public void ClearHistory()

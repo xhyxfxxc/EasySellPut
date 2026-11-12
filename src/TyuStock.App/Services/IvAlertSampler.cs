@@ -57,6 +57,7 @@ public sealed class IvAlertSampler : IDisposable
         _cts.Cancel();
         _cts.Dispose();
         _cts = null;
+        _store.Flush(); // C4
     }
 
     public void Dispose() => Stop();
