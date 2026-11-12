@@ -194,13 +194,7 @@
     <sys:String x:Key="Ch_1d">日</sys:String>
     <sys:String x:Key="Ch_1w">周</sys:String>
     <sys:String x:Key="Ch_1mo">月</sys:String>
-    <sys:String x:Key="Ch_MA">MA(20)</sys:String>
-    <sys:String x:Key="Ch_EMA">EMA(20)</sys:String>
-    <sys:String x:Key="Ch_BOLL">BOLL(20)</sys:String>
     <sys:String x:Key="Ch_Volume">成交量</sys:String>
-    <sys:String x:Key="Ch_MACD">MACD</sys:String>
-    <sys:String x:Key="Ch_RSI">RSI(14)</sys:String>
-    <sys:String x:Key="Ch_KDJ">KDJ</sys:String>
     <sys:String x:Key="Ch_Loading">正在加载 K 线…</sys:String>
     <sys:String x:Key="Ch_Empty">没有可显示的 K 线。请换一个代码或周期试试。</sys:String>
     <sys:String x:Key="Ch_AllFailed">所有数据源均不可用，请检查网络或代理后重试。</sys:String>
@@ -580,4 +574,17 @@
     <sys:String x:Key="Op_DistanceTip">行权价相对标的价的距离（正数为高于标的价）</sys:String>
     <sys:String x:Key="Op_Compact">精简列</sys:String>
     <sys:String x:Key="Op_CompactTip">小屏或高缩放时使用：列宽收窄，并隐藏成交量、Gamma、Theta、Vega（可单独再勾选）</sys:String>
+    <sys:String x:Key="Ch_Params">指标参数</sys:String>
+    <sys:String x:Key="Ch_PMa">MA 周期</sys:String>
+    <sys:String x:Key="Ch_PEma">EMA 周期</sys:String>
+    <sys:String x:Key="Ch_PBoll">BOLL 周期</sys:String>
+    <sys:String x:Key="Ch_PBollWidth">BOLL 带宽（倍标准差）</sys:String>
+    <sys:String x:Key="Ch_PMacdFast">MACD 快线</sys:String>
+    <sys:String x:Key="Ch_PMacdSlow">MACD 慢线</sys:String>
+    <sys:String x:Key="Ch_PMacdSignal">MACD 信号线</sys:String>
+    <sys:String x:Key="Ch_PRsi">RSI 周期</sys:String>
+    <sys:String x:Key="Ch_PKdj">KDJ 周期</sys:String>
+    <sys:String x:Key="Ch_PKdjM1">KDJ M1</sys:String>
+    <sys:String x:Key="Ch_PKdjM2">KDJ M2</sys:String>
+    <sys:String x:Key="Ch_PReset">恢复默认</sys:String>
 </ResourceDictionary>

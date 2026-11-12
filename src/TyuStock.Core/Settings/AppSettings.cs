@@ -128,6 +128,39 @@ public sealed class ChartSettings
 {
     /// <summary>F7: request dividend-adjusted (adjclose, total-return) daily+ bars instead of split-only.</summary>
     public bool DividendAdjusted { get; set; }
+
+    /// <summary>G3: indicator parameters, edited on the K-line page.</summary>
+    public IndicatorSettings Indicators { get; set; } = new();
+}
+
+/// <summary>G3: MA/EMA/BOLL/MACD/RSI/KDJ parameters (defaults are the common 20/20/20·2/12·26·9/14/9·3·3).</summary>
+public sealed record IndicatorSettings
+{
+    public int MaPeriod { get; init; } = 20;
+    public int EmaPeriod { get; init; } = 20;
+    public int BollPeriod { get; init; } = 20;
+    public double BollWidth { get; init; } = 2.0;
+    public int MacdFast { get; init; } = 12;
+    public int MacdSlow { get; init; } = 26;
+    public int MacdSignal { get; init; } = 9;
+    public int RsiPeriod { get; init; } = 14;
+    public int KdjPeriod { get; init; } = 9;
+    public int KdjM1 { get; init; } = 3;
+    public int KdjM2 { get; init; } = 3;
+
+    /// <summary>Clamps typed values into usable ranges (periods 1–250, band width 0.5–5, MACD fast below slow).</summary>
+    public IndicatorSettings Normalized()
+    {
+        static int P(int v) => Math.Clamp(v, 1, 250);
+        var fast = P(MacdFast);
+        var slow = Math.Max(P(MacdSlow), fast + 1);
+        return this with
+        {
+            MaPeriod = P(MaPeriod), EmaPeriod = P(EmaPeriod), BollPeriod = Math.Max(2, P(BollPeriod)),
+            BollWidth = Math.Clamp(Math.Round(BollWidth, 2), 0.5, 5), MacdFast = fast, MacdSlow = Math.Min(slow, 251), MacdSignal = P(MacdSignal),
+            RsiPeriod = P(RsiPeriod), KdjPeriod = P(KdjPeriod), KdjM1 = P(KdjM1), KdjM2 = P(KdjM2),
+        };
+    }
 }
 
 /// <summary>Options page preferences.</summary>

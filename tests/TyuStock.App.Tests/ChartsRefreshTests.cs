@@ -52,3 +52,36 @@ public class ChartsRefreshTests
         });
     }
 }
+
+/// <summary>G3: editing an indicator parameter recomputes in place, relabels, and is saved.</summary>
+public class IndicatorParamsTests
+{
+    [Fact]
+    public void Editing_a_period_recomputes_relabels_and_persists()
+    {
+        WpfHost.Run(async () =>
+        {
+            var vm = AppServices.Get<ChartsViewModel>();
+            var store = AppServices.Get<TyuStock.Core.Settings.SettingsStore>();
+            try
+            {
+                vm.SymbolText = "AAPL";
+                await vm.LoadAsync();
+                var requests = WpfHost.Data.BarRequests.Count;
+                vm.MaPeriod = 5;
+                vm.MacdFast = 40;   // above slow: normalised so fast < slow
+                Assert.Equal(5, vm.Snapshot!.Options.SmaPeriod);
+                Assert.Equal("MA(5)", vm.MaLabel);
+                Assert.True(vm.MacdSlow > vm.MacdFast);
+                Assert.Equal(5, store.Current.Charts.Indicators.MaPeriod);
+                Assert.Equal(requests, WpfHost.Data.BarRequests.Count);   // no reload
+            }
+            finally
+            {
+                vm.ResetIndicatorsCommand.Execute(null);
+                vm.Deactivate();
+            }
+            Assert.Equal(new TyuStock.Core.Settings.IndicatorSettings(), store.Current.Charts.Indicators);
+        });
+    }
+}

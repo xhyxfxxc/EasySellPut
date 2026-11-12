@@ -194,13 +194,7 @@
     <sys:String x:Key="Ch_1d">Daily</sys:String>
     <sys:String x:Key="Ch_1w">Weekly</sys:String>
     <sys:String x:Key="Ch_1mo">Monthly</sys:String>
-    <sys:String x:Key="Ch_MA">MA(20)</sys:String>
-    <sys:String x:Key="Ch_EMA">EMA(20)</sys:String>
-    <sys:String x:Key="Ch_BOLL">BOLL(20)</sys:String>
     <sys:String x:Key="Ch_Volume">Volume</sys:String>
-    <sys:String x:Key="Ch_MACD">MACD</sys:String>
-    <sys:String x:Key="Ch_RSI">RSI(14)</sys:String>
-    <sys:String x:Key="Ch_KDJ">KDJ</sys:String>
     <sys:String x:Key="Ch_Loading">Loading bars…</sys:String>
     <sys:String x:Key="Ch_Empty">No bars to display. Try another symbol or interval.</sys:String>
     <sys:String x:Key="Ch_AllFailed">Every data source is unavailable. Check your network or proxy and retry.</sys:String>
@@ -580,4 +574,17 @@
     <sys:String x:Key="Op_DistanceTip">Strike relative to the underlying price (positive = above)</sys:String>
     <sys:String x:Key="Op_Compact">Compact</sys:String>
     <sys:String x:Key="Op_CompactTip">For small or scaled screens: narrower columns, with volume, gamma, theta and vega hidden (each can be turned back on)</sys:String>
+    <sys:String x:Key="Ch_Params">Indicator settings</sys:String>
+    <sys:String x:Key="Ch_PMa">MA period</sys:String>
+    <sys:String x:Key="Ch_PEma">EMA period</sys:String>
+    <sys:String x:Key="Ch_PBoll">BOLL period</sys:String>
+    <sys:String x:Key="Ch_PBollWidth">BOLL width (std devs)</sys:String>
+    <sys:String x:Key="Ch_PMacdFast">MACD fast</sys:String>
+    <sys:String x:Key="Ch_PMacdSlow">MACD slow</sys:String>
+    <sys:String x:Key="Ch_PMacdSignal">MACD signal</sys:String>
+    <sys:String x:Key="Ch_PRsi">RSI period</sys:String>
+    <sys:String x:Key="Ch_PKdj">KDJ period</sys:String>
+    <sys:String x:Key="Ch_PKdjM1">KDJ M1</sys:String>
+    <sys:String x:Key="Ch_PKdjM2">KDJ M2</sys:String>
+    <sys:String x:Key="Ch_PReset">Reset to defaults</sys:String>
 </ResourceDictionary>

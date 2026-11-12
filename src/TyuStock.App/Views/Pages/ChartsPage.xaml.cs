@@ -94,9 +94,9 @@ public partial class ChartsPage : Page
 
         _painter.DrawPrice(PricePlot, vm.Series, vm.Snapshot, vm, up, down, text);
         if (showVol) _painter.DrawVolume(VolumePlot, vm.Series, up, down);
-        if (showMacd) _painter.DrawMacd(MacdPlot, vm.Snapshot, up, down, text, Find("Ch_MACD"));
-        if (showRsi) _painter.DrawRsi(RsiPlot, vm.Snapshot, muted, Find("Ch_RSI"));
-        if (showKdj) _painter.DrawKdj(KdjPlot, vm.Snapshot, Find("Ch_KDJ"));
+        if (showMacd) _painter.DrawMacd(MacdPlot, vm.Snapshot, up, down, text, vm.MacdLabel);
+        if (showRsi) _painter.DrawRsi(RsiPlot, vm.Snapshot, muted, vm.RsiLabel);
+        if (showKdj) _painter.DrawKdj(KdjPlot, vm.Snapshot, vm.KdjLabel);
 
         var bottomLabel = Find("Ch_TimeAxis");
         WpfPlot last = PricePlot;

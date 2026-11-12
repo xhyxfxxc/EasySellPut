@@ -146,3 +146,30 @@ public class DataDirectoryResolverTests : IDisposable
         finally { try { Directory.Delete(lad, true); } catch { } }
     }
 }
+
+/// <summary>G3: typed indicator parameters are clamped into usable ranges and survive a save/load.</summary>
+public class IndicatorSettingsTests
+{
+    [Fact]
+    public void Normalized_clamps_and_keeps_macd_fast_below_slow()
+    {
+        var n = new TyuStock.Core.Settings.IndicatorSettings { MaPeriod = 0, BollPeriod = 1, BollWidth = 9, MacdFast = 30, MacdSlow = 26, RsiPeriod = 999 }.Normalized();
+        Assert.Equal(1, n.MaPeriod);
+        Assert.Equal(2, n.BollPeriod);
+        Assert.Equal(5, n.BollWidth);
+        Assert.Equal(30, n.MacdFast);
+        Assert.Equal(31, n.MacdSlow);
+        Assert.Equal(250, n.RsiPeriod);
+        Assert.Equal(new TyuStock.Core.Settings.IndicatorSettings(), new TyuStock.Core.Settings.IndicatorSettings().Normalized());
+    }
+
+    [Fact]
+    public void Round_trips_through_json()
+    {
+        var s = new TyuStock.Core.Settings.AppSettings();
+        s.Charts.Indicators = new TyuStock.Core.Settings.IndicatorSettings { MaPeriod = 60, KdjM2 = 5 };
+        var json = System.Text.Json.JsonSerializer.Serialize(s);
+        var back = System.Text.Json.JsonSerializer.Deserialize<TyuStock.Core.Settings.AppSettings>(json)!;
+        Assert.Equal(s.Charts.Indicators, back.Charts.Indicators);
+    }
+}

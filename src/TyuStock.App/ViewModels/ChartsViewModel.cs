@@ -61,6 +61,29 @@ public partial class ChartsViewModel : ObservableObject
     [ObservableProperty] public partial string Headline { get; set; } = "";
     [ObservableProperty] public partial BarSeries? Series { get; set; }
     [ObservableProperty] public partial KlineSnapshot? Snapshot { get; set; }
+
+    // G3: indicator parameters (doubles because the number boxes edit doubles; normalised on change).
+    [ObservableProperty] public partial double MaPeriod { get; set; }
+    [ObservableProperty] public partial double EmaPeriod { get; set; }
+    [ObservableProperty] public partial double BollPeriod { get; set; }
+    [ObservableProperty] public partial double BollWidth { get; set; }
+    [ObservableProperty] public partial double MacdFast { get; set; }
+    [ObservableProperty] public partial double MacdSlow { get; set; }
+    [ObservableProperty] public partial double MacdSignal { get; set; }
+    [ObservableProperty] public partial double RsiPeriod { get; set; }
+    [ObservableProperty] public partial double KdjPeriod { get; set; }
+    [ObservableProperty] public partial double KdjM1 { get; set; }
+    [ObservableProperty] public partial double KdjM2 { get; set; }
+    [ObservableProperty] public partial string MaLabel { get; set; } = "";
+    [ObservableProperty] public partial string EmaLabel { get; set; } = "";
+    [ObservableProperty] public partial string BollLabel { get; set; } = "";
+    [ObservableProperty] public partial string MacdLabel { get; set; } = "";
+    [ObservableProperty] public partial string RsiLabel { get; set; } = "";
+    [ObservableProperty] public partial string KdjLabel { get; set; } = "";
+    private IndicatorSettings _ind = new();
+    private bool _loadingInd;
+    private OhlcvBar[] _bars = [];
+    private bool[] _incomplete = [];
     /// <summary>F7: request dividend-adjusted (adjclose) bars; persisted.</summary>
     [ObservableProperty] public partial bool DividendAdjusted { get; set; }
     /// <summary>F7: basis of the bars on screen, e.g. "拆股调整 · 不含分红".</summary>
@@ -90,6 +113,7 @@ public partial class ChartsViewModel : ObservableObject
     public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context, SettingsStore settings)
     {
         _watchlist = watchlist; _data = data; _loc = loc; _context = context; _settings = settings;
+        ApplyIndicators(settings.Current.Charts.Indicators.Normalized());
         DividendAdjusted = settings.Current.Charts.DividendAdjusted;
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
         _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
@@ -240,7 +264,9 @@ public partial class ChartsViewModel : ObservableObject
             var bars = series.Bars.Select(b => new OhlcvBar(b.Time, b.Open, b.High, b.Low, b.Close, b.Volume)).ToArray();
             Series = series;
             DescribeAdjustment(request, series);
-            Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars, null, series.Bars.Select(b => b.Incomplete || !b.IsConsistent()).ToArray());
+            _bars = bars;
+            _incomplete = series.Bars.Select(b => b.Incomplete || !b.IsConsistent()).ToArray();
+            Snapshot = bars.Length == 0 ? null : KlineSnapshot.Compute(bars, IndicatorOptions(_ind), _incomplete);
             CrosshairText = "";
             Headline = string.IsNullOrWhiteSpace(symbol) ? "" : symbol;
             _lastError = series.Bars.Count == 0 ? _loc["Ch_Empty"] : null;
@@ -271,6 +297,61 @@ public partial class ChartsViewModel : ObservableObject
         if (_settings.Current.Charts.DividendAdjusted != value) _settings.Update(s => s.Charts.DividendAdjusted = value);
         if (Series is not null) _ = LoadAsync();
     }
+
+    private static KlineIndicatorOptions IndicatorOptions(IndicatorSettings i) => new()
+    {
+        SmaPeriod = i.MaPeriod, EmaPeriod = i.EmaPeriod, BollingerPeriod = i.BollPeriod, BollingerMultiplier = i.BollWidth,
+        MacdFast = i.MacdFast, MacdSlow = i.MacdSlow, MacdSignal = i.MacdSignal, RsiPeriod = i.RsiPeriod,
+        KdjPeriod = i.KdjPeriod, KdjM1 = i.KdjM1, KdjM2 = i.KdjM2,
+    };
+
+    /// <summary>G3: shows <paramref name="i"/> in the number boxes and labels, recomputes the indicators, and saves it.</summary>
+    private void ApplyIndicators(IndicatorSettings i)
+    {
+        _ind = i;
+        _loadingInd = true;
+        (MaPeriod, EmaPeriod, BollPeriod, BollWidth) = (i.MaPeriod, i.EmaPeriod, i.BollPeriod, i.BollWidth);
+        (MacdFast, MacdSlow, MacdSignal, RsiPeriod) = (i.MacdFast, i.MacdSlow, i.MacdSignal, i.RsiPeriod);
+        (KdjPeriod, KdjM1, KdjM2) = (i.KdjPeriod, i.KdjM1, i.KdjM2);
+        _loadingInd = false;
+        var inv = CultureInfo.InvariantCulture;
+        MaLabel = $"MA({i.MaPeriod})";
+        EmaLabel = $"EMA({i.EmaPeriod})";
+        BollLabel = string.Create(inv, $"BOLL({i.BollPeriod},{i.BollWidth:0.##})");
+        MacdLabel = $"MACD({i.MacdFast},{i.MacdSlow},{i.MacdSignal})";
+        RsiLabel = $"RSI({i.RsiPeriod})";
+        KdjLabel = $"KDJ({i.KdjPeriod},{i.KdjM1},{i.KdjM2})";
+        if (_settings.Current.Charts.Indicators != i) _settings.Update(s => s.Charts.Indicators = i);
+        if (_bars.Length > 0) Snapshot = KlineSnapshot.Compute(_bars, IndicatorOptions(i), _incomplete);
+        PlotChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnIndicatorEdited()
+    {
+        if (_loadingInd) return;
+        static int R(double v) => (int)Math.Round(v);
+        ApplyIndicators(new IndicatorSettings
+        {
+            MaPeriod = R(MaPeriod), EmaPeriod = R(EmaPeriod), BollPeriod = R(BollPeriod), BollWidth = BollWidth,
+            MacdFast = R(MacdFast), MacdSlow = R(MacdSlow), MacdSignal = R(MacdSignal), RsiPeriod = R(RsiPeriod),
+            KdjPeriod = R(KdjPeriod), KdjM1 = R(KdjM1), KdjM2 = R(KdjM2),
+        }.Normalized());
+    }
+
+    partial void OnMaPeriodChanged(double value) => OnIndicatorEdited();
+    partial void OnEmaPeriodChanged(double value) => OnIndicatorEdited();
+    partial void OnBollPeriodChanged(double value) => OnIndicatorEdited();
+    partial void OnBollWidthChanged(double value) => OnIndicatorEdited();
+    partial void OnMacdFastChanged(double value) => OnIndicatorEdited();
+    partial void OnMacdSlowChanged(double value) => OnIndicatorEdited();
+    partial void OnMacdSignalChanged(double value) => OnIndicatorEdited();
+    partial void OnRsiPeriodChanged(double value) => OnIndicatorEdited();
+    partial void OnKdjPeriodChanged(double value) => OnIndicatorEdited();
+    partial void OnKdjM1Changed(double value) => OnIndicatorEdited();
+    partial void OnKdjM2Changed(double value) => OnIndicatorEdited();
+
+    [RelayCommand]
+    private void ResetIndicators() => ApplyIndicators(new IndicatorSettings());
 
     /// <summary>F7: label the basis and warn about mismatches (asked vs. delivered, or a source switch).</summary>
     private void DescribeAdjustment(BarRequest request, BarSeries series)

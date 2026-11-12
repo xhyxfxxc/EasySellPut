@@ -80,12 +80,12 @@ public sealed class ChartPainter
             }
         }
         var time = snap.Columns.Time;
-        if (vm.ShowMa) AddLine(p, time, snap.Sma, Color.FromHex("#3B82F6"), Label(vm, "Ch_MA"));
-        if (vm.ShowEma) AddLine(p, time, snap.Ema, Color.FromHex("#F59E0B"), Label(vm, "Ch_EMA"));
+        if (vm.ShowMa) AddLine(p, time, snap.Sma, Color.FromHex("#3B82F6"), vm.MaLabel);
+        if (vm.ShowEma) AddLine(p, time, snap.Ema, Color.FromHex("#F59E0B"), vm.EmaLabel);
         if (vm.ShowBoll)
         {
             var boll = Color.FromHex("#A78BFA");
-            AddLine(p, time, snap.Bollinger.Middle, boll, Label(vm, "Ch_BOLL"));
+            AddLine(p, time, snap.Bollinger.Middle, boll, vm.BollLabel);
             AddLine(p, time, snap.Bollinger.Upper, boll.WithAlpha(160), null);
             AddLine(p, time, snap.Bollinger.Lower, boll.WithAlpha(160), null);
         }
