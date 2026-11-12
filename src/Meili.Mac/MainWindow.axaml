@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Meili.Mac.Views.Controls"
         xmlns:vm="using:Meili.Shared.ViewModels"
         x:Class="Meili.Mac.MainWindow"
         x:DataType="vm:ShellViewModel"
@@ -50,8 +51,7 @@
                     AutomationProperties.AutomationId="KeyboardWizard">
                 <StackPanel>
                     <TextBlock Classes="Caption" Text="{DynamicResource Kb_WizardTitle}" Margin="0,0,0,6" />
-                    <AutoCompleteBox x:Name="WizardBox" MinWidth="350" FilterMode="StartsWith"
-                                     AutomationProperties.AutomationId="KeyboardWizardSymbol" />
+                    <controls:SymbolBox x:Name="WizardBox" MinWidth="350" AutomationProperties.AutomationId="KeyboardWizardSymbol" />
                 </StackPanel>
             </Border>
         </Panel>

@@ -41,17 +41,22 @@ public partial class MainWindow : Window
         foreach (var (page, i) in PageOrder.Select((p, i) => (p, i)))
             Nav.Items.Add(NavItem(page, Glyphs[i]));
         RestorePlacement();
-        AppServices.Get<NavigationHub>().Requested += (_, e) => Dispatcher.UIThread.Post(() => OnNavigateRequested(e));
+        var hub = AppServices.Get<NavigationHub>();
+        EventHandler<NavigationRequest> onRequest = (_, e) => Dispatcher.UIThread.Post(() => { if (!_closed) OnNavigateRequested(e); });
+        hub.Requested += onRequest;
         _notify.Banner += ShowBanner;
+        Closed += (_, _) => { _closed = true; hub.Requested -= onRequest; _notify.Banner -= ShowBanner; };
         _bannerTimer.Tick += (_, _) => { _bannerTimer.Stop(); Banner.IsVisible = false; };
-        WizardBox.ItemsSource = AppServices.Get<WatchlistStore>().AllSymbols;
-        WizardBox.KeyDown += OnWizardKeyDown;
-        WizardBox.LostFocus += (_, _) => CloseWizard();
+        WizardBox.WatchSymbols = AppServices.Get<WatchlistStore>().AllSymbols;
+        WizardBox.CommitCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(CommitWizard);
+        Wizard.AddHandler(KeyDownEvent, (_, e) => { if (e.Key == Key.Escape) { CloseWizard(); e.Handled = true; } }, RoutingStrategies.Bubble);
+        Wizard.LostFocus += (_, _) => { if (!Wizard.IsKeyboardFocusWithin && !WizardBox.IsDropDownOpen) CloseWizard(); };
         AddHandler(TextInputEvent, OnWindowTextInput, RoutingStrategies.Tunnel);
         Closing += OnClosing;
         Navigate(StartPageFromArgs() ?? AppPage.Dashboard);
     }
 
+    private bool _closed;
     internal AppPage CurrentPage { get; private set; }
     internal Control? CurrentView => PageHost.Content as Control;
     internal bool WizardVisible => Wizard.IsVisible;
@@ -184,30 +189,25 @@ public partial class MainWindow : Window
     {
         ShowFromDock();
         Wizard.IsVisible = true;
-        WizardBox.Focus();
+        WizardBox.FocusInput();
     }
 
     private void OnWindowTextInput(object? sender, TextInputEventArgs e)
     {
-        if (Wizard.IsVisible || FocusManager?.GetFocusedElement() is TextBox or AutoCompleteBox or ComboBox) return;
+        if (Wizard.IsVisible || FocusManager?.GetFocusedElement() is TextBox or ComboBox) return;
         if (e.Text is not { Length: 1 } t || !(char.IsAsciiLetterOrDigit(t[0]) || t[0] is '^' or '.')) return;
-        OpenWizard();
-        WizardBox.Text = t;
-        WizardBox.CaretIndex = 1;
+        ShowFromDock();
+        Wizard.IsVisible = true;
+        WizardBox.Begin(t);
         e.Handled = true;
     }
 
-    private void OnWizardKeyDown(object? sender, KeyEventArgs e)
+    private void CommitWizard()
     {
-        if (e.Key == Key.Escape) { CloseWizard(); e.Handled = true; }
-        else if (e.Key == Key.Enter)
-        {
-            var text = WizardBox.Text;
-            CloseWizard();
-            if (WatchlistStore.TryNormalizeSymbol(text, out var symbol, out _))
-                AppServices.Get<NavigationHub>().Go(AppPage.Charts, symbol);
-            e.Handled = true;
-        }
+        var text = WizardBox.Text;
+        CloseWizard();
+        if (WatchlistStore.TryNormalizeSymbol(text, out var symbol, out _))
+            AppServices.Get<NavigationHub>().Go(AppPage.Charts, symbol);
     }
 
     private void CloseWizard()

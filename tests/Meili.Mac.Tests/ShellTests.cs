@@ -108,9 +108,27 @@ public class ShellTests
         var w = Open();
         try
         {
-            w.OpenWizard();
+            w.Navigate(AppPage.Dashboard);
+            MacHost.Pump();
+            w.Activate();
+            MacHost.Pump();
+            w.KeyTextInput("M");                       // typing anywhere opens the wizard with that letter
             MacHost.Pump();
             Assert.True(w.WizardVisible);
+            w.KeyTextInput("SFT");
+            MacHost.Pump();
+            w.KeyPress(Avalonia.Input.Key.Enter, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.Enter, null);
+            MacHost.Pump();
+            Assert.False(w.WizardVisible);
+            Assert.Equal(AppPage.Charts, w.CurrentPage);
+            Assert.Equal("MSFT", AppServices.Get<ChartsViewModel>().SymbolText);
+
+            w.OpenWizard();                           // ⌘F / menu
+            MacHost.Pump();
+            Assert.True(w.WizardVisible);
+            w.KeyPress(Avalonia.Input.Key.Escape, Avalonia.Input.RawInputModifiers.None, Avalonia.Input.PhysicalKey.Escape, null);
+            MacHost.Pump();
+            Assert.False(w.WizardVisible);
         }
         finally { w.Close(); }
     }
