@@ -573,4 +573,9 @@
     <sys:String x:Key="Ch_AdjChanged">数据源由 {0} 换为 {1}，复权口径由“{2}”变为“{3}”，与之前的价格不能直接比较</sys:String>
     <sys:String x:Key="Ex_MetaAdjust">复权口径</sys:String>
     <sys:String x:Key="Wl_ColTime">时间</sys:String>
+    <sys:String x:Key="Op_SpreadPct">价差%</sys:String>
+    <sys:String x:Key="Op_Spread">价差</sys:String>
+    <sys:String x:Key="Op_Distance">距现价</sys:String>
+    <sys:String x:Key="Op_SpreadTip">买卖价差占中间价的比例；超过 10% 且价差大于 0.05 时置灰，表示流动性差、成交价可能明显偏离中间价</sys:String>
+    <sys:String x:Key="Op_DistanceTip">行权价相对标的价的距离（正数为高于标的价）</sys:String>
 </ResourceDictionary>

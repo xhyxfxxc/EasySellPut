@@ -573,4 +573,9 @@
     <sys:String x:Key="Ch_AdjChanged">Source changed from {0} to {1} and the adjustment from “{2}” to “{3}”; prices are not directly comparable with before</sys:String>
     <sys:String x:Key="Ex_MetaAdjust">Price adjustment</sys:String>
     <sys:String x:Key="Wl_ColTime">Time</sys:String>
+    <sys:String x:Key="Op_SpreadPct">Spread %</sys:String>
+    <sys:String x:Key="Op_Spread">Spread</sys:String>
+    <sys:String x:Key="Op_Distance">vs spot</sys:String>
+    <sys:String x:Key="Op_SpreadTip">Bid/ask spread as a share of the mid price; greyed out above 10% (and wider than 0.05), meaning poor liquidity and fills that may be far from mid</sys:String>
+    <sys:String x:Key="Op_DistanceTip">Strike relative to the underlying price (positive = above)</sys:String>
 </ResourceDictionary>

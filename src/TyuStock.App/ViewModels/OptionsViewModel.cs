@@ -53,6 +53,13 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] public partial bool ShowTheta { get; set; } = true;
     [ObservableProperty] public partial bool ShowVega { get; set; } = true;
     [ObservableProperty] public partial bool ShowSmile { get; set; } = true;
+    /// <summary>G4: spread % column (wide spreads greyed out).</summary>
+    [ObservableProperty] public partial bool ShowSpread { get; set; } = true;
+    /// <summary>G4: strike distance to spot column.</summary>
+    [ObservableProperty] public partial bool ShowDistance { get; set; } = true;
+
+    /// <summary>H1: the column check boxes as one value for <see cref="OptionColumns"/>.</summary>
+    public OptionColumnSet ColumnSet => new(ShowVolume, ShowOi, ShowIv, ShowDelta, ShowGamma, ShowTheta, ShowVega, ShowSpread, ShowDistance);
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = "";
     [ObservableProperty] public partial string Headline { get; set; } = "";
@@ -213,6 +220,8 @@ public partial class OptionsViewModel : ObservableObject
     partial void OnShowThetaChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowVegaChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
     partial void OnShowSmileChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
+    partial void OnShowSpreadChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
+    partial void OnShowDistanceChanged(bool value) => TableChanged?.Invoke(this, EventArgs.Empty);
 
     public async Task LoadAsync(bool refreshOnly = false)
     {
@@ -300,6 +309,7 @@ public partial class OptionsViewModel : ObservableObject
                 puts.TryGetValue(k, out var put);
                 rows.Add(new OptionStrikeRow(k, call, put, isAtm: atm is { } a && k == a, spot: Spot));
             }
+            OptionStrikeRow.SetOiRatios(rows);
             _allRows = rows;
             ApplyWindow();
             BuildSmile(rows);
@@ -424,6 +434,21 @@ public sealed class OptionStrikeRow
     public bool IsAtm { get; }
     public bool CallItm { get; }
     public bool PutItm { get; }
+    /// <summary>G4: (strike − spot) / spot, e.g. "+2.3%".</summary>
+    public double? Distance { get; }
+    public string DistanceText { get; } = "—";
+
+    /// <summary>G4: scale each side's OI data bar to the largest OI on that side of the chain.</summary>
+    public static void SetOiRatios(IReadOnlyList<OptionStrikeRow> rows)
+    {
+        var maxCall = rows.Max(r => r.Call?.OiValue ?? 0);
+        var maxPut = rows.Max(r => r.Put?.OiValue ?? 0);
+        foreach (var r in rows)
+        {
+            if (r.Call is { } c) c.OiRatio = maxCall > 0 ? Math.Clamp((c.OiValue ?? 0) / maxCall, 0, 1) : 0;
+            if (r.Put is { } p) p.OiRatio = maxPut > 0 ? Math.Clamp((p.OiValue ?? 0) / maxPut, 0, 1) : 0;
+        }
+    }
 
     public OptionStrikeRow(double strike, EnrichedSide? call, EnrichedSide? put, bool isAtm, double? spot)
     {
@@ -434,6 +459,11 @@ public sealed class OptionStrikeRow
         IsAtm = isAtm;
         CallItm = call?.InTheMoney ?? (spot is { } s && s > strike);
         PutItm = put?.InTheMoney ?? (spot is { } s2 && s2 < strike);
+        if (spot is > 0 and var sp)
+        {
+            Distance = (strike - sp) / sp;
+            DistanceText = (Distance.Value * 100).ToString("+0.0;-0.0;0.0", CultureInfo.InvariantCulture) + "%";
+        }
     }
 }
 
@@ -453,6 +483,25 @@ public sealed class EnrichedSide
     /// <summary>G2: raw numbers for export (the display text uses 万/K units).</summary>
     public double? VolumeValue { get; init; }
     public double? OiValue { get; init; }
+    /// <summary>G4: bid/ask spread and its share of the mid price.</summary>
+    public string Spread { get; init; } = "—";
+    public string SpreadPct { get; init; } = "—";
+    public bool IsWideSpread { get; init; }
+    /// <summary>G4: 0..1 of the largest OI on this side (data bar width); set after the chain is built.</summary>
+    public double OiRatio { get; set; }
+
+    /// <summary>G4: a spread is "wide" above this share of mid (and wider than <see cref="WideSpreadMinAbs"/>).</summary>
+    public const double WideSpreadPct = 0.10;
+    public const double WideSpreadMinAbs = 0.05;
+
+    public static (double? Spread, double? Pct, bool Wide) SpreadOf(double? bid, double? ask)
+    {
+        if (bid is not > 0 || ask is not > 0 || ask < bid) return (null, null, false);
+        var spread = ask.Value - bid.Value;
+        var mid = (ask.Value + bid.Value) / 2;
+        var pct = spread / mid;
+        return (spread, pct, pct > WideSpreadPct && spread > WideSpreadMinAbs);
+    }
     public bool InTheMoney { get; init; }
     public bool IvLocal { get; init; }
     public string IvHint { get; init; } = "";
@@ -460,8 +509,12 @@ public sealed class EnrichedSide
     public static EnrichedSide From(OptionContract c, EnrichedOption e, LocalizationService loc)
     {
         var ivLocal = e.IvOrigin is IvOrigin.SolvedFromMid or IvOrigin.SolvedFromLast;
+        var (spread, pct, wide) = SpreadOf(c.Bid, c.Ask);
         return new EnrichedSide
         {
+            Spread = spread is { } sp ? NumberDisplay.Price(sp) : "—",
+            SpreadPct = pct is { } pc ? (pc * 100).ToString("0.0", CultureInfo.InvariantCulture) + "%" : "—",
+            IsWideSpread = wide,
             Bid = Px(c.Bid), Ask = Px(c.Ask), Last = Px(c.Last),
             Volume = Qty(c.Volume, loc), Oi = Qty(c.OpenInterest, loc), VolumeValue = c.Volume, OiValue = c.OpenInterest,
             Iv = e.ImpliedVolatility is { } iv ? (iv * 100).ToString("0.0", CultureInfo.InvariantCulture) + "%" : "—",

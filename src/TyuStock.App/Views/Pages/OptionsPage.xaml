@@ -122,6 +122,8 @@
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Gamma}" IsChecked="{Binding ShowGamma}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Theta}" IsChecked="{Binding ShowTheta}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Vega}" IsChecked="{Binding ShowVega}" />
+                <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_SpreadPct}" IsChecked="{Binding ShowSpread}" ToolTip="{DynamicResource Op_SpreadTip}" />
+                <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Distance}" IsChecked="{Binding ShowDistance}" ToolTip="{DynamicResource Op_DistanceTip}" />
                 <CheckBox Style="{StaticResource ColCheck}" Content="{DynamicResource Op_Smile}" IsChecked="{Binding ShowSmile}" />
             </WrapPanel>
 

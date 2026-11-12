@@ -44,7 +44,7 @@ public partial class OptionsPage : Page
             if (e.PropertyName is nameof(OptionsViewModel.ShowVolume) or nameof(OptionsViewModel.ShowOi)
                 or nameof(OptionsViewModel.ShowIv) or nameof(OptionsViewModel.ShowDelta)
                 or nameof(OptionsViewModel.ShowGamma) or nameof(OptionsViewModel.ShowTheta)
-                or nameof(OptionsViewModel.ShowVega))
+                or nameof(OptionsViewModel.ShowVega) or nameof(OptionsViewModel.ShowSpread) or nameof(OptionsViewModel.ShowDistance))
                 Dispatcher.Invoke(RebuildColumns);
         };
     }
@@ -86,98 +86,88 @@ public partial class OptionsPage : Page
             ChainList.ScrollIntoView(row);
     }
 
+    /// <summary>H1/G4: columns come from <see cref="OptionColumns"/>; this method only turns definitions into cells.</summary>
     private void RebuildColumns()
     {
+        var set = Vm.ColumnSet;
         var view = new GridView { AllowsColumnReorder = false };
-        AddSide(view, call: true);
-        view.Columns.Add(Column(Find("Op_Strike"), "StrikeText", 80, center: true, strike: true));
-        AddSide(view, call: false);
+        foreach (var c in OptionColumns.Side(call: true, set)) view.Columns.Add(Column(c, set, "Call", "CallItm", call: true));
+        foreach (var c in OptionColumns.Middle(set)) view.Columns.Add(Column(c, set, null, null, call: true));
+        foreach (var c in OptionColumns.Side(call: false, set)) view.Columns.Add(Column(c, set, "Put", "PutItm", call: false));
         ChainList.View = view;
     }
 
-    private void AddSide(GridView view, bool call)
+    private GridViewColumn Column(OptionColumnDef def, OptionColumnSet set, string? side, string? itm, bool call)
     {
-        var p = call ? "Call" : "Put";
-        var vm = Vm;
-        var cols = new List<(string header, string path, double width, string? fmt)>();
-        if (call)
-        {
-            if (vm.ShowVolume) cols.Add((Find("Op_Volume"), $"{p}.Volume", 72, null));
-            if (vm.ShowOi) cols.Add((Find("Op_OI"), $"{p}.Oi", 72, null));
-            if (vm.ShowIv) cols.Add((Find("Op_IV"), $"{p}.Iv", 64, null));
-            if (vm.ShowDelta) cols.Add((Find("Op_Delta"), $"{p}.Delta", 64, null));
-            if (vm.ShowGamma) cols.Add((Find("Op_Gamma"), $"{p}.Gamma", 64, null));
-            if (vm.ShowTheta) cols.Add((Find("Op_Theta"), $"{p}.Theta", 64, null));
-            if (vm.ShowVega) cols.Add((Find("Op_Vega"), $"{p}.Vega", 58, null));
-            cols.Add((Find("Op_Bid"), $"{p}.Bid", 58, null));
-            cols.Add((Find("Op_Ask"), $"{p}.Ask", 58, null));
-            cols.Add((Find("Op_Last"), $"{p}.Last", 58, null));
-        }
-        else
-        {
-            cols.Add((Find("Op_Last"), $"{p}.Last", 58, null));
-            cols.Add((Find("Op_Bid"), $"{p}.Bid", 58, null));
-            cols.Add((Find("Op_Ask"), $"{p}.Ask", 58, null));
-            if (vm.ShowVega) cols.Add((Find("Op_Vega"), $"{p}.Vega", 58, null));
-            if (vm.ShowTheta) cols.Add((Find("Op_Theta"), $"{p}.Theta", 64, null));
-            if (vm.ShowGamma) cols.Add((Find("Op_Gamma"), $"{p}.Gamma", 64, null));
-            if (vm.ShowDelta) cols.Add((Find("Op_Delta"), $"{p}.Delta", 64, null));
-            if (vm.ShowIv) cols.Add((Find("Op_IV"), $"{p}.Iv", 64, null));
-            if (vm.ShowOi) cols.Add((Find("Op_OI"), $"{p}.Oi", 72, null));
-            if (vm.ShowVolume) cols.Add((Find("Op_Volume"), $"{p}.Volume", 72, null));
-        }
-        foreach (var c in cols)
-            view.Columns.Add(Column(c.header, c.path, c.width, itm: call ? "CallItm" : "PutItm"));
-    }
-
-    private GridViewColumn Column(string header, string path, double width, bool center = false, bool strike = false, string? itm = null)
-    {
-        var align = center ? TextAlignment.Center : TextAlignment.Right;
+        var strike = def.Key == OptionColumns.Strike.Key;
+        var path = side is null ? def.Path : $"{side}.{def.Path}";
         var factory = new FrameworkElementFactory(typeof(Border));
+        var style = new Style(typeof(Border));
         if (itm is not null)
         {
-            var bind = new Binding(itm);
-            var style = new Style(typeof(Border));
-            var trigger = new DataTrigger { Binding = bind, Value = true };
+            var trigger = new DataTrigger { Binding = new Binding(itm), Value = true };
             trigger.Setters.Add(new Setter(Border.BackgroundProperty, TryFindResource("ControlFillColorSecondaryBrush")));
             style.Triggers.Add(trigger);
-            if (strike)
-            {
-                var atm = new DataTrigger { Binding = new Binding("IsAtm"), Value = true };
-                atm.Setters.Add(new Setter(Border.BackgroundProperty, TryFindResource("AccentFillColorSecondaryBrush")));
-                style.Triggers.Add(atm);
-            }
-            factory.SetValue(FrameworkElement.StyleProperty, style);
         }
-        else if (strike)
+        if (side is null)
         {
-            var style = new Style(typeof(Border));
             var atm = new DataTrigger { Binding = new Binding("IsAtm"), Value = true };
             atm.Setters.Add(new Setter(Border.BackgroundProperty, TryFindResource("AccentFillColorSecondaryBrush")));
             style.Triggers.Add(atm);
-            factory.SetValue(FrameworkElement.StyleProperty, style);
         }
-        factory.SetValue(Border.PaddingProperty, new Thickness(6, 4, 6, 4));
+        factory.SetValue(FrameworkElement.StyleProperty, style);
+        factory.SetValue(Border.PaddingProperty, set.Compact ? new Thickness(4, 3, 4, 3) : new Thickness(6, 4, 6, 4));
+
+        var grid = new FrameworkElementFactory(typeof(Grid));
+        if (def.Kind == OptionCellKind.OiBar && side is not null)
+        {
+            // G4: OI data bar, growing from the strike side (calls → right edge, puts → left edge).
+            var bar = new FrameworkElementFactory(typeof(System.Windows.Shapes.Rectangle));
+            bar.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "AccentFillColorDefaultBrush");
+            bar.SetValue(UIElement.OpacityProperty, 0.28);
+            bar.SetValue(FrameworkElement.HorizontalAlignmentProperty, System.Windows.HorizontalAlignment.Stretch);
+            bar.SetValue(UIElement.RenderTransformOriginProperty, new System.Windows.Point(call ? 1 : 0, 0.5));
+            bar.SetValue(FrameworkElement.MarginProperty, new Thickness(-2, 1, -2, 1));
+            bar.SetBinding(UIElement.RenderTransformProperty, new Binding($"{side}.OiRatio") { Converter = RatioToScale.Instance });
+            grid.AppendChild(bar);
+        }
         var tb = new FrameworkElementFactory(typeof(TextBlock));
         tb.SetBinding(TextBlock.TextProperty, new Binding(path));
-        tb.SetValue(TextBlock.FontSizeProperty, 12.0);
-        tb.SetValue(TextBlock.TextAlignmentProperty, align);
+        tb.SetValue(TextBlock.FontSizeProperty, strike ? 14.0 : 12.0);
+        if (strike) tb.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
+        tb.SetValue(TextBlock.TextAlignmentProperty, side is null ? TextAlignment.Center : TextAlignment.Right);
         tb.SetValue(TextBlock.FontFamilyProperty, TryFindResource("NumberFont") as FontFamily ?? new FontFamily("Segoe UI"));
-        if (strike)
+        var tbStyle = new Style(typeof(TextBlock));
+        tbStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, new DynamicResourceExtension("TextFillColorPrimaryBrush")));
+        if (def.Kind == OptionCellKind.Spread && side is not null)
         {
-            tb.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
-            tb.SetValue(TextBlock.FontSizeProperty, 14.0);
+            // G4: wide spread → secondary text colour (still ≥ 4.5:1 in both themes), so liquid quotes stand out.
+            var wide = new DataTrigger { Binding = new Binding($"{side}.IsWideSpread"), Value = true };
+            wide.Setters.Add(new Setter(TextBlock.ForegroundProperty, new DynamicResourceExtension("TextFillColorSecondaryBrush")));
+            wide.Setters.Add(new Setter(TextBlock.FontStyleProperty, FontStyles.Italic));
+            tbStyle.Triggers.Add(wide);
+            if (def.Key == "SpreadPct") tb.SetValue(FrameworkElement.ToolTipProperty, Find("Op_SpreadTip"));
         }
-        tb.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorPrimaryBrush");
-        factory.AppendChild(tb);
-        var template = new DataTemplate { VisualTree = factory };
-        var col = new GridViewColumn
+        if (def.Key == OptionColumns.Distance.Key) tb.SetValue(FrameworkElement.ToolTipProperty, Find("Op_DistanceTip"));
+        tb.SetValue(FrameworkElement.StyleProperty, tbStyle);
+        grid.AppendChild(tb);
+        factory.AppendChild(grid);
+        return new GridViewColumn
         {
-            Header = header,
-            Width = width,
-            CellTemplate = template,
+            Header = Find(def.HeaderKey),
+            Width = OptionColumns.WidthOf(def, set),
+            CellTemplate = new DataTemplate { VisualTree = factory },
         };
-        return col;
+    }
+
+    /// <summary>G4: OI ratio (0..1) → horizontal scale of the data bar.</summary>
+    private sealed class RatioToScale : IValueConverter
+    {
+        public static readonly RatioToScale Instance = new();
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
+            new ScaleTransform(value is double d && double.IsFinite(d) ? Math.Clamp(d, 0, 1) : 0, 1);
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) =>
+            throw new NotSupportedException();
     }
 
     private void RenderSmile()
