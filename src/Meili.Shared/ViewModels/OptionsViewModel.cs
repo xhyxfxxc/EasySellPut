@@ -105,6 +105,7 @@ public partial class OptionsViewModel : ObservableObject
             ModelText = PricingText.Model(_inputs.Rate, _loc);
             RelabelExpirations();
             RelabelHeader();
+            RelabelIvRank();
             UpdateStatus();
             TableChanged?.Invoke(this, EventArgs.Empty);
             if (_active && Rows.Count > 0) _ = LoadAsync(refreshOnly: true); // G2: volume/OI units follow the language

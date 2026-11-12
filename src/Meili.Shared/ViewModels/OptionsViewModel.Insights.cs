@@ -38,29 +38,40 @@ public partial class OptionsViewModel
         }
     }
 
+    private (Meili.Core.Alerts.IvSample Sample, IvRankResult? Rank, int Days)? _ivRank;
+
+    /// <summary>IV rank tag and tip in the current language (also re-run when the language changes).</summary>
+    private void RelabelIvRank()
+    {
+        if (_ivRank is not var (sample, rank, days))
+        {
+            IvRankText = "";
+            IvRankTip = "";
+            return;
+        }
+        var inv = CultureInfo.InvariantCulture;
+        if (rank is { } r)
+        {
+            IvRankText = string.Format(inv, _loc["Op_IvRank"], r.Rank, r.Percentile);
+            IvRankTip = string.Format(inv, _loc["Op_IvRankTip"], r.Days, AlertText.IvBasisText(sample, _loc), r.Low * 100, r.High * 100, sample.Iv * 100);
+        }
+        else
+        {
+            IvRankText = string.Format(inv, _loc["Op_IvRankPending"], days, Meili.Analytics.IvRank.MinDays);
+            IvRankTip = _loc["Op_IvRankPendingTip"];
+        }
+    }
+
     private async Task LoadInsightsAsync(string symbol, IReadOnlyList<DateOnly> expirations, double spot, CancellationToken ct)
     {
-        IvRankText = "";
-        IvRankTip = "";
+        _ivRank = null;
+        RelabelIvRank();
         TermPoints = [];
         try
         {
             var now = DateTimeOffset.Now;
-            if (await _insights.RankAsync(symbol, now, ct) is var (sample, rank, days))
-            {
-                var basis = AlertText.IvBasisText(sample, _loc);
-                var inv = CultureInfo.InvariantCulture;
-                if (rank is { } r)
-                {
-                    IvRankText = string.Format(inv, _loc["Op_IvRank"], r.Rank, r.Percentile);
-                    IvRankTip = string.Format(inv, _loc["Op_IvRankTip"], r.Days, basis, r.Low * 100, r.High * 100, sample.Iv * 100);
-                }
-                else
-                {
-                    IvRankText = string.Format(inv, _loc["Op_IvRankPending"], days, Meili.Analytics.IvRank.MinDays);
-                    IvRankTip = _loc["Op_IvRankPendingTip"];
-                }
-            }
+            _ivRank = await _insights.RankAsync(symbol, now, ct);
+            RelabelIvRank();
             TermPoints = await _insights.TermStructureAsync(symbol, expirations, spot, now, ct);
         }
         catch (OperationCanceledException) { }

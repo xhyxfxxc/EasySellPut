@@ -53,7 +53,8 @@ public partial class OptionsPage : UserControl
         foreach (var (b, kind) in new[] { (Near5, StrikeWindowKind.Near5), (Near10, StrikeWindowKind.Near10), (Near20, StrikeWindowKind.Near20), (All, StrikeWindowKind.All) })
             b.Classes.Set("Selected", Vm.Window == kind);
         RenderSmile();
-        if (Vm.AtmRow is { } row) ChainList.ScrollIntoView(row, null);
+        // After the grid has laid out the new rows; scrolling before that is a no-op.
+        if (Vm.AtmRow is { } row) Dispatcher.UIThread.Post(() => ChainList.ScrollIntoView(row, null), DispatcherPriority.Background);
     }
 
     /// <summary>H1/G4: columns come from <see cref="OptionColumns"/>; only rebuilt when the column set changes.</summary>
