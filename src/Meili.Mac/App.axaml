@@ -27,6 +27,8 @@
                     <SolidColorBrush x:Key="SolidBackgroundFillColorBaseBrush" Color="#F3F3F3" />
                     <SolidColorBrush x:Key="ErrorBarBrush" Color="#FDE7E9" />
                     <SolidColorBrush x:Key="InfoBarBrush" Color="#E8EEF8" />
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#7A4FB8" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="#FFFFFF" />
@@ -40,6 +42,8 @@
                     <SolidColorBrush x:Key="SolidBackgroundFillColorBaseBrush" Color="#202020" />
                     <SolidColorBrush x:Key="ErrorBarBrush" Color="#442726" />
                     <SolidColorBrush x:Key="InfoBarBrush" Color="#2B3340" />
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#C9A6F2" />
+                    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#1A1A1A" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

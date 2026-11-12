@@ -1,0 +1,161 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:models="using:Meili.Core.Models"
+             xmlns:local="using:Meili.Mac.Views"
+             x:Class="Meili.Mac.Views.WatchlistPage"
+             x:DataType="vm:WatchlistViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,24,32,12">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource Wl_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource Wl_Desc}" Margin="0,0,0,16" />
+
+            <!-- Groups -->
+            <DockPanel Margin="0,0,0,12" LastChildFill="False">
+                <ItemsControl ItemsSource="{Binding Groups}" DockPanel.Dock="Left">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:WatchlistGroupTab">
+                            <Button Classes="Chip" Classes.Selected="{Binding IsSelected}"
+                                    Command="{Binding $parent[UserControl].((vm:WatchlistViewModel)DataContext).SelectGroupCommand}"
+                                    CommandParameter="{Binding Id}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Count, StringFormat='({0})'}" FontSize="12" Margin="8,0,0,0" Opacity="0.85" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button DockPanel.Dock="Right" Margin="4,0,0,0" Command="{Binding RemoveGroupCommand}" IsEnabled="{Binding CanRemoveGroup}"
+                        Content="{DynamicResource Wl_RemoveGroup}" />
+                <Button DockPanel.Dock="Right" Margin="4,0,0,0" Command="{Binding BeginRenameGroupCommand}" Content="{DynamicResource Wl_RenameGroup}" />
+                <Button DockPanel.Dock="Right" Command="{Binding BeginAddGroupCommand}" Content="{DynamicResource Wl_AddGroup}" />
+            </DockPanel>
+
+            <DockPanel Margin="0,0,0,12">
+                <DockPanel.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                        <Binding Path="IsAddingGroup" />
+                        <Binding Path="IsRenamingGroup" />
+                    </MultiBinding>
+                </DockPanel.IsVisible>
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding CancelGroupEditCommand}" Content="{DynamicResource Wl_Cancel}" />
+                <Button DockPanel.Dock="Right" Classes="Accent" Command="{Binding ConfirmGroupEditCommand}" Content="{DynamicResource Wl_Ok}" />
+                <TextBox Text="{Binding GroupNameDraft}" Watermark="{DynamicResource Wl_GroupNameHint}" />
+            </DockPanel>
+
+            <!-- Search + actions -->
+            <DockPanel Margin="0,0,0,8">
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding ExportCommand}" Content="{DynamicResource Wl_Export}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding RefreshCommand}" Content="{DynamicResource Wl_Refresh}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding MoveDownCommand}" Content="↓" ToolTip.Tip="{DynamicResource Wl_MoveDown}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding MoveUpCommand}" Content="↑" ToolTip.Tip="{DynamicResource Wl_MoveUp}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding RemoveSelectedCommand}" Content="{DynamicResource Wl_Remove}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Classes="Accent" Command="{Binding AddCommand}" Content="{DynamicResource Wl_Add}" />
+                <Panel>
+                    <TextBox x:Name="QueryBox" Text="{Binding Query}" Watermark="{DynamicResource Wl_SymbolHint}" />
+                    <Popup IsOpen="{Binding ShowSuggestions}" PlacementTarget="{Binding #QueryBox}" Placement="BottomEdgeAlignedLeft"
+                           IsLightDismissEnabled="False">
+                        <Border Classes="Popup" MinWidth="360" MaxHeight="280" Margin="0,4,0,0">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Bottom" Classes="Caption" Margin="12,6" Text="{DynamicResource Wl_SearchEmpty}"
+                                           IsVisible="{Binding ShowSearchEmpty}" />
+                                <ListBox x:Name="SuggestionList" ItemsSource="{Binding Suggestions}" Background="Transparent">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:SymbolMatch">
+                                            <StackPanel Orientation="Horizontal" Margin="4,2">
+                                                <TextBlock Text="{Binding Symbol}" FontWeight="SemiBold" Width="88" />
+                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxWidth="200" />
+                                                <TextBlock Text="{Binding Exchange}" FontSize="12" Margin="12,0,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </Border>
+                    </Popup>
+                </Panel>
+            </DockPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <ProgressBar IsIndeterminate="True" Width="60" Margin="0,0,8,0" IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Classes="ErrorBar" IsVisible="{Binding AllSourcesFailed}" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Classes="CardTitle" Text="{DynamicResource Dash_AllFailedTitle}" />
+                    <TextBlock Classes="Body" Text="{DynamicResource Dash_AllFailedBody}" Margin="0,4,0,8" />
+                    <Button Command="{Binding OpenDataSourcesCommand}" Content="{DynamicResource Dash_OpenSources}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Top" Classes="Secondary" Margin="32,24,32,0" Text="{DynamicResource Wl_Empty}" IsVisible="{Binding !HasRows}" />
+
+        <DataGrid x:Name="QuoteList" ItemsSource="{Binding Rows}" SelectedItem="{Binding SelectedRow}" Margin="32,0,32,24"
+                  IsVisible="{Binding HasRows}" SelectionMode="Single">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="{DynamicResource Wl_OpenChart}" Command="{Binding OpenChartCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenOptions}" Command="{Binding OpenOptionsCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenStrategy}" Command="{Binding OpenStrategyCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenNews}" Command="{Binding OpenNewsCommand}" />
+                    <Separator />
+                    <MenuItem Header="{DynamicResource Wl_MoveUp}" Command="{Binding MoveUpCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_MoveDown}" Command="{Binding MoveDownCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_Remove}" Command="{Binding RemoveSelectedCommand}" />
+                    <Separator />
+                    <MenuItem Header="{DynamicResource Wl_SetAlert}" Command="{Binding SetAlertCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_Export}" Command="{Binding ExportCommand}" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+            <DataGrid.Columns>
+                <DataGridTextColumn local:Loc.Header="Wl_ColSymbol" x:DataType="vm:WatchlistRowViewModel" Binding="{Binding Symbol}" Width="100" FontWeight="SemiBold" />
+                <DataGridTextColumn local:Loc.Header="Wl_ColName" x:DataType="vm:WatchlistRowViewModel" Binding="{Binding Name}" Width="170" />
+                <DataGridTemplateColumn local:Loc.Header="Wl_ColPrice" Width="110">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:WatchlistRowViewModel">
+                            <TextBlock Classes="Num" Text="{Binding PriceText}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn local:Loc.Header="Wl_ColTime" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:WatchlistRowViewModel">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+                                <TextBlock Text="{Binding PriceTimeText}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip.Tip="{Binding TimingTip}" />
+                                <Border Classes="Stale" Margin="6,0,0,0" IsVisible="{Binding IsStale}" ToolTip.Tip="{Binding StaleTip}">
+                                    <TextBlock Text="{DynamicResource Quote_Stale}" />
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn local:Loc.Header="Wl_ColChange" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:WatchlistRowViewModel">
+                            <Border CornerRadius="4" Padding="8,2" Margin="4,0" Background="{Binding ChangeBackground}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Classes="Num" Text="{Binding ChangeText}" FontWeight="SemiBold" Foreground="{Binding ChangeBrush}" />
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn local:Loc.Header="Wl_ColChangePct" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:WatchlistRowViewModel">
+                            <Border CornerRadius="4" Padding="8,2" Margin="4,0" Background="{Binding ChangeBackground}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock Classes="Num" Text="{Binding ChangePctText}" FontWeight="SemiBold" Foreground="{Binding ChangeBrush}" />
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn local:Loc.Header="Wl_ColExt" x:DataType="vm:WatchlistRowViewModel" Binding="{Binding ExtText}" Width="150" />
+                <DataGridTextColumn local:Loc.Header="Wl_ColVolume" x:DataType="vm:WatchlistRowViewModel" Binding="{Binding VolumeText}" Width="90" />
+                <DataGridTextColumn local:Loc.Header="Wl_ColSource" x:DataType="vm:WatchlistRowViewModel" Binding="{Binding SourceText}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>
