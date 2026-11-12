@@ -59,12 +59,13 @@ public partial class MainWindow : FluentWindow
     {
         Dispatcher.BeginInvoke(() =>
         {
+            // D1: set the shared symbol first; the target page adopts it when it activates (or at once if it is
+            // already showing), so every symbol-aware page is reachable with a symbol — not only K-line and alerts.
+            if (!string.IsNullOrWhiteSpace(e.Symbol) && e.PageType != typeof(AlertsPage))
+                AppServices.Get<SymbolContext>().Set(e.Symbol);
             RootNavigation.Navigate(e.PageType);
-            if (string.IsNullOrWhiteSpace(e.Symbol)) return;
-            if (e.PageType == typeof(AlertsPage))
+            if (!string.IsNullOrWhiteSpace(e.Symbol) && e.PageType == typeof(AlertsPage))
                 AppServices.Get<AlertsViewModel>().PrepareForSymbol(e.Symbol);
-            else if (e.PageType == typeof(ChartsPage))
-                _ = AppServices.Get<ChartsViewModel>().OpenSymbolAsync(e.Symbol);
         });
     }
 

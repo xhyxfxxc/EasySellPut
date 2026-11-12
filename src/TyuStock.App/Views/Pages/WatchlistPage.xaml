@@ -203,6 +203,11 @@
             </ListView.Resources>
             <ListView.ContextMenu>
                 <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                    <MenuItem Header="{DynamicResource Wl_OpenChart}" Command="{Binding OpenChartCommand}" InputGestureText="{DynamicResource Wl_DoubleClick}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenOptions}" Command="{Binding OpenOptionsCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenStrategy}" Command="{Binding OpenStrategyCommand}" />
+                    <MenuItem Header="{DynamicResource Wl_OpenNews}" Command="{Binding OpenNewsCommand}" />
+                    <Separator />
                     <MenuItem Header="{DynamicResource Wl_MoveUp}" Command="{Binding MoveUpCommand}" />
                     <MenuItem Header="{DynamicResource Wl_MoveDown}" Command="{Binding MoveDownCommand}" />
                     <MenuItem Header="{DynamicResource Wl_Remove}" Command="{Binding RemoveSelectedCommand}" />

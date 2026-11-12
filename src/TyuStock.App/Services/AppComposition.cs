@@ -18,6 +18,7 @@ public static class AppComposition
         s.AddSingleton<ThemeService>();
         s.AddSingleton<WatchlistStore>();
         s.AddSingleton<NavigationHub>();
+        s.AddSingleton<SymbolContext>();
         s.AddSingleton<NotificationService>();
         s.AddSingleton<AlertMonitor>();
         s.AddSingleton<ShellViewModel>();

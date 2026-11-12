@@ -134,10 +134,21 @@
                        Visibility="{Binding HasRows, Converter={StaticResource InverseBoolToVis}}" />
             <ListView x:Name="ChainList" AutomationProperties.AutomationId="OptionsChain"
                       ItemsSource="{Binding Rows}"
+                      SelectedItem="{Binding SelectedRow}"
                       BorderThickness="0"
                       Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}"
                       ScrollViewer.HorizontalScrollBarVisibility="Auto"
                       ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                        <MenuItem Header="{DynamicResource Op_BuildStrategy}">
+                            <MenuItem Header="{DynamicResource Op_SeedLongCall}" Command="{Binding BuildStrategyCommand}" CommandParameter="LC" />
+                            <MenuItem Header="{DynamicResource Op_SeedShortCall}" Command="{Binding BuildStrategyCommand}" CommandParameter="SC" />
+                            <MenuItem Header="{DynamicResource Op_SeedLongPut}" Command="{Binding BuildStrategyCommand}" CommandParameter="LP" />
+                            <MenuItem Header="{DynamicResource Op_SeedShortPut}" Command="{Binding BuildStrategyCommand}" CommandParameter="SP" />
+                        </MenuItem>
+                    </ContextMenu>
+                </ListView.ContextMenu>
                 <ListView.View>
                     <GridView x:Name="ChainView" AllowsColumnReorder="False">
                         <!-- Call side (filled in code so column show/hide stays in sync) -->

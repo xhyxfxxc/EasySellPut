@@ -475,4 +475,15 @@
     <sys:String x:Key="Ch_IncompleteCount">{0} incomplete bars (O/H/L missing or inconsistent, drawn as close points)</sys:String>
     <sys:String x:Key="Ch_IncompleteBar">(O/H/L missing or inconsistent; only the close is reliable)</sys:String>
     <sys:String x:Key="Ex_Incomplete">Incomplete</sys:String>
+    <sys:String x:Key="Wl_OpenChart">Open chart</sys:String>
+    <sys:String x:Key="Wl_DoubleClick">Double-click</sys:String>
+    <sys:String x:Key="Wl_OpenOptions">Option chain</sys:String>
+    <sys:String x:Key="Wl_OpenStrategy">Strategy</sys:String>
+    <sys:String x:Key="Wl_OpenNews">News &amp; profile</sys:String>
+    <sys:String x:Key="Op_BuildStrategy">Build strategy at this strike</sys:String>
+    <sys:String x:Key="Op_SeedLongCall">Buy call</sys:String>
+    <sys:String x:Key="Op_SeedShortCall">Sell call</sys:String>
+    <sys:String x:Key="Op_SeedLongPut">Buy put</sys:String>
+    <sys:String x:Key="Op_SeedShortPut">Sell put</sys:String>
+    <sys:String x:Key="St_SeedNoQuote">No quote for this contract; premium 0 and IV 30% assumed — please fill them in</sys:String>
 </ResourceDictionary>

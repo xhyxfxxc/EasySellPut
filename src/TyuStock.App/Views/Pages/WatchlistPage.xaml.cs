@@ -105,7 +105,13 @@ public partial class WatchlistPage : Page
 
     private void OnListDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        // Equity details arrive with the charts milestone; a double-click currently just selects the row.
+        // D1: double-click a row → its K-line chart.
+        if ((e.OriginalSource as FrameworkElement)?.DataContext is WatchlistRowViewModel row)
+        {
+            Vm.SelectedRow = row;
+            Vm.OpenChartCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
     private static bool IsInside(DependencyObject? d, DependencyObject ancestor)

@@ -34,12 +34,15 @@ public partial class StrategyViewModel : ObservableObject
     private readonly WatchlistStore _watchlist;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
+    private readonly SymbolContext _context;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(45) };
     private CancellationTokenSource? _cts;
     private bool _active, _manualLegs, _suppress, _hasChain;
     private string? _lastError;
     private IReadOnlyList<ListedQuote> _listed = [];
     private double _yield;
+    private string? _loadedSymbol;
+    private StrategySeed? _pendingSeed;
 
     public ObservableCollection<string> WatchSymbols { get; } = [];
     public ObservableCollection<ExpirationChoice> Expirations { get; } = [];
@@ -74,9 +77,11 @@ public partial class StrategyViewModel : ObservableObject
     public string HorizonLabel { get; private set; } = "";
     public event EventHandler? ChartChanged;
 
-    public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc)
+    public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
     {
-        _watchlist = watchlist; _data = data; _loc = loc;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
+        _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
             ? "AAPL"
             : (watchlist.AllSymbols.FirstOrDefault() ?? "AAPL");
@@ -96,8 +101,16 @@ public partial class StrategyViewModel : ObservableObject
     public async Task ActivateAsync()
     {
         _active = true;
-        if (Legs.Count == 0) await LoadAsync();
+        if (_context.ShouldAdopt(SymbolText)) { await AdoptContextAsync(); return; }
+        if (Legs.Count == 0 || _pendingSeed is not null) await LoadAsync();
         else _timer.Start();
+    }
+
+    /// <summary>D1: switch to the shared symbol (set by another page, the watchlist, or a toast) and load it.</summary>
+    private Task AdoptContextAsync()
+    {
+        SymbolText = _context.Current!;
+        return LoadAsync();
     }
 
     public void Deactivate()
@@ -207,6 +220,7 @@ public partial class StrategyViewModel : ObservableObject
             return;
         }
         SymbolText = symbol;
+        _context.Set(symbol);
         IsBusy = true;
         if (!refreshOnly || Legs.Count == 0) StatusText = _loc["St_Loading"];
         _cts?.Cancel();
@@ -214,7 +228,9 @@ public partial class StrategyViewModel : ObservableObject
         var ct = _cts.Token;
         try
         {
-            var exp = SelectedExpiration?.Date;
+            var seed = _pendingSeed is { } ps && ps.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase) ? ps : null;
+            var exp = seed?.Expiration
+                ?? (string.Equals(symbol, _loadedSymbol, StringComparison.OrdinalIgnoreCase) ? SelectedExpiration?.Date : null);
             OptionChain? chain = null;
             string? chainError = null;
             try { chain = await _data.GetChainAsync(symbol, exp, ct); }
@@ -223,6 +239,7 @@ public partial class StrategyViewModel : ObservableObject
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { chainError = ex.Message; }
 
+            if (chain is not null) _loadedSymbol = symbol;
             var quotes = await SafeQuotes(symbol, ct);
             _yield = await SafeYield(symbol, ct);
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
@@ -280,7 +297,12 @@ public partial class StrategyViewModel : ObservableObject
                 ? $"{symbol}   {string.Format(_loc["St_Spot"], p.ToString("0.00", CultureInfo.InvariantCulture))}"
                 : symbol;
 
-            if (_hasChain && !_manualLegs) BuildFromPreset(force: false);
+            if (seed is not null)
+            {
+                _pendingSeed = null;
+                ApplySeed(seed);
+            }
+            else if (_hasChain && !_manualLegs) BuildFromPreset(force: false);
             else if (_hasChain && _manualLegs) RefreshLegQuotes();
             Recompute();
         }
@@ -313,6 +335,37 @@ public partial class StrategyViewModel : ObservableObject
         if (!(px > 0) && c.Ask is > 0) px = c.Ask.Value;
         var iv = e.ImpliedVolatility ?? double.NaN;
         return new ListedQuote(right, c.Strike, px, iv);
+    }
+
+    /// <summary>
+    /// D1: "build a strategy from this contract" (option chain right-click). Starts a custom strategy with that one leg;
+    /// the user then adds legs. Takes effect on the next load (immediately if the page is visible).
+    /// </summary>
+    public void Seed(StrategySeed seed)
+    {
+        _pendingSeed = seed;
+        SymbolText = seed.Symbol;
+        _context.Set(seed.Symbol);
+        if (_active) _ = LoadAsync();
+    }
+
+    private void ApplySeed(StrategySeed seed)
+    {
+        var right = seed.Right == CRight.Call ? ARight.Call : ARight.Put;
+        var q = _listed.FirstOrDefault(x => x.Right == right && Math.Abs(x.Strike - seed.Strike) < 1e-8);
+        var exp = SelectedExpiration?.Date ?? seed.Expiration;
+        var premium = q.Strike > 0 ? q.Premium : 0;
+        var iv = q.Strike > 0 && double.IsFinite(q.ImpliedVolatility) ? q.ImpliedVolatility : DefaultVolatility;
+        var qty = Math.Max(1, Quantity);
+        var leg = seed.Right == CRight.Call
+            ? StrategyLeg.Call(seed.Side, seed.Strike, premium, exp, qty, iv)
+            : StrategyLeg.Put(seed.Side, seed.Strike, premium, exp, qty, iv);
+        _manualLegs = true;
+        _suppress = true;
+        try { SelectedPreset = Presets.FirstOrDefault(p => p.Kind == StrategyKind.Custom) ?? SelectedPreset; }
+        finally { _suppress = false; }
+        ReplaceLegs([leg]);
+        if (q.Strike <= 0) _lastError = _loc["St_SeedNoQuote"];
     }
 
     private void BuildFromPreset(bool force)

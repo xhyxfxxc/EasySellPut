@@ -35,6 +35,7 @@ public partial class ChartsViewModel : ObservableObject
     private readonly WatchlistStore _watchlist;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
+    private readonly SymbolContext _context;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background);
     private CancellationTokenSource? _cts;
     private bool _active;
@@ -60,9 +61,11 @@ public partial class ChartsViewModel : ObservableObject
 
     public event EventHandler? PlotChanged;
 
-    public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc)
+    public ChartsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
     {
-        _watchlist = watchlist; _data = data; _loc = loc;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
+        _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.FirstOrDefault() ?? "AAPL";
         RebuildWatchSymbols();
         RebuildRanges();
@@ -79,12 +82,20 @@ public partial class ChartsViewModel : ObservableObject
     public async Task ActivateAsync()
     {
         _active = true;
+        if (_context.ShouldAdopt(SymbolText)) { await AdoptContextAsync(); return; }
         if (Series is null) await LoadAsync();
         else
         {
             ArmTimer();
             _timer.Start();
         }
+    }
+
+    /// <summary>D1: switch to the shared symbol (set by another page, the watchlist, or a toast) and load it.</summary>
+    private Task AdoptContextAsync()
+    {
+        SymbolText = _context.Current!;
+        return LoadAsync();
     }
 
     public void Deactivate()
@@ -180,6 +191,7 @@ public partial class ChartsViewModel : ObservableObject
             return;
         }
         SymbolText = symbol;
+        _context.Set(symbol);
         if (IsBusy) { _cts?.Cancel(); }
         IsBusy = true;
         if (!refreshOnly || Series is null) StatusText = _loc["Ch_Loading"];

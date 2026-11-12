@@ -25,12 +25,14 @@ public partial class OptionsViewModel : ObservableObject
     private readonly WatchlistStore _watchlist;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
+    private readonly SymbolContext _context;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(45) };
     private CancellationTokenSource? _cts;
     private bool _active;
     private string? _lastError;
     private IReadOnlyList<OptionStrikeRow> _allRows = [];
     private bool _suppressExpChange;
+    private string? _loadedSymbol;
 
     public ObservableCollection<string> WatchSymbols { get; } = [];
     public ObservableCollection<ExpirationChoice> Expirations { get; } = [];
@@ -57,12 +59,15 @@ public partial class OptionsViewModel : ObservableObject
     [ObservableProperty] public partial double? Spot { get; set; }
     [ObservableProperty] public partial bool HasRows { get; set; }
     [ObservableProperty] public partial OptionStrikeRow? AtmRow { get; set; }
+    [ObservableProperty] public partial OptionStrikeRow? SelectedRow { get; set; }
 
     public event EventHandler? TableChanged;
 
-    public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc)
+    public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
     {
-        _watchlist = watchlist; _data = data; _loc = loc;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
+        _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
             ? "AAPL"
             : (watchlist.AllSymbols.FirstOrDefault() ?? "AAPL");
@@ -80,8 +85,16 @@ public partial class OptionsViewModel : ObservableObject
     public async Task ActivateAsync()
     {
         _active = true;
+        if (_context.ShouldAdopt(SymbolText)) { await AdoptContextAsync(); return; }
         if (Rows.Count == 0) await LoadAsync();
         else _timer.Start();
+    }
+
+    /// <summary>D1: switch to the shared symbol (set by another page, the watchlist, or a toast) and load it.</summary>
+    private Task AdoptContextAsync()
+    {
+        SymbolText = _context.Current!;
+        return LoadAsync();
     }
 
     public void Deactivate()
@@ -99,6 +112,32 @@ public partial class OptionsViewModel : ObservableObject
 
     [RelayCommand]
     private Task LoadFromBoxAsync() => LoadAsync();
+
+    /// <summary>D1: right-click a strike → open the strategy page with that contract as the first leg.</summary>
+    /// <param name="kind">"LC" buy call, "SC" sell call, "LP" buy put, "SP" sell put.</param>
+    [RelayCommand]
+    private void BuildStrategy(string? kind)
+    {
+        if (BuildSeed(kind) is not { } seed) return;
+        AppServices.Get<StrategyViewModel>().Seed(seed);
+        AppServices.Get<NavigationHub>().Go(typeof(TyuStock.App.Views.Pages.StrategyPage), seed.Symbol);
+    }
+
+    public StrategySeed? BuildSeed(string? kind)
+    {
+        if (SelectedRow is not { } row || _loadedSymbol is null) return null;
+        var exp = SelectedExpiration?.Date;
+        if (exp is null) return null;
+        var (right, side) = kind switch
+        {
+            "LC" => (CRight.Call, PositionSide.Long),
+            "SC" => (CRight.Call, PositionSide.Short),
+            "LP" => (CRight.Put, PositionSide.Long),
+            "SP" => (CRight.Put, PositionSide.Short),
+            _ => ((CRight?)null, PositionSide.Long),
+        };
+        return right is { } r ? new StrategySeed(_loadedSymbol, exp.Value, r, side, row.Strike) : null;
+    }
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(refreshOnly: true);
@@ -175,6 +214,7 @@ public partial class OptionsViewModel : ObservableObject
             return;
         }
         SymbolText = symbol;
+        _context.Set(symbol);
         IsBusy = true;
         if (!refreshOnly || Rows.Count == 0) StatusText = _loc["Op_Loading"];
         _cts?.Cancel();
@@ -182,11 +222,13 @@ public partial class OptionsViewModel : ObservableObject
         var ct = _cts.Token;
         try
         {
-            var exp = SelectedExpiration?.Date;
+            // A different symbol's expiration list does not apply: start from its nearest expiry.
+            var exp = string.Equals(symbol, _loadedSymbol, StringComparison.OrdinalIgnoreCase) ? SelectedExpiration?.Date : null;
             var chainTask = _data.GetChainAsync(symbol, exp, ct);
             var quoteTask = SafeQuotes(symbol, ct);
             var fundTask = SafeYield(symbol, ct);
             var chain = await chainTask;
+            _loadedSymbol = symbol;
             var quotes = await quoteTask;
             var yield = await fundTask;
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));

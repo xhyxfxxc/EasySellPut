@@ -24,6 +24,7 @@ public partial class NewsViewModel : ObservableObject
     private readonly WatchlistStore _watchlist;
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
+    private readonly SymbolContext _context;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromMinutes(3) };
     private CancellationTokenSource? _cts;
     private bool _active;
@@ -56,9 +57,11 @@ public partial class NewsViewModel : ObservableObject
     [ObservableProperty] public partial bool HasFinancials { get; set; }
     [ObservableProperty] public partial bool HasWebsite { get; set; }
 
-    public NewsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc)
+    public NewsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context)
     {
-        _watchlist = watchlist; _data = data; _loc = loc;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context;
+        // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
+        _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
             ? "AAPL"
             : (watchlist.AllSymbols.FirstOrDefault() ?? "AAPL");
@@ -71,8 +74,16 @@ public partial class NewsViewModel : ObservableObject
     public async Task ActivateAsync()
     {
         _active = true;
+        if (_context.ShouldAdopt(SymbolText)) { await AdoptContextAsync(); return; }
         if (string.IsNullOrEmpty(Headline) && Stats.Count == 0 && News.Count == 0) await LoadAsync();
         else _timer.Start();
+    }
+
+    /// <summary>D1: switch to the shared symbol (set by another page, the watchlist, or a toast) and load it.</summary>
+    private Task AdoptContextAsync()
+    {
+        SymbolText = _context.Current!;
+        return LoadAsync();
     }
 
     public void Deactivate()
@@ -158,6 +169,7 @@ public partial class NewsViewModel : ObservableObject
             return;
         }
         SymbolText = symbol;
+        _context.Set(symbol);
         IsBusy = true;
         if (!refreshOnly) StatusText = _loc["Nf_Loading"];
         _cts?.Cancel();

@@ -365,6 +365,17 @@ public partial class WatchlistViewModel : ObservableObject
         SelectedGroupId = fallback.Id;
     }
 
+    // D1: open the selected symbol on another page.
+    [RelayCommand] private void OpenChart() => OpenOn(typeof(TyuStock.App.Views.Pages.ChartsPage));
+    [RelayCommand] private void OpenOptions() => OpenOn(typeof(TyuStock.App.Views.Pages.OptionsPage));
+    [RelayCommand] private void OpenStrategy() => OpenOn(typeof(TyuStock.App.Views.Pages.StrategyPage));
+    [RelayCommand] private void OpenNews() => OpenOn(typeof(TyuStock.App.Views.Pages.NewsPage));
+
+    private void OpenOn(Type page)
+    {
+        if (SelectedRow?.Symbol is { } symbol) _nav.Go(page, symbol);
+    }
+
     [RelayCommand]
     private void SetAlert()
     {

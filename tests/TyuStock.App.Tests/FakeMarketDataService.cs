@@ -52,8 +52,11 @@ public sealed class FakeMarketDataService : IMarketDataService
 
     private static DateOnly Exp(int days) => DateOnly.FromDateTime(DateTime.Today.AddDays(days));
 
+    public List<(string Symbol, DateOnly? Expiration)> ChainRequests { get; } = [];
+
     public Task<OptionChain> GetChainAsync(string symbol, DateOnly? expiration = null, CancellationToken ct = default)
     {
+        lock (ChainRequests) ChainRequests.Add((symbol, expiration));
         var exp = expiration ?? Exp(30);
         var contracts = new List<OptionContract>();
         foreach (var k in new[] { 110.0, 115, 120, 125, 130, 135 })

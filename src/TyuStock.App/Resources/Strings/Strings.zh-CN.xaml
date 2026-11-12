@@ -475,4 +475,15 @@
     <sys:String x:Key="Ch_IncompleteCount">{0} 根数据不完整（O/H/L 缺失或矛盾，按收盘点绘制）</sys:String>
     <sys:String x:Key="Ch_IncompleteBar">（此根 O/H/L 缺失或矛盾，仅收盘价可信）</sys:String>
     <sys:String x:Key="Ex_Incomplete">数据不完整</sys:String>
+    <sys:String x:Key="Wl_OpenChart">查看 K 线</sys:String>
+    <sys:String x:Key="Wl_DoubleClick">双击</sys:String>
+    <sys:String x:Key="Wl_OpenOptions">期权链</sys:String>
+    <sys:String x:Key="Wl_OpenStrategy">策略分析</sys:String>
+    <sys:String x:Key="Wl_OpenNews">新闻与资料</sys:String>
+    <sys:String x:Key="Op_BuildStrategy">以此行权价建策略</sys:String>
+    <sys:String x:Key="Op_SeedLongCall">买入看涨</sys:String>
+    <sys:String x:Key="Op_SeedShortCall">卖出看涨</sys:String>
+    <sys:String x:Key="Op_SeedLongPut">买入看跌</sys:String>
+    <sys:String x:Key="Op_SeedShortPut">卖出看跌</sys:String>
+    <sys:String x:Key="St_SeedNoQuote">该合约暂无报价，权利金按 0、波动率按 30% 估算，请手动填写</sys:String>
 </ResourceDictionary>
