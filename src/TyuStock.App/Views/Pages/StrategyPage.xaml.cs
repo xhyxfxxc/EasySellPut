@@ -32,7 +32,7 @@ public partial class StrategyPage : Page
             HighlightHorizonButtons();
             RenderChart();
         });
-        _theme.ThemeChanged += (_, _) => Dispatcher.Invoke(RenderChart);
+        ThemeService.ColorsChanged += (_, _) => Dispatcher.Invoke(RenderChart);   // E5
     }
 
     private StrategyViewModel Vm => (StrategyViewModel)DataContext;
@@ -71,13 +71,9 @@ public partial class StrategyPage : Page
     {
         var plot = PayoffPlot.Plot;
         plot.Clear();
-        var dark = _theme.IsDark;
-        var text = Sp(BrushColor("TextFillColorPrimaryBrush", MediaColor(0xE8, 0xE8, 0xE8)));
-        var muted = Sp(BrushColor("TextFillColorSecondaryBrush", MediaColor(0x9A, 0x9A, 0x9A)));
-        var bg = Sp(BrushColor("ApplicationBackgroundBrush", dark ? MediaColor(0x20, 0x20, 0x20) : MediaColor(0xF3, 0xF3, 0xF3)));
-        var dataBg = dark ? Color.FromHex("#2A2A2A") : Color.FromHex("#FFFFFF");
-        var grid = dark ? new Color(255, 255, 255, 0x33) : new Color(0, 0, 0, 0x33); // E4: ScottPlot hex is RRGGBBAA, "#33FFFFFF" was opaque cyan
-        _themePaint.ApplyTheme(PayoffPlot, dark, Color.FromHex("#3B82F6"), Color.FromHex("#E2A03F"), text, muted, grid, bg, dataBg);
+        var c = ChartPalette.Current(_theme.IsDark);
+        var muted = c.Muted;
+        _themePaint.ApplyTheme(PayoffPlot, c);
 
         var curve = Vm.Curve;
         if (curve is null || curve.Prices.Length < 2)
@@ -90,7 +86,7 @@ public partial class StrategyPage : Page
         expiry.LegendText = Find("St_ExpiryCurve");
         expiry.LineWidth = 2.2f;
         expiry.MarkerSize = 0;
-        expiry.Color = Color.FromHex("#3B82F6");
+        expiry.Color = c.Series1;
 
         if (curve.ValuationPnl is { } tn && tn.Length == curve.Prices.Length)
         {
@@ -99,7 +95,7 @@ public partial class StrategyPage : Page
             s.LineWidth = 1.8f;
             s.LinePattern = LinePattern.Dashed;
             s.MarkerSize = 0;
-            s.Color = Color.FromHex("#E2A03F");
+            s.Color = c.Series2;
         }
 
         var zero = plot.Add.HorizontalLine(0);
@@ -123,7 +119,7 @@ public partial class StrategyPage : Page
             be.LineWidth = 0;
             be.MarkerSize = 9;
             be.MarkerShape = MarkerShape.FilledCircle;
-            be.Color = Color.FromHex("#22C55E");
+            be.Color = c.Marker;
         }
 
         plot.Axes.Bottom.Label.Text = Find("St_PriceAxis");
@@ -135,9 +131,5 @@ public partial class StrategyPage : Page
         PayoffPlot.Refresh();
     }
 
-    private static System.Windows.Media.Color MediaColor(byte r, byte g, byte b) => System.Windows.Media.Color.FromRgb(r, g, b);
-    private static System.Windows.Media.Color BrushColor(string key, System.Windows.Media.Color fallback)
-        => Application.Current.TryFindResource(key) is SolidColorBrush br ? br.Color : fallback;
-    private static Color Sp(System.Windows.Media.Color c) => new(c.R, c.G, c.B, c.A);
     private static string Find(string key) => Application.Current.TryFindResource(key) as string ?? key;
 }

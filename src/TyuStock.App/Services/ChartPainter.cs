@@ -19,8 +19,13 @@ public sealed class ChartPainter
     private const string FontName = "Microsoft YaHei UI";
     private bool _syncing;
 
-    public void ApplyTheme(WpfPlot plot, bool dark, Color up, Color down, Color text, Color muted, Color grid, Color bg, Color dataBg)
+    /// <summary>E5: colours of the last <see cref="ApplyTheme"/>; the Draw methods paint with them.</summary>
+    public ChartPalette Palette { get; private set; } = null!;
+
+    public void ApplyTheme(WpfPlot plot, ChartPalette palette)
     {
+        Palette = palette;
+        var (text, grid, bg, dataBg) = (palette.Text, palette.Grid, palette.Background, palette.DataBackground);
         var p = plot.Plot;
         p.FigureBackground.Color = bg;
         p.DataBackground.Color = dataBg;
@@ -43,11 +48,11 @@ public sealed class ChartPainter
         p.Grid.MajorLineColor = grid;
         p.Grid.MinorLineColor = grid.WithAlpha(40);
         plot.Menu?.Clear();
-        _ = (up, down, muted, dark);
     }
 
-    public void DrawPrice(WpfPlot plot, BarSeries series, KlineSnapshot snap, ChartsViewModel vm, Color up, Color down, Color text)
+    public void DrawPrice(WpfPlot plot, BarSeries series, KlineSnapshot snap, ChartsViewModel vm)
     {
+        var (up, down, text) = (Palette.Up, Palette.Down, Palette.Text);
         var p = plot.Plot;
         p.Clear();
         var span = SpanOf(vm.Range);
@@ -81,11 +86,11 @@ public sealed class ChartPainter
             }
         }
         var time = snap.Columns.Time;
-        if (vm.ShowMa) AddLine(p, time, snap.Sma, Color.FromHex("#3B82F6"), vm.MaLabel);
-        if (vm.ShowEma) AddLine(p, time, snap.Ema, Color.FromHex("#F59E0B"), vm.EmaLabel);
+        if (vm.ShowMa) AddLine(p, time, snap.Sma, Palette.Series1, vm.MaLabel);
+        if (vm.ShowEma) AddLine(p, time, snap.Ema, Palette.Series2, vm.EmaLabel);
         if (vm.ShowBoll)
         {
-            var boll = Color.FromHex("#A78BFA");
+            var boll = Palette.Series3;
             AddLine(p, time, snap.Bollinger.Middle, boll, vm.BollLabel);
             AddLine(p, time, snap.Bollinger.Upper, boll.WithAlpha(160), null);
             AddLine(p, time, snap.Bollinger.Lower, boll.WithAlpha(160), null);
@@ -94,12 +99,12 @@ public sealed class ChartPainter
         if (vm.CompareLine is { } cmp)
         {
             var line = p.Add.Scatter(cmp.Time.Select(ToX).ToArray(), cmp.Close);
-            line.Color = Color.FromHex("#14B8A6");
+            line.Color = Palette.Series4;
             line.LineWidth = 1.6f;
             line.MarkerSize = 0;
             line.LegendText = vm.CompareLabel;
         }
-        var ink = Color.FromHex("#E879F9");
+        var ink = Palette.Series5;
         foreach (var d in vm.Drawings)
         {
             if (d.Kind == DrawingKind.HorizontalLine)
@@ -125,8 +130,9 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawVolume(WpfPlot plot, BarSeries series, Color up, Color down)
+    public void DrawVolume(WpfPlot plot, BarSeries series)
     {
+        var (up, down) = (Palette.Up, Palette.Down);
         var p = plot.Plot;
         p.Clear();
         var bars = new List<ScottPlot.Bar>(series.Bars.Count);
@@ -151,13 +157,14 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawMacd(WpfPlot plot, KlineSnapshot snap, Color up, Color down, Color text, string title)
+    public void DrawMacd(WpfPlot plot, KlineSnapshot snap, string title)
     {
+        var (up, down, text) = (Palette.Up, Palette.Down, Palette.Text);
         var p = plot.Plot;
         p.Clear();
         var time = snap.Columns.Time;
-        AddLine(p, time, snap.Macd.Macd, Color.FromHex("#60A5FA"), "DIF");
-        AddLine(p, time, snap.Macd.Signal, Color.FromHex("#F59E0B"), "DEA");
+        AddLine(p, time, snap.Macd.Macd, Palette.Series1, "DIF");
+        AddLine(p, time, snap.Macd.Signal, Palette.Series2, "DEA");
         var histBars = new List<ScottPlot.Bar>();
         for (int i = 0; i < snap.Macd.Histogram.Length; i++)
         {
@@ -181,11 +188,12 @@ public sealed class ChartPainter
         plot.Refresh();
     }
 
-    public void DrawRsi(WpfPlot plot, KlineSnapshot snap, Color muted, string title)
+    public void DrawRsi(WpfPlot plot, KlineSnapshot snap, string title)
     {
+        var muted = Palette.Muted;
         var p = plot.Plot;
         p.Clear();
-        AddLine(p, snap.Columns.Time, snap.Rsi, Color.FromHex("#E2A03F"), title);
+        AddLine(p, snap.Columns.Time, snap.Rsi, Palette.Series2, title);
         var h = p.Add.HorizontalLine(70, color: muted, width: 1);
         h.LinePattern = LinePattern.Dashed;
         var l = p.Add.HorizontalLine(30, color: muted, width: 1);
@@ -204,9 +212,9 @@ public sealed class ChartPainter
         var p = plot.Plot;
         p.Clear();
         var time = snap.Columns.Time;
-        AddLine(p, time, snap.Kdj.K, Color.FromHex("#60A5FA"), "K");
-        AddLine(p, time, snap.Kdj.D, Color.FromHex("#F59E0B"), "D");
-        AddLine(p, time, snap.Kdj.J, Color.FromHex("#E5484D"), "J");
+        AddLine(p, time, snap.Kdj.K, Palette.Series1, "K");
+        AddLine(p, time, snap.Kdj.D, Palette.Series2, "D");
+        AddLine(p, time, snap.Kdj.J, Palette.Series6, "J");
         p.Axes.DateTimeTicksBottom();
         p.Axes.Left.Label.Text = title;
         p.Legend.IsVisible = true;

@@ -38,7 +38,7 @@ public partial class OptionsPage : Page
             RenderSmile();
             ScrollAtm();
         });
-        _theme.ThemeChanged += (_, _) => Dispatcher.Invoke(() => { RenderSmile(); });
+        ThemeService.ColorsChanged += (_, _) => Dispatcher.Invoke(RenderSmile);   // E5
     }
 
     private OptionsViewModel Vm => (OptionsViewModel)DataContext;
@@ -163,7 +163,7 @@ public partial class OptionsPage : Page
     }
 
     /// <summary>B6: ATM IV by days to expiry (same plot as the smile, switched by the term-structure box).</summary>
-    private void RenderTerm(Plot plot)
+    private void RenderTerm(Plot plot, ChartPalette c)
     {
         var pts = Vm.TermPoints;
         if (pts.Count > 0)
@@ -171,7 +171,7 @@ public partial class OptionsPage : Page
             var s = plot.Add.Scatter(pts.Select(p => (double)p.DaysToExpiry).ToArray(), pts.Select(p => p.Iv * 100).ToArray());
             s.MarkerSize = 6;
             s.LineWidth = 1.6f;
-            s.Color = Color.FromHex("#3B82F6");
+            s.Color = c.Series1;
             s.LegendText = Find("Op_TermLegend");
             plot.Legend.IsVisible = true;
             plot.Legend.Alignment = Alignment.UpperRight;
@@ -187,17 +187,13 @@ public partial class OptionsPage : Page
     {
         var plot = SmilePlot.Plot;
         plot.Clear();
-        var dark = _theme.IsDark;
-        var text = Sp(BrushColor("TextFillColorPrimaryBrush", MediaColor(0xE8, 0xE8, 0xE8)));
-        var muted = Sp(BrushColor("TextFillColorSecondaryBrush", MediaColor(0x9A, 0x9A, 0x9A)));
-        var bg = Sp(BrushColor("ApplicationBackgroundBrush", dark ? MediaColor(0x20, 0x20, 0x20) : MediaColor(0xF3, 0xF3, 0xF3)));
-        var dataBg = dark ? Color.FromHex("#2A2A2A") : Color.FromHex("#FFFFFF");
-        var grid = dark ? new Color(255, 255, 255, 0x33) : new Color(0, 0, 0, 0x33); // E4: ScottPlot hex is RRGGBBAA, "#33FFFFFF" was opaque cyan
-        _themePaint.ApplyTheme(SmilePlot, dark, Color.FromHex("#3B82F6"), Color.FromHex("#F59E0B"), text, muted, grid, bg, dataBg);
+        var c = ChartPalette.Current(_theme.IsDark);
+        var muted = c.Muted;
+        _themePaint.ApplyTheme(SmilePlot, c);
 
         if (Vm.ShowTerm)
         {
-            RenderTerm(plot);
+            RenderTerm(plot, c);
             return;
         }
         var pts = Vm.SmilePoints;
@@ -214,7 +210,7 @@ public partial class OptionsPage : Page
             s.LegendText = Find("Op_Calls");
             s.MarkerSize = 5;
             s.LineWidth = 1.4f;
-            s.Color = Color.FromHex("#3B82F6");
+            s.Color = c.Series1;
         }
         if (puts.Count > 0)
         {
@@ -222,7 +218,7 @@ public partial class OptionsPage : Page
             s.LegendText = Find("Op_Puts");
             s.MarkerSize = 5;
             s.LineWidth = 1.4f;
-            s.Color = Color.FromHex("#E2A03F");
+            s.Color = c.Series2;
         }
         if (Vm.Spot is { } spot)
         {
@@ -240,9 +236,5 @@ public partial class OptionsPage : Page
         SmilePlot.Refresh();
     }
 
-    private static System.Windows.Media.Color MediaColor(byte r, byte g, byte b) => System.Windows.Media.Color.FromRgb(r, g, b);
-    private static System.Windows.Media.Color BrushColor(string key, System.Windows.Media.Color fallback)
-        => Application.Current.TryFindResource(key) is SolidColorBrush br ? br.Color : fallback;
-    private static Color Sp(System.Windows.Media.Color c) => new(c.R, c.G, c.B, c.A);
     private static string Find(string key) => Application.Current.TryFindResource(key) as string ?? key;
 }
