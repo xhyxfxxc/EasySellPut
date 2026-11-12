@@ -11,5 +11,6 @@
     <Project Path="tests/Meili.Data.Tests/Meili.Data.Tests.csproj" />
     <Project Path="tests/Meili.Analytics.Tests/Meili.Analytics.Tests.csproj" />
     <Project Path="tests/Meili.App.Tests/Meili.App.Tests.csproj" />
+    <Project Path="tests/Meili.Shared.Tests/Meili.Shared.Tests.csproj" />
   </Folder>
 </Solution>

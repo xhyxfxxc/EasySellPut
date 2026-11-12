@@ -1,0 +1,48 @@
+namespace Meili.Shared.Tests;
+
+/// <summary>Synchronous stand-in for the UI toolkit; timers tick only when a test calls <see cref="FakeTimer.Fire"/>.</summary>
+public sealed class FakeUiPlatform : IUiPlatform
+{
+    public List<FakeTimer> Timers { get; } = [];
+    public string? SavePath { get; set; }
+    public bool ConfirmAnswer { get; set; } = true;
+    public List<string> Opened { get; } = [];
+    public int? SaveThreadId { get; private set; }
+
+    public event EventHandler? ColorsChanged;
+
+    public void Run(Action action) => action();
+
+    public IUiTimer CreateTimer(TimeSpan interval)
+    {
+        var t = new FakeTimer { Interval = interval };
+        Timers.Add(t);
+        return t;
+    }
+
+    public object? Resource(string key) => key;
+
+    public Task<bool> ConfirmAsync(string title, string message) => Task.FromResult(ConfirmAnswer);
+
+    public void OpenUrl(string url) => Opened.Add(url);
+
+    public void OpenFolder(string path) => Opened.Add(path);
+
+    public Task<string?> PickSavePathAsync(string title, string suggestedName)
+    {
+        SaveThreadId = Environment.CurrentManagedThreadId;
+        return Task.FromResult(SavePath);
+    }
+
+    public void RaiseColorsChanged() => ColorsChanged?.Invoke(this, EventArgs.Empty);
+
+    public sealed class FakeTimer : IUiTimer
+    {
+        public TimeSpan Interval { get; set; }
+        public bool IsEnabled { get; private set; }
+        public event EventHandler? Tick;
+        public void Start() => IsEnabled = true;
+        public void Stop() => IsEnabled = false;
+        public void Fire() => Tick?.Invoke(this, EventArgs.Empty);
+    }
+}

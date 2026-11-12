@@ -14,9 +14,10 @@
     <ProjectReference Include="..\Meili.Analytics\Meili.Analytics.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- One copy of the UI text: the WPF string dictionaries, read as plain key/value pairs on every platform. -->
-    <EmbeddedResource Include="..\Meili.App\Resources\Strings\Strings.zh-CN.xaml" LogicalName="Strings.zh-CN.xaml" />
-    <EmbeddedResource Include="..\Meili.App\Resources\Strings\Strings.en-US.xaml" LogicalName="Strings.en-US.xaml" />
+    <!-- One copy of the UI text: the WPF string dictionaries, read as plain key/value pairs on every platform
+         (WithCulture=false: kept in the main assembly, not split into zh-CN/en-US satellite assemblies). -->
+    <EmbeddedResource Include="..\Meili.App\Resources\Strings\Strings.zh-CN.xaml" LogicalName="Strings.zh-CN.xaml" WithCulture="false" />
+    <EmbeddedResource Include="..\Meili.App\Resources\Strings\Strings.en-US.xaml" LogicalName="Strings.en-US.xaml" WithCulture="false" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="MeiliTerminal" />
