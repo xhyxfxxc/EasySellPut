@@ -3,7 +3,7 @@
 #define MyAppName "美丽稻谷卖方绿泡群专用终端"
 #define MyAppNameEn "Meili Daogu Seller Green-Bubble Group Terminal"
 #define MyAppPublisher "美丽稻谷"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.4.0"
 #define MyAppExeName "美丽稻谷卖方绿泡群专用终端.exe"
 #define MyAppAumid "MeiliDaogu.SellerTerminal"
 
