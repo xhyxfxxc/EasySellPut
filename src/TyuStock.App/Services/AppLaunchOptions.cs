@@ -14,6 +14,8 @@ public sealed class AppLaunchOptions
     public bool SmokeOffline { get; init; }
     /// <summary>B3: report path (default: data folder\logs\smoke.json).</summary>
     public string? SmokeReport { get; init; }
+    /// <summary>C6: write a startup timing and memory timeline to logs\perf.json.</summary>
+    public bool Perf { get; init; }
 
     public static AppLaunchOptions Parse(IReadOnlyList<string> args)
     {
@@ -33,6 +35,7 @@ public sealed class AppLaunchOptions
             Smoke = smoke,
             SmokeOffline = Has("--smoke-offline"),
             SmokeReport = string.IsNullOrWhiteSpace(report) ? null : report,
+            Perf = Has("--perf"),
         };
     }
 }

@@ -1,3 +1,4 @@
+using System.IO;
 using TyuStock.App.Services;
 
 namespace TyuStock.App.Tests;
@@ -32,5 +33,27 @@ public class LaunchOptionsTests
         Assert.False(o.Smoke);
         Assert.False(o.NoAlerts);
         Assert.Null(o.SmokeReport);
+    }
+
+    /// <summary>C6: --perf records a timeline with monotonic times and writes logs\perf.json.</summary>
+    [Fact]
+    public void Perf_flag_and_timeline()
+    {
+        Assert.True(AppLaunchOptions.Parse(["--smoke-offline", "--perf"]).Perf);
+        Assert.False(AppLaunchOptions.Parse(["--smoke-offline"]).Perf);
+
+        var dir = Path.Combine(Path.GetTempPath(), "meili-perf-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var perf = new StartupPerf(dir);
+            perf.Mark("a");
+            perf.Mark("b");
+            Assert.Equal(["a", "b"], perf.Marks.Select(m => m.Name));
+            Assert.True(perf.Marks[1].SinceStartMs >= perf.Marks[0].SinceStartMs);
+            Assert.All(perf.Marks, m => Assert.True(m.WorkingSetMb > 0 && m.ManagedMb > 0));
+            var json = File.ReadAllText(Path.Combine(dir, "logs", "perf.json"));
+            Assert.Contains("\"SinceStartMs\"", json);
+        }
+        finally { Directory.Delete(dir, true); }
     }
 }

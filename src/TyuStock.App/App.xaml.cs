@@ -29,12 +29,15 @@ public partial class App : Application
         AppLog.Info("app", $"start {string.Join(' ', e.Args)} data={dataDir.Path} ({dataDir.Source})");
 
         var options = AppLaunchOptions.Parse(e.Args);
+        var perf = options.Perf ? new StartupPerf(dataDir.Path) : null;   // C6
+        perf?.Mark("app-start");
         if (options.ExitOnClose)
             ShutdownMode = ShutdownMode.OnMainWindowClose;
         var services = new ServiceCollection();
         services.AddSingleton(options);
         AppComposition.Register(services, dataDir);
         AppServices.Provider = services.BuildServiceProvider();
+        perf?.Mark("services");
 
         var settings = AppServices.Get<SettingsStore>().Load();
         AppServices.Get<LocalizationService>().Apply(settings.Language);
@@ -52,7 +55,13 @@ public partial class App : Application
             window.PrepareForSmoke();
             TaskScheduler.UnobservedTaskException += (_, ev) => SmokeRunner.RecordError(ev.Exception);
         }
+        if (perf is not null)
+        {
+            window.ContentRendered += (_, _) => perf.Mark("first-render");
+            Dispatcher.BeginInvoke(() => perf.Mark("idle"), DispatcherPriority.ApplicationIdle);
+        }
         window.Show();
+        perf?.Mark("window-shown");
         AppComposition.OnStarted(AppServices.Provider);
         if (options.Smoke)
             Dispatcher.BeginInvoke(async () =>
@@ -60,6 +69,7 @@ public partial class App : Application
                 int code;
                 try { code = await new SmokeRunner().RunAsync(window, options); }
                 catch (Exception ex) { SmokeRunner.RecordError(ex); code = 2; }
+                perf?.Mark("smoke-done");   // memory after every page was opened once
                 Shutdown(code);
             }, DispatcherPriority.ApplicationIdle);
     }
