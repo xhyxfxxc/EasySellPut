@@ -1,0 +1,144 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Meili.Shared.ViewModels"
+             xmlns:local="using:Meili.Mac.Views"
+             xmlns:controls="using:Meili.Mac.Views.Controls"
+             xmlns:sp="using:ScottPlot.Avalonia"
+             x:Class="Meili.Mac.Views.StrategyPage"
+             x:DataType="vm:StrategyViewModel">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="32,20,32,8">
+            <TextBlock Classes="PageTitle" Text="{DynamicResource St_Title}" />
+            <TextBlock Classes="Secondary" Text="{DynamicResource St_Desc}" Margin="0,0,0,12" />
+            <DockPanel Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding RefreshCommand}" Content="{DynamicResource St_Refresh}" />
+                <Button DockPanel.Dock="Right" Margin="8,0,0,0" Classes="Accent" Command="{Binding LoadFromBoxCommand}" Content="{DynamicResource St_Load}" />
+                <ComboBox DockPanel.Dock="Right" MinWidth="200" Margin="8,0,0,0" ItemsSource="{Binding Expirations}"
+                          SelectedItem="{Binding SelectedExpiration}" DisplayMemberBinding="{Binding Label, x:DataType=vm:ExpirationChoice}" />
+                <TextBlock DockPanel.Dock="Right" Classes="Caption" VerticalAlignment="Center" Margin="12,0,0,0" Text="{DynamicResource St_Expiration}" />
+                <controls:SymbolBox x:Name="SymbolInput" MinWidth="160" Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}"
+                                    CommitCommand="{Binding LoadFromBoxCommand}" />
+            </DockPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="CardTitle" FontSize="16" Text="{Binding Headline}" VerticalAlignment="Center" Margin="0,2" />
+                <TextBlock Classes="Caption" Text="{Binding LivePriceText}" VerticalAlignment="Center" Margin="12,2,0,2" ToolTip.Tip="{DynamicResource Op_LivePriceTip}" />
+                <Border Classes="Tag" Margin="12,2,0,2" VerticalAlignment="Center" IsVisible="{Binding HasDelay}">
+                    <TextBlock Classes="Caption" Text="{Binding DelayText}" />
+                </Border>
+                <Border Classes="Tag" Margin="8,2,0,2" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Px_ModelTip}">
+                    <TextBlock Classes="Caption" Text="{Binding ModelText}" />
+                </Border>
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_Preset}" />
+                <ComboBox MinWidth="200" Margin="0,0,16,0" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}"
+                          DisplayMemberBinding="{Binding Label, x:DataType=vm:PresetChoice}" />
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_Quantity}" />
+                <NumericUpDown Value="{Binding Quantity}" Minimum="1" Maximum="1000" Increment="1" FormatString="0" Width="110" Margin="0,0,16,0" />
+                <Button Command="{Binding ApplyPresetCommand}" Content="{DynamicResource St_ApplyPreset}" />
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource St_SavedList}" />
+                <ComboBox MinWidth="200" MaxWidth="320" Margin="0,0,8,0" ItemsSource="{Binding Saved}" SelectedItem="{Binding SelectedSaved}"
+                          DisplayMemberBinding="{ReflectionBinding Name}" />
+                <Button Margin="0,0,8,0" Command="{Binding LoadSavedCommand}" Content="{DynamicResource St_LoadSaved}" />
+                <Button Margin="0,0,16,0" Command="{Binding DeleteSavedCommand}" Content="{DynamicResource St_DeleteSaved}" />
+                <TextBox Width="180" Margin="0,0,8,0" PlaceholderText="{DynamicResource St_SaveName}" Text="{Binding SaveName}" />
+                <Button Classes="Accent" Command="{Binding SaveStrategyCommand}" Content="{DynamicResource St_Save}" />
+            </WrapPanel>
+            <WrapPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,10,0" Text="{DynamicResource St_Horizon}" />
+                <Button x:Name="Tn0" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource St_TnNow}" Command="{Binding SelectHorizonCommand}" />
+                <Button x:Name="Tn7" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource St_Tn7}" Command="{Binding SelectHorizonCommand}" />
+                <Button x:Name="Tn14" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource St_Tn14}" Command="{Binding SelectHorizonCommand}" />
+                <Button x:Name="Tn30" Classes="Chip" Padding="10,6" Margin="0,0,6,0" Content="{DynamicResource St_Tn30}" Command="{Binding SelectHorizonCommand}" />
+            </WrapPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <ProgressBar IsIndeterminate="True" Width="60" Margin="0,0,8,0" IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                <TextBlock Classes="Caption" Text="{Binding LocalNote}" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
+        <DockPanel DockPanel.Dock="Top" Margin="32,0,32,8">
+            <TextBlock DockPanel.Dock="Top" Classes="CardTitle" Text="{DynamicResource St_Legs}" Margin="0,0,0,6" />
+            <WrapPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                <Button Margin="0,0,8,0" Command="{Binding AddCallCommand}" Content="{DynamicResource St_AddCall}" />
+                <Button Margin="0,0,8,0" Command="{Binding AddPutCommand}" Content="{DynamicResource St_AddPut}" />
+                <Button Margin="0,0,8,0" Command="{Binding AddStockCommand}" Content="{DynamicResource St_AddStock}" />
+                <Button Command="{Binding RemoveLegCommand}" Content="{DynamicResource St_RemoveLeg}" />
+            </WrapPanel>
+            <DataGrid x:Name="LegsGrid" ItemsSource="{Binding Legs}" SelectedItem="{Binding SelectedLeg}" MaxHeight="220"
+                      SelectionMode="Single" GridLinesVisibility="Horizontal" CanUserSortColumns="False">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn local:Loc.Header="St_Type" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:StrategyLegRow">
+                                <TextBlock Text="{Binding TypeLabel}" VerticalAlignment="Center" Margin="8,0" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate x:DataType="vm:StrategyLegRow">
+                                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding $parent[DataGrid].((vm:StrategyViewModel)DataContext).TypeChoices}"
+                                          SelectedValueBinding="{ReflectionBinding Value}" DisplayMemberBinding="{ReflectionBinding Label}"
+                                          SelectedValue="{Binding Type}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn local:Loc.Header="St_Side" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="vm:StrategyLegRow">
+                                <TextBlock Text="{Binding SideLabel}" VerticalAlignment="Center" Margin="8,0" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate x:DataType="vm:StrategyLegRow">
+                                <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding $parent[DataGrid].((vm:StrategyViewModel)DataContext).SideChoices}"
+                                          SelectedValueBinding="{ReflectionBinding Value}" DisplayMemberBinding="{ReflectionBinding Label}"
+                                          SelectedValue="{Binding Side}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn local:Loc.Header="St_Strike" Binding="{Binding StrikeText}" Width="100" />
+                    <DataGridTextColumn local:Loc.Header="St_Premium" Binding="{Binding PremiumText}" Width="100" />
+                    <DataGridTextColumn local:Loc.Header="St_IV" Binding="{Binding IvText}" Width="80" />
+                    <DataGridTextColumn local:Loc.Header="St_Qty" Binding="{Binding QtyText}" Width="80" />
+                    <DataGridTextColumn local:Loc.Header="St_Expiry" Binding="{Binding ExpiryText}" Width="130" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+
+        <UniformGrid DockPanel.Dock="Top" Margin="32,0,32,8" Columns="4" Rows="2">
+            <StackPanel Margin="0,0,16,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Cost}" />
+                <TextBlock Classes="CardTitle Num" FontSize="16" Text="{Binding CostText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_MaxProfit}" />
+                <TextBlock Classes="CardTitle Num" FontSize="16" Text="{Binding MaxProfitText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_MaxLoss}" />
+                <TextBlock Classes="CardTitle Num" FontSize="16" Text="{Binding MaxLossText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,0,8">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Breakeven}" />
+                <TextBlock Classes="CardTitle Num" FontSize="16" Text="{Binding BreakevenText}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8" ToolTip.Tip="{DynamicResource St_PopTip}">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Pop}" />
+                <TextBlock Classes="CardTitle Num" FontSize="16" Text="{Binding PopText}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,16,8" ToolTip.Tip="{Binding MarginTip}">
+                <TextBlock Classes="Caption" Text="{DynamicResource St_Margin}" />
+                <TextBlock Classes="CardTitle Num" FontSize="16" Text="{Binding MarginText}" />
+            </StackPanel>
+            <TextBlock Classes="Caption" Text="{Binding RewardText}" TextWrapping="Wrap" />
+            <TextBlock Classes="Caption" Text="{Binding GreeksText}" TextWrapping="Wrap" />
+        </UniformGrid>
+        <Panel Margin="16,0,16,16">
+            <TextBlock Classes="Secondary" VerticalAlignment="Center" HorizontalAlignment="Center" Text="{DynamicResource St_NoLegs}" IsVisible="{Binding !HasCurve}" />
+            <sp:AvaPlot x:Name="PayoffPlot" IsVisible="{Binding HasCurve}" />
+        </Panel>
+    </DockPanel>
+</UserControl>
