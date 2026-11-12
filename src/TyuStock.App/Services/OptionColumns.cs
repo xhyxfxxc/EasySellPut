@@ -32,7 +32,7 @@ public static class OptionColumns
     private static readonly OptionColumnDef Gamma = new("Gamma", "Op_Gamma", "Gamma", 64, 58);
     private static readonly OptionColumnDef Theta = new("Theta", "Op_Theta", "Theta", 64, 52);
     private static readonly OptionColumnDef Vega = new("Vega", "Op_Vega", "Vega", 58, 50);
-    private static readonly OptionColumnDef SpreadPct = new("SpreadPct", "Op_SpreadPct", "SpreadPct", 64, 54, OptionCellKind.Spread);
+    private static readonly OptionColumnDef SpreadPct = new("SpreadPct", "Op_SpreadPct", "SpreadPct", 76, 62, OptionCellKind.Spread);
     private static readonly OptionColumnDef Bid = new("Bid", "Op_Bid", "Bid", 58, 54, OptionCellKind.Spread);
     private static readonly OptionColumnDef Ask = new("Ask", "Op_Ask", "Ask", 58, 54, OptionCellKind.Spread);
     private static readonly OptionColumnDef Last = new("Last", "Op_Last", "Last", 58, 54);

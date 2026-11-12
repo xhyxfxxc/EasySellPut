@@ -178,6 +178,7 @@
                    Visibility="{Binding HasRows, Converter={StaticResource InverseBoolToVis}}" />
 
         <ListView x:Name="QuoteList"
+                      Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                   ItemsSource="{Binding Rows}"
                   SelectedItem="{Binding SelectedRow}"
                   Margin="32,0,32,24"
@@ -191,6 +192,7 @@
                   Visibility="{Binding HasRows, Converter={StaticResource BoolToVis}}">
             <ListView.Resources>
                 <Style TargetType="GridViewColumnHeader">
+                    <Setter Property="Background" Value="Transparent" />
                     <Setter Property="FontSize" Value="12" />
                     <Setter Property="FontWeight" Value="SemiBold" />
                     <Setter Property="Padding" Value="8,8" />
@@ -206,7 +208,7 @@
                     <Setter Property="FontSize" Value="14" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsFlashing}" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -271,7 +273,7 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding PriceTimeText}" FontSize="12" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip="{Binding TimingTip}" />
-                                    <Border Margin="6,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="6,1" Background="{StaticResource DegradedBrush}"
+                                    <Border Margin="6,0,0,0" VerticalAlignment="Center" CornerRadius="4" Padding="6,1" Background="{StaticResource StaleBadgeBrush}"
                                             Visibility="{Binding IsStale, Converter={StaticResource BoolToVis}}" ToolTip="{Binding StaleTip}"
                                             AutomationProperties.AutomationId="StaleBadge">
                                         <TextBlock Text="{DynamicResource Quote_Stale}" FontSize="12" FontWeight="SemiBold" Foreground="#1A1A1A" />

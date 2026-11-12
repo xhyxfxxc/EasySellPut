@@ -35,24 +35,65 @@ public sealed class ThemeService
                 break;
         }
         if (mainWindow is not null) ApplicationThemeManager.Apply(mainWindow);
+        ApplySemanticColors(IsDark);
         ThemeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Quick toggle from the title bar: flips to the opposite explicit theme.</summary>
     public AppThemeMode Toggle() => IsDark ? AppThemeMode.Light : AppThemeMode.Dark;
 
+    private static UpDownColorMode _upDown = UpDownColorMode.RedUp;
+
+    /// <summary>Up/down colours for the chosen convention, in the tones of the active theme (E4 contrast).</summary>
     public static void ApplyUpDownColors(UpDownColorMode mode)
     {
-        var red = (Color)ColorConverter.ConvertFromString("#E5484D");
-        var green = (Color)ColorConverter.ConvertFromString("#22A06B");
-        var up = mode == UpDownColorMode.RedUp ? red : green;
-        var down = mode == UpDownColorMode.RedUp ? green : red;
-        var res = Application.Current.Resources;
-        res["UpBrush"] = Frozen(new SolidColorBrush(up));
-        res["DownBrush"] = Frozen(new SolidColorBrush(down));
-        res["UpBackgroundBrush"] = Frozen(new SolidColorBrush(Color.FromArgb(0x26, up.R, up.G, up.B)));
-        res["DownBackgroundBrush"] = Frozen(new SolidColorBrush(Color.FromArgb(0x26, down.R, down.G, down.B)));
+        _upDown = mode;
+        ApplySemanticColors(ApplicationThemeManager.GetAppTheme() == ApplicationTheme.Dark);
     }
 
-    private static Brush Frozen(SolidColorBrush b) { b.Freeze(); return b; }
+    /// <summary>Raised after the up/down and health brushes were replaced; view models holding one re-fetch it.</summary>
+    public static event EventHandler? ColorsChanged;
+
+    /// <summary>E4: price and health colours are re-toned per theme so text keeps a 4.5:1 contrast on both.</summary>
+    public static void ApplySemanticColors(bool dark)
+    {
+        var p = SemanticPalette.For(dark);
+        var up = _upDown == UpDownColorMode.RedUp ? p.Red : p.Green;
+        var down = _upDown == UpDownColorMode.RedUp ? p.Green : p.Red;
+        Set("UpBrush", up);
+        Set("DownBrush", down);
+        Set("UpBackgroundBrush", Color.FromArgb(SemanticPalette.TintAlpha, up.R, up.G, up.B));
+        Set("DownBackgroundBrush", Color.FromArgb(SemanticPalette.TintAlpha, down.R, down.G, down.B));
+        Set("HealthyBrush", p.Healthy);
+        Set("DegradedBrush", p.Degraded);
+        Set("DownStateBrush", p.DownState);
+        Set("UnknownBrush", p.Unknown);
+        Set("RowHighlightBrush", p.RowHighlight);
+        ColorsChanged?.Invoke(null, EventArgs.Empty);
+    }
+
+    // WPF freezes brushes held in application resources, so each change installs a new brush.
+    private static void Set(string key, Color color)
+    {
+        var b = new SolidColorBrush(color);
+        b.Freeze();
+        Application.Current.Resources[key] = b;
+    }
+}
+
+/// <summary>E4: theme-specific tones for price direction and health states (all ≥ 4.5:1 on the theme's page and card backgrounds).</summary>
+public sealed record SemanticPalette(Color Red, Color Green, Color Healthy, Color Degraded, Color DownState, Color Unknown, Color RowHighlight)
+{
+    private static Color C(uint rgb) => Color.FromRgb((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
+
+    public static readonly SemanticPalette Light = new(C(0xB8282E), C(0x0F6B45), C(0x2563B8), C(0x8F5E00), C(0x5E6875), C(0x6B6B6B), C(0xEADCF2));
+    public static readonly SemanticPalette Dark = new(C(0xF89CA0), C(0x45C98E), C(0x6AA6EC), C(0xD99A1E), C(0x9AA4B2), C(0xA0A0A0), C(0x3E2F48));
+
+    /// <summary>Badge fill behind dark (#1A1A1A) text, e.g. the "stale" tag; the same in both themes.</summary>
+    public static readonly Color Badge = C(0xD99A1E);
+
+    /// <summary>Alpha of the up/down tag fills behind up/down text.</summary>
+    public const byte TintAlpha = 0x1A;
+
+    public static SemanticPalette For(bool dark) => dark ? Dark : Light;
 }

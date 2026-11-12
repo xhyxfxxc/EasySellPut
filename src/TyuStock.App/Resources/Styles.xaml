@@ -17,14 +17,18 @@
 
     <SolidColorBrush x:Key="UpBrush" Color="#E5484D" />
     <SolidColorBrush x:Key="DownBrush" Color="#22A06B" />
-    <SolidColorBrush x:Key="UpBackgroundBrush" Color="#26E5484D" />
-    <SolidColorBrush x:Key="DownBackgroundBrush" Color="#2622A06B" />
+    <SolidColorBrush x:Key="UpBackgroundBrush" Color="#1AE5484D" />
+    <SolidColorBrush x:Key="DownBackgroundBrush" Color="#1A22A06B" />
     <!-- E1: health/status colours are neutral (blue / amber / slate / grey) so they never read as "up" or "down",
          whichever up/down colour convention is active. State is also shown by an icon and a word. -->
     <SolidColorBrush x:Key="HealthyBrush" Color="#3B82D6" />
     <SolidColorBrush x:Key="DegradedBrush" Color="#B07408" />
     <SolidColorBrush x:Key="DownStateBrush" Color="#7A8594" />
     <SolidColorBrush x:Key="UnknownBrush" Color="#8A8A8A" />
+    <!-- E4: fill of small warning tags (stale quote) behind #1A1A1A text; ThemeService re-tones the brushes above per theme. -->
+    <SolidColorBrush x:Key="StaleBadgeBrush" Color="#D99A1E" />
+    <!-- E4: ATM / flashing row fill; readable with the theme's primary text (the accent fill was not). -->
+    <SolidColorBrush x:Key="RowHighlightBrush" Color="#3E2F48" />
 
     <Style x:Key="PageTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="{StaticResource DisplayFontSize}" />

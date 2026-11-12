@@ -38,6 +38,7 @@
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         </Style>
         <Style TargetType="GridViewColumnHeader">
+                    <Setter Property="Background" Value="Transparent" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Padding" Value="6,8" />
@@ -52,7 +53,7 @@
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsAtm}" Value="True">
                     <Setter Property="BorderThickness" Value="0,0,0,0" />
-                    <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource RowHighlightBrush}" />
                     <Setter Property="FontWeight" Value="SemiBold" />
                 </DataTrigger>
             </Style.Triggers>
@@ -142,7 +143,8 @@
             <TextBlock Style="{StaticResource Secondary}" VerticalAlignment="Center" HorizontalAlignment="Center"
                        Text="{DynamicResource Op_Empty}"
                        Visibility="{Binding HasRows, Converter={StaticResource InverseBoolToVis}}" />
-            <ListView x:Name="ChainList" AutomationProperties.AutomationId="OptionsChain"
+            <ListView x:Name="ChainList"
+                      Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}" AutomationProperties.AutomationId="OptionsChain"
                       ItemsSource="{Binding Rows}"
                       SelectedItem="{Binding SelectedRow}"
                       BorderThickness="0"

@@ -49,4 +49,42 @@ public class UnderlyingPriceTests
             return Task.CompletedTask;
         });
     }
+
+    /// <summary>E4: switching language while the page is hidden must not leave the header in the old language.</summary>
+    [Fact]
+    public void Header_follows_a_language_switch_without_reloading()
+    {
+        WpfHost.Run(async () =>
+        {
+            var loc = AppServices.Get<LocalizationService>();
+            var options = AppServices.Get<OptionsViewModel>();
+            var strategy = AppServices.Get<StrategyViewModel>();
+            var charts = AppServices.Get<ChartsViewModel>();
+            var before = loc.Language;
+            try
+            {
+                loc.Apply("zh-CN");
+                options.SymbolText = "MSFT";
+                strategy.SymbolText = "MSFT";
+                await options.LoadAsync();
+                await strategy.LoadAsync();
+                charts.SymbolText = "MSFT";
+                await charts.LoadAsync();
+                options.Deactivate();
+                strategy.Deactivate();
+                loc.Apply("en-US");
+                foreach (var text in new[] { options.Headline, options.StatusText, options.DelayText, strategy.Headline, strategy.StatusText, charts.AdjustText })
+                    Assert.DoesNotMatch(@"\p{IsCJKUnifiedIdeographs}", text);
+                Assert.Contains(string.Format(loc["Op_SpotSynced"], "123.45", 15), options.Headline);
+                Assert.Equal(FreshnessText.Adjustment(charts.Series!.Adjustment, loc), charts.AdjustText);
+            }
+            finally
+            {
+                loc.Apply(before);
+                options.Deactivate();
+                strategy.Deactivate();
+                charts.Deactivate();
+            }
+        });
+    }
 }

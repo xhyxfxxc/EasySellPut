@@ -102,6 +102,7 @@ public partial class ChartsViewModel : ObservableObject
         {
             RebuildRanges();
             UpdateStatus();
+            if (Series is { } series) AdjustText = FreshnessText.Adjustment(series.Adjustment, _loc); // E4
             PlotChanged?.Invoke(this, EventArgs.Empty);
         };
     }

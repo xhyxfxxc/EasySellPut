@@ -53,3 +53,68 @@ public class HealthColorTests
         });
     }
 }
+
+/// <summary>E4: every semantic tone keeps ≥ 4.5:1 text contrast on its theme's page and card backgrounds.</summary>
+public class SemanticPaletteTests
+{
+    private static readonly Color[] LightBacks = [Colors.White, Color.FromRgb(0xF3, 0xF3, 0xF3), Color.FromRgb(0xFA, 0xFA, 0xFA)];
+    private static readonly Color[] DarkBacks = [Color.FromRgb(0x20, 0x20, 0x20), Color.FromRgb(0x2B, 0x2B, 0x2B)];
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Tones_meet_text_contrast(bool dark)
+    {
+        var p = SemanticPalette.For(dark);
+        foreach (var c in new[] { p.Red, p.Green, p.Healthy, p.Degraded, p.DownState, p.Unknown })
+            foreach (var bg in dark ? DarkBacks : LightBacks)
+                Assert.True(UiAudit.Contrast(c, bg) >= 4.5, $"{c} on {bg}: {UiAudit.Contrast(c, bg):0.00}");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Up_down_text_reads_on_its_tinted_tag(bool dark)
+    {
+        var p = SemanticPalette.For(dark);
+        // Darkest-contrast cards each theme puts tags on (dashboard card in dark is #363636).
+        var cards = dark ? new[] { Color.FromRgb(0x2B, 0x2B, 0x2B), Color.FromRgb(0x36, 0x36, 0x36) } : new[] { Colors.White, Color.FromRgb(0xF3, 0xF3, 0xF3) };
+        foreach (var card in cards)
+        foreach (var c in new[] { p.Red, p.Green })
+        {
+            var a = SemanticPalette.TintAlpha / 255.0;
+            byte M(byte f, byte b) => (byte)Math.Round(f * a + b * (1 - a));
+            var tag = Color.FromRgb(M(c.R, card.R), M(c.G, card.G), M(c.B, card.B));
+            Assert.True(UiAudit.Contrast(c, tag) >= 4.5, $"{c} on its tag: {UiAudit.Contrast(c, tag):0.00}");
+        }
+        var text = dark ? Colors.White : Color.FromRgb(0x1C, 0x1C, 0x1C);
+        Assert.True(UiAudit.Contrast(text, p.RowHighlight) >= 7);
+    }
+
+    [Fact]
+    public void Badge_fill_reads_with_dark_text()
+        => Assert.True(UiAudit.Contrast(Color.FromRgb(0x1A, 0x1A, 0x1A), SemanticPalette.Badge) >= 4.5);
+
+    [Fact]
+    public void Theme_switch_retones_brushes()
+    {
+        WpfHost.Run(() =>
+        {
+            Color C(string key) => ((SolidColorBrush)Application.Current.FindResource(key)).Color;
+            var theme = AppServices.Get<ThemeService>();
+            var raised = 0;
+            EventHandler h = (_, _) => raised++;
+            ThemeService.ColorsChanged += h;
+            try
+            {
+                theme.Apply(AppThemeMode.Light);
+                Assert.Equal(SemanticPalette.Light.Healthy, C("HealthyBrush"));
+                theme.Apply(AppThemeMode.Dark);
+                Assert.Equal(SemanticPalette.Dark.Healthy, C("HealthyBrush"));
+                Assert.Contains(C("UpBrush"), new[] { SemanticPalette.Dark.Red, SemanticPalette.Dark.Green });
+                Assert.Equal(2, raised);   // view models holding a brush are told to re-fetch it
+            }
+            finally { ThemeService.ColorsChanged -= h; theme.Apply(AppThemeMode.Dark); }
+        });
+    }
+}

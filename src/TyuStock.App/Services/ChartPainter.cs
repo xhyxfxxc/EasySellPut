@@ -32,6 +32,8 @@ public sealed class ChartPainter
         p.Axes.Bottom.Label.FontSize = FontSize;
         p.Axes.Left.Label.FontName = FontName;
         p.Axes.Left.Label.FontSize = FontSize;
+        p.Axes.Title.Label.FontName = FontName; // E4: the default title font has no CJK glyphs ("IV 微笑" drew as boxes)
+        p.Axes.Title.Label.FontSize = FontSize + 1;
         p.Legend.FontName = FontName;
         p.Legend.FontSize = FontSize;
         p.Legend.BackgroundColor = dataBg;

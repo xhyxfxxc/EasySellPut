@@ -143,7 +143,7 @@ public partial class ChartsPage : Page
         var muted = BrushColor("TextFillColorSecondaryBrush", System.Windows.Media.Color.FromRgb(0x9A, 0x9A, 0x9A));
         var bg = BrushColor("ApplicationBackgroundBrush", _theme.IsDark ? System.Windows.Media.Color.FromRgb(0x20, 0x20, 0x20) : System.Windows.Media.Color.FromRgb(0xF3, 0xF3, 0xF3));
         var dataBg = _theme.IsDark ? Color.FromHex("#2A2A2A") : Color.FromHex("#FFFFFF");
-        var grid = _theme.IsDark ? Color.FromHex("#33FFFFFF") : Color.FromHex("#33000000");
+        var grid = _theme.IsDark ? new Color(255, 255, 255, 0x33) : new Color(0, 0, 0, 0x33); // E4: ScottPlot hex is RRGGBBAA, "#33FFFFFF" was opaque cyan
         return (Sp(up), Sp(down), Sp(text), Sp(muted), grid, Sp(bg), dataBg);
     }
 

@@ -104,6 +104,7 @@ public partial class StrategyViewModel : ObservableObject
             RelabelExpirations();
             RebuildChoices();
             RelabelLegs();
+            RelabelHeader();
             Recompute();
         };
     }
@@ -293,21 +294,15 @@ public partial class StrategyViewModel : ObservableObject
                 }
                 _listed = list;
                 _hasChain = list.Count > 0;
-                var src = SourceNames.Display(chain.Source, _loc);
-                DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
-                HasDelay = DelayText.Length > 0;
                 _lastError = _hasChain ? null : (chainError ?? _loc["St_NoChain"]);
-                if (_hasChain)
-                    StatusText = string.Format(_loc["St_Source"], src, list.Count);
             }
             else
             {
-                DelayText = ""; HasDelay = false;
                 _lastError = chainError ?? _loc["St_NoChain"];
             }
 
-            Headline = underlying.Main.Length > 0 ? $"{symbol}   {underlying.Main}" : symbol;
-            LivePriceText = underlying.Live;
+            (_hdrSymbol, _hdrQuote, _hdrChain) = (symbol, q, chain);
+            RelabelHeader();
 
             if (seed is not null)
             {
@@ -598,6 +593,25 @@ public partial class StrategyViewModel : ObservableObject
     {
         var dte = OptionTime.DaysToExpiry(d, DateTimeOffset.Now);
         return $"{d:yyyy-MM-dd}  ·  {string.Format(_loc["Op_Dte"], dte)}";
+    }
+
+    // E4: inputs of the header texts, so a language switch can relabel them without a reload.
+    private string? _hdrSymbol;
+    private Quote? _hdrQuote;
+    private OptionChain? _hdrChain;
+
+    /// <summary>E4: header/status texts from the last load, rebuilt in the current language.</summary>
+    private void RelabelHeader()
+    {
+        if (_hdrSymbol is not { } symbol) return;
+        var now = DateTimeOffset.Now;
+        var u = UnderlyingText.Describe(_hdrChain, _hdrQuote, _loc, now);
+        Headline = u.Main.Length > 0 ? $"{symbol}   {u.Main}" : symbol;
+        LivePriceText = u.Live;
+        DelayText = _hdrChain is { } c ? FreshnessText.ChainTiming(c, _loc, now) : "";
+        HasDelay = DelayText.Length > 0;
+        if (_hasChain && _lastError is null && _hdrChain is { } ch)
+            StatusText = string.Format(_loc["St_Source"], SourceNames.Display(ch.Source, _loc), _listed.Count);
     }
 
     private void UpdateStatus()

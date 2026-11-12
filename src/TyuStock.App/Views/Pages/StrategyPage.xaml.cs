@@ -76,7 +76,7 @@ public partial class StrategyPage : Page
         var muted = Sp(BrushColor("TextFillColorSecondaryBrush", MediaColor(0x9A, 0x9A, 0x9A)));
         var bg = Sp(BrushColor("ApplicationBackgroundBrush", dark ? MediaColor(0x20, 0x20, 0x20) : MediaColor(0xF3, 0xF3, 0xF3)));
         var dataBg = dark ? Color.FromHex("#2A2A2A") : Color.FromHex("#FFFFFF");
-        var grid = dark ? Color.FromHex("#33FFFFFF") : Color.FromHex("#33000000");
+        var grid = dark ? new Color(255, 255, 255, 0x33) : new Color(0, 0, 0, 0x33); // E4: ScottPlot hex is RRGGBBAA, "#33FFFFFF" was opaque cyan
         _themePaint.ApplyTheme(PayoffPlot, dark, Color.FromHex("#3B82F6"), Color.FromHex("#E2A03F"), text, muted, grid, bg, dataBg);
 
         var curve = Vm.Curve;
@@ -131,6 +131,7 @@ public partial class StrategyPage : Page
         plot.Title(Find("St_Chart"));
         plot.Legend.IsVisible = true;
         plot.Legend.Alignment = Alignment.UpperRight;
+        plot.Axes.AutoScale(); // E4: limits from an earlier render would otherwise stick
         PayoffPlot.Refresh();
     }
 

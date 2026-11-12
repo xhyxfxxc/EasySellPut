@@ -65,6 +65,7 @@ public partial class WatchlistViewModel : ObservableObject
             foreach (var r in Rows) r.IsFlashing = false;
         };
         _store.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(OnStoreChanged);
+        ThemeService.ColorsChanged += (_, _) => { foreach (var r in Rows) r.Relabel(_loc); }; // E4: theme tones
         _loc.LanguageChanged += (_, _) =>
         {
             RebuildGroups();

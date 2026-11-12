@@ -36,6 +36,10 @@ public partial class OptionsViewModel : ObservableObject
     private bool _suppressExpChange;
     private string? _loadedSymbol;
     private OptionChain? _lastChain;
+    // E4: inputs of the header texts, so a language switch can relabel them without a reload.
+    private string? _hdrSymbol;
+    private Quote? _hdrQuote;
+    private bool _hdrLocal;
 
     public ObservableCollection<string> WatchSymbols { get; } = [];
     public ObservableCollection<ExpirationChoice> Expirations { get; } = [];
@@ -95,6 +99,7 @@ public partial class OptionsViewModel : ObservableObject
         {
             ModelText = PricingText.Model(_rate, _loc);
             RelabelExpirations();
+            RelabelHeader();
             UpdateStatus();
             TableChanged?.Invoke(this, EventArgs.Empty);
             if (_active && Rows.Count > 0) _ = LoadAsync(refreshOnly: true); // G2: volume/OI units follow the language
@@ -315,15 +320,9 @@ public partial class OptionsViewModel : ObservableObject
             BuildSmile(rows);
             AtmRow = Rows.FirstOrDefault(r => r.IsAtm) ?? _allRows.FirstOrDefault(r => r.IsAtm);
 
-            var src = SourceNames.Display(chain.Source, _loc);
             _lastError = Rows.Count == 0 ? _loc["Op_Empty"] : null;
-            Headline = underlying.Main.Length > 0 ? $"{symbol}   {underlying.Main}" : symbol;
-            LivePriceText = underlying.Live;
-            DelayText = FreshnessText.ChainTiming(chain, _loc, DateTimeOffset.Now);
-            HasDelay = DelayText.Length > 0;
-            LocalNote = usedLocal ? string.Format(_loc["Op_LocalGreeks"], _rate.Rate) : "";
-            if (_lastError is null)
-                StatusText = string.Format(_loc["Op_Source"], src, Rows.Count);
+            (_hdrSymbol, _hdrQuote, _hdrLocal) = (symbol, q, usedLocal);
+            RelabelHeader();
         }
         catch (AllSourcesFailedException) { Fail(_loc["Op_AllFailed"], refreshOnly); }
         catch (OperationCanceledException) when (_active && !refreshOnly) { Fail(_loc["Op_Timeout"], refreshOnly); }
@@ -351,6 +350,7 @@ public partial class OptionsViewModel : ObservableObject
         SmilePoints = [];
         HasRows = false;
         AtmRow = null;
+        _hdrSymbol = null;
         Headline = "";
         LivePriceText = "";
         DelayText = "";
@@ -406,6 +406,21 @@ public partial class OptionsViewModel : ObservableObject
         var dte = OptionTime.DaysToExpiry(d, DateTimeOffset.Now);
         var days = string.Format(_loc["Op_Dte"], dte);
         return $"{d:yyyy-MM-dd}  ·  {days}";
+    }
+
+    /// <summary>E4: header/status texts from the last load, rebuilt in the current language.</summary>
+    private void RelabelHeader()
+    {
+        if (_hdrSymbol is not { } symbol) return;
+        var now = DateTimeOffset.Now;
+        var u = UnderlyingText.Describe(_lastChain, _hdrQuote, _loc, now);
+        Headline = u.Main.Length > 0 ? $"{symbol}   {u.Main}" : symbol;
+        LivePriceText = u.Live;
+        DelayText = _lastChain is { } c ? FreshnessText.ChainTiming(c, _loc, now) : "";
+        HasDelay = DelayText.Length > 0;
+        LocalNote = _hdrLocal ? string.Format(_loc["Op_LocalGreeks"], _rate.Rate) : "";
+        if (_lastError is null && _lastChain is { } ch)
+            StatusText = string.Format(_loc["Op_Source"], SourceNames.Display(ch.Source, _loc), Rows.Count);
     }
 
     private void UpdateStatus()

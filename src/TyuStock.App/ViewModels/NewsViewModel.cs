@@ -71,6 +71,7 @@ public partial class NewsViewModel : ObservableObject
         _timer.Tick += async (_, _) => await LoadAsync(refreshOnly: true);
         _watchlist.Changed += (_, _) => RebuildWatchSymbols();
         _loc.LanguageChanged += (_, _) => Relabel();
+        ThemeService.ColorsChanged += (_, _) => ChangeBrush = UpDownBrush(_up); // E4: theme tones
     }
 
     public async Task ActivateAsync()
@@ -243,8 +244,8 @@ public partial class NewsViewModel : ObservableObject
             ChangeText = $"{NumberDisplay.SignedChange(c, price ?? c)}  ({(p >= 0 ? "+" : "")}{p.ToString("0.00", CultureInfo.InvariantCulture)}%)";
         else
             ChangeText = "";
-        var up = (ch ?? 0) >= 0;
-        ChangeBrush = Application.Current?.TryFindResource(up ? "UpBrush" : "DownBrush") as Brush;
+        _up = (ch ?? 0) >= 0;
+        ChangeBrush = UpDownBrush(_up);
         Headline = string.IsNullOrEmpty(PriceText) || PriceText == NumberDisplay.Empty
             ? $"{name}  ({symbol})"
             : $"{name}  ({symbol})   {PriceText}";
@@ -390,6 +391,10 @@ public partial class NewsViewModel : ObservableObject
         var bj = TimeZoneInfo.ConvertTime(t, BeijingZone).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
         return string.Format(_loc["Nf_TimeEtBj"], et, bj);
     }
+
+    private bool _up = true;
+
+    private static Brush? UpDownBrush(bool up) => Application.Current.TryFindResource(up ? "UpBrush" : "DownBrush") as Brush;
 
     private void Relabel()
     {

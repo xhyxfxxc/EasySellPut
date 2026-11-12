@@ -106,13 +106,13 @@ public partial class OptionsPage : Page
         if (itm is not null)
         {
             var trigger = new DataTrigger { Binding = new Binding(itm), Value = true };
-            trigger.Setters.Add(new Setter(Border.BackgroundProperty, TryFindResource("ControlFillColorSecondaryBrush")));
+            trigger.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("ControlFillColorSecondaryBrush")));
             style.Triggers.Add(trigger);
         }
         if (side is null)
         {
             var atm = new DataTrigger { Binding = new Binding("IsAtm"), Value = true };
-            atm.Setters.Add(new Setter(Border.BackgroundProperty, TryFindResource("AccentFillColorSecondaryBrush")));
+            atm.Setters.Add(new Setter(Border.BackgroundProperty, new DynamicResourceExtension("RowHighlightBrush")));
             style.Triggers.Add(atm);
         }
         factory.SetValue(FrameworkElement.StyleProperty, style);
@@ -136,7 +136,7 @@ public partial class OptionsPage : Page
         tb.SetValue(TextBlock.FontSizeProperty, strike ? 14.0 : 12.0);
         if (strike) tb.SetValue(TextBlock.FontWeightProperty, FontWeights.SemiBold);
         tb.SetValue(TextBlock.TextAlignmentProperty, side is null ? TextAlignment.Center : TextAlignment.Right);
-        tb.SetValue(TextBlock.FontFamilyProperty, TryFindResource("NumberFont") as FontFamily ?? new FontFamily("Segoe UI"));
+        tb.SetValue(TextBlock.FontFamilyProperty, (FontFamily)FindResource("NumberFont"));
         var tbStyle = new Style(typeof(TextBlock));
         tbStyle.Setters.Add(new Setter(TextBlock.ForegroundProperty, new DynamicResourceExtension("TextFillColorPrimaryBrush")));
         if (def.Kind == OptionCellKind.Spread && side is not null)
@@ -179,7 +179,7 @@ public partial class OptionsPage : Page
         var muted = Sp(BrushColor("TextFillColorSecondaryBrush", MediaColor(0x9A, 0x9A, 0x9A)));
         var bg = Sp(BrushColor("ApplicationBackgroundBrush", dark ? MediaColor(0x20, 0x20, 0x20) : MediaColor(0xF3, 0xF3, 0xF3)));
         var dataBg = dark ? Color.FromHex("#2A2A2A") : Color.FromHex("#FFFFFF");
-        var grid = dark ? Color.FromHex("#33FFFFFF") : Color.FromHex("#33000000");
+        var grid = dark ? new Color(255, 255, 255, 0x33) : new Color(0, 0, 0, 0x33); // E4: ScottPlot hex is RRGGBBAA, "#33FFFFFF" was opaque cyan
         _themePaint.ApplyTheme(SmilePlot, dark, Color.FromHex("#3B82F6"), Color.FromHex("#F59E0B"), text, muted, grid, bg, dataBg);
 
         var pts = Vm.SmilePoints;
@@ -218,6 +218,7 @@ public partial class OptionsPage : Page
         plot.Title(Find("Op_Smile"));
         plot.Legend.IsVisible = true;
         plot.Legend.Alignment = Alignment.UpperRight;
+        plot.Axes.AutoScale(); // E4: limits from an earlier render would otherwise stick
         SmilePlot.Refresh();
     }
 

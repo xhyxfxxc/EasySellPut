@@ -176,7 +176,8 @@
                 <TextBlock DockPanel.Dock="Top" Style="{StaticResource CardTitle}" Text="{DynamicResource Nf_News}" Margin="0,0,0,8" />
                 <TextBlock DockPanel.Dock="Top" Style="{StaticResource Secondary}" Text="{DynamicResource Nf_NoNews}"
                            Visibility="{Binding HasNews, Converter={StaticResource InverseBoolToVis}}" />
-                <ListView x:Name="NewsList" AutomationProperties.AutomationId="NewsList"
+                <ListView x:Name="NewsList"
+                      Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}" AutomationProperties.AutomationId="NewsList"
                           ItemsSource="{Binding News}" BorderThickness="0"
                           Visibility="{Binding HasNews, Converter={StaticResource BoolToVis}}"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"

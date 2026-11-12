@@ -31,6 +31,8 @@ public sealed class FakeMarketDataService : IMarketDataService
     /// <summary>F7: source and adjustment basis of returned bars (default: yahoo, honouring the requested mode).</summary>
     public Func<BarRequest, (string Source, PriceAdjustment Basis)>? BarMeta { get; set; }
     public List<BarRequest> BarRequests { get; } = [];
+    /// <summary>C5: override the chain's strikes (e.g. 400 strikes for the render-time baseline).</summary>
+    public double[]? ChainStrikes { get; set; }
 
     public Task<BarSeries> GetBarsAsync(BarRequest request, CancellationToken ct = default)
     {
@@ -66,7 +68,7 @@ public sealed class FakeMarketDataService : IMarketDataService
         lock (ChainRequests) ChainRequests.Add((symbol, expiration));
         var exp = expiration ?? Exp(30);
         var contracts = new List<OptionContract>();
-        foreach (var k in new[] { 110.0, 115, 120, 125, 130, 135 })
+        foreach (var k in ChainStrikes ?? [110.0, 115, 120, 125, 130, 135])
         {
             foreach (var right in new[] { OptionRight.Call, OptionRight.Put })
             {

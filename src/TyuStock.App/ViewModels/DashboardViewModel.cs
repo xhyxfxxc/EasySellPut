@@ -40,6 +40,7 @@ public partial class DashboardViewModel : ObservableObject
         _watchlist = watchlist; _hub = hub; _loc = loc; _nav = nav;
         RebuildCards();
         _loc.LanguageChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); UpdateStatus(); };
+        ThemeService.ColorsChanged += (_, _) => { foreach (var q in Quotes) q.Relabel(_loc); }; // E4: theme tones
         _watchlist.Changed += (_, _) => Application.Current?.Dispatcher.Invoke(() => { RebuildCards(); if (_active) { Resubscribe(); _ = RefreshAsync(); } });
     }
 
