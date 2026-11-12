@@ -51,14 +51,6 @@ public partial class OptionsPage : Page
 
     private OptionsViewModel Vm => (OptionsViewModel)DataContext;
 
-    private void OnSymbolKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            _ = Vm.LoadFromBoxCommand.ExecuteAsync(null);
-            e.Handled = true;
-        }
-    }
 
     private void OnWindowClick(object sender, RoutedEventArgs e)
     {

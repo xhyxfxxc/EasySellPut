@@ -29,14 +29,6 @@ public partial class NewsPage : Page
 
     private NewsViewModel Vm => (NewsViewModel)DataContext;
 
-    private void OnSymbolKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            _ = Vm.LoadFromBoxCommand.ExecuteAsync(null);
-            e.Handled = true;
-        }
-    }
 
     private void OnPeriodClick(object sender, RoutedEventArgs e)
     {

@@ -55,14 +55,6 @@ public partial class ChartsPage : Page
 
     private IEnumerable<WpfPlot> AllPlots() => [PricePlot, VolumePlot, MacdPlot, RsiPlot, KdjPlot];
 
-    private void OnSymbolKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter)
-        {
-            _ = Vm.LoadFromBoxCommand.ExecuteAsync(null);
-            e.Handled = true;
-        }
-    }
 
     private void OnPlotMouseMove(object sender, MouseEventArgs e)
     {

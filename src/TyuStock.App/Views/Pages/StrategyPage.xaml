@@ -3,6 +3,7 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:controls="clr-namespace:TyuStock.App.Views.Controls"
       xmlns:scottplot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF">
     <Page.Resources>
         <Style x:Key="RangeChip" TargetType="Button">
@@ -80,11 +81,8 @@
                           DisplayMemberPath="Label" />
                 <TextBlock DockPanel.Dock="Right" Style="{StaticResource Caption}" VerticalAlignment="Center"
                            Margin="12,0,0,0" Text="{DynamicResource St_Expiration}" />
-                <ComboBox x:Name="SymbolBox" AutomationProperties.AutomationId="StrategySymbol"
-                          MinWidth="160" FontSize="14" IsEditable="True" StaysOpenOnEdit="True"
-                          ItemsSource="{Binding WatchSymbols}"
-                          Text="{Binding SymbolText, UpdateSourceTrigger=PropertyChanged}"
-                          KeyDown="OnSymbolKeyDown" />
+                <controls:SymbolBox x:Name="SymbolInput" AutomationProperties.AutomationId="StrategySymbol" MinWidth="160"
+                          Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}" CommitCommand="{Binding LoadFromBoxCommand}" />
             </DockPanel>
             <DockPanel Margin="0,0,0,8" LastChildFill="False">
                 <TextBlock Style="{StaticResource CardTitle}" FontSize="16" Text="{Binding Headline}" VerticalAlignment="Center" />

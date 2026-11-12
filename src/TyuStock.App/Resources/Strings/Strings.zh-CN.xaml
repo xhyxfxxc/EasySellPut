@@ -518,4 +518,9 @@
     <sys:String x:Key="Al_IvFailed">{0} 取样失败</sys:String>
     <sys:String x:Key="Al_IvPending">{0} 等待取样</sys:String>
     <sys:String x:Key="Al_IvNotePrefix">IV 取样（每 5 分钟；优先 CBOE IV30，取不到时用约 30 天到期的平值 IV）：</sys:String>
+    <sys:String x:Key="Sb_Placeholder">代码或英文名称，如 AAPL</sys:String>
+    <sys:String x:Key="Sb_ShowWatchlist">从自选中选择</sys:String>
+    <sys:String x:Key="Sb_WatchTag">自选</sys:String>
+    <sys:String x:Key="Sb_NoMatch">没有匹配的代码</sys:String>
+    <sys:String x:Key="Sb_SearchFailed">联想搜索暂时不可用，只显示自选中的匹配</sys:String>
 </ResourceDictionary>

@@ -518,4 +518,9 @@
     <sys:String x:Key="Al_IvFailed">{0} sample failed</sys:String>
     <sys:String x:Key="Al_IvPending">{0} waiting for first sample</sys:String>
     <sys:String x:Key="Al_IvNotePrefix">IV samples (every 5 min; CBOE IV30 first, otherwise ATM IV of the expiry nearest 30 days):</sys:String>
+    <sys:String x:Key="Sb_Placeholder">Symbol or name, e.g. AAPL</sys:String>
+    <sys:String x:Key="Sb_ShowWatchlist">Pick from the watchlist</sys:String>
+    <sys:String x:Key="Sb_WatchTag">Watchlist</sys:String>
+    <sys:String x:Key="Sb_NoMatch">No matching symbol</sys:String>
+    <sys:String x:Key="Sb_SearchFailed">Search is unavailable right now; showing watchlist matches only</sys:String>
 </ResourceDictionary>
