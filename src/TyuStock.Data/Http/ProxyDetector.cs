@@ -110,7 +110,7 @@ public static class ProxyDetector
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Internet Settings");
             return key?.GetValue("ProxyServer") as string;
         }
-        catch { return null; }
+        catch { return null; } // expected: no readable proxy setting simply means "no system proxy"
     }
 
     public static async Task<bool> IsListeningAsync(string host, int port, TimeSpan timeout, CancellationToken ct = default)
@@ -119,6 +119,6 @@ public static class ProxyDetector
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeout);
         try { await client.ConnectAsync(host, port, cts.Token); return client.Connected; }
-        catch { return false; }
+        catch { return false; } // expected: a refused/timed-out probe is the answer ("not listening")
     }
 }

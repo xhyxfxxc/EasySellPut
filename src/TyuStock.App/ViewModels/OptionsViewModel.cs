@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Threading;
@@ -311,7 +312,7 @@ public partial class OptionsViewModel : ObservableObject
         catch (AllSourcesFailedException) { Fail(_loc["Op_AllFailed"], refreshOnly); }
         catch (OperationCanceledException) when (_active && !refreshOnly) { Fail(_loc["Op_Timeout"], refreshOnly); }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Fail(ex.Message, refreshOnly); }
+        catch (Exception ex) { AppLog.Warn("options", "load failed", ex); Fail(ex.Message, refreshOnly); }
         finally
         {
             IsBusy = false;
@@ -395,21 +396,9 @@ public partial class OptionsViewModel : ObservableObject
         if (_lastError is not null) StatusText = _lastError;
     }
 
-    private async Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct)
-    {
-        try { return await _data.GetQuotesAsync([symbol], ct); }
-        catch { return []; }
-    }
+    private Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct) => SafeData.QuotesAsync(_data, symbol, "options", ct);
 
-    private async Task<double> SafeYield(string symbol, CancellationToken ct)
-    {
-        try
-        {
-            var f = await _data.GetFundamentalsAsync(symbol, ct);
-            return f.DividendYield is { } y && y >= 0 && y < 1 ? y : 0;
-        }
-        catch { return 0; }
-    }
+    private Task<double> SafeYield(string symbol, CancellationToken ct) => SafeData.DividendYieldAsync(_data, symbol, "options", ct);
 }
 
 public sealed record ExpirationChoice(DateOnly Date, string Label)

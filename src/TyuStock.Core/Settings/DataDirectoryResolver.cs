@@ -40,7 +40,7 @@ public static class DataDirectoryResolver
                 Directory.CreateDirectory(localAppData);
                 Directory.Move(legacy, modern);
             }
-            catch
+            catch // expected: runs before logging exists; keep using the old folder rather than lose data
             {
                 return new(legacy, DataDirectorySource.LocalAppData);
             }

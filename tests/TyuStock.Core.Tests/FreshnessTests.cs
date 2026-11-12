@@ -67,6 +67,7 @@ public class FreshnessTests
     }
 }
 
+[Collection("AppLog")]
 public class AppLogTests
 {
     [Fact]

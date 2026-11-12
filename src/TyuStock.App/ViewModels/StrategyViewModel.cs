@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Threading;
@@ -244,7 +245,7 @@ public partial class StrategyViewModel : ObservableObject
             catch (AllSourcesFailedException) { chainError = _loc["St_AllFailed"]; }
             catch (OperationCanceledException) when (_active && !refreshOnly) { chainError = _loc["St_Timeout"]; throw; }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { chainError = ex.Message; }
+            catch (Exception ex) { AppLog.Warn("strategy", "chain load failed", ex); chainError = ex.Message; }
 
             if (chain is not null) _loadedSymbol = symbol;
             var quotes = await SafeQuotes(symbol, ct);
@@ -320,7 +321,7 @@ public partial class StrategyViewModel : ObservableObject
             _lastError = _loc["St_Timeout"];
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { _lastError = ex.Message; }
+        catch (Exception ex) { AppLog.Warn("strategy", "load failed", ex); _lastError = ex.Message; }
         finally
         {
             IsBusy = false;
@@ -526,6 +527,7 @@ public partial class StrategyViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            AppLog.Warn("strategy", "valuation failed", ex);
             HasCurve = false;
             StatusText = ex.Message;
         }
@@ -601,21 +603,9 @@ public partial class StrategyViewModel : ObservableObject
         if (_lastError is not null) StatusText = _lastError;
     }
 
-    private async Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct)
-    {
-        try { return await _data.GetQuotesAsync([symbol], ct); }
-        catch { return []; }
-    }
+    private Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct) => SafeData.QuotesAsync(_data, symbol, "strategy", ct);
 
-    private async Task<double> SafeYield(string symbol, CancellationToken ct)
-    {
-        try
-        {
-            var f = await _data.GetFundamentalsAsync(symbol, ct);
-            return f.DividendYield is { } y && y >= 0 && y < 1 ? y : 0;
-        }
-        catch { return 0; }
-    }
+    private Task<double> SafeYield(string symbol, CancellationToken ct) => SafeData.DividendYieldAsync(_data, symbol, "strategy", ct);
 }
 
 public sealed record PresetChoice(StrategyKind Kind, string Label)
@@ -713,6 +703,7 @@ public partial class StrategyLegRow : ObservableObject
         }
         catch (Exception ex)
         {
+            AppLog.Warn("strategy", "leg parse failed", ex);
             error = ex.Message;
             return false;
         }

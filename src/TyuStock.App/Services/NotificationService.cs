@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -201,9 +202,9 @@ public sealed class NotificationService : IDisposable
         _disposed = true;
         if (!_options.NoAlerts)
         {
-            try { ToastNotificationManagerCompat.OnActivated -= OnToastActivated; } catch { }
+            try { ToastNotificationManagerCompat.OnActivated -= OnToastActivated; } catch (Exception ex) { Log(ex); }
         }
-        try { _tray?.Dispose(); } catch { }
+        try { _tray?.Dispose(); } catch (Exception ex) { Log(ex); }
         _tray = null;
     }
 
@@ -243,16 +244,8 @@ public sealed class NotificationService : IDisposable
         try { _ = SetCurrentProcessExplicitAppUserModelID(AppUserModelId); } catch (Exception ex) { Log(ex); }
     }
 
-    private void Log(Exception ex)
-    {
-        try
-        {
-            var dir = Path.Combine(_dataDir.Path, "logs");
-            Directory.CreateDirectory(dir);
-            File.AppendAllText(Path.Combine(dir, "alerts.log"), $"[{DateTime.Now:O}] {ex}{Environment.NewLine}");
-        }
-        catch { }
-    }
+    /// <summary>H2: notification failures go to the shared app log (previously a separate alerts.log).</summary>
+    private static void Log(Exception ex) => AppLog.Warn("notify", "notification failed", ex);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SetCurrentProcessExplicitAppUserModelID(string appID);

@@ -45,7 +45,9 @@ public sealed class AlertStore
             }
             catch (Exception ex) when (ex is JsonException or IOException or NotSupportedException)
             {
-                try { File.Copy(FilePath, FilePath + ".corrupt-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true); } catch { }
+                Diagnostics.AppLog.Error("alerts", $"{FilePath} is unreadable, starting from defaults (copy kept as .corrupt-*)", ex);
+                try { File.Copy(FilePath, FilePath + ".corrupt-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true); }
+                catch (Exception copyEx) { Diagnostics.AppLog.Warn("alerts", "could not keep a copy of the corrupt file", copyEx); }
             }
             Current = new AlertDocument();
             return Current;

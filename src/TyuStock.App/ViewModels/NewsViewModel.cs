@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -149,11 +150,14 @@ public partial class NewsViewModel : ObservableObject
     [RelayCommand]
     private void OpenArticle(NewsEntry? item)
     {
-        if (item is not null) TryOpenUrl(item.Url);
+        if (item is not null && !TryOpenUrl(item.Url)) StatusText = _loc["Nf_OpenFailed"];
     }
 
     [RelayCommand]
-    private void OpenWebsite() => TryOpenUrl(WebsiteUrl);
+    private void OpenWebsite()
+    {
+        if (!TryOpenUrl(WebsiteUrl)) StatusText = _loc["Nf_OpenFailed"];
+    }
 
     partial void OnAnnualChanged(bool value) => RebuildFinancials();
 
@@ -214,7 +218,7 @@ public partial class NewsViewModel : ObservableObject
             _lastError = _loc["Nf_Timeout"];
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { _lastError = ex.Message; }
+        catch (Exception ex) { AppLog.Warn("news", "refresh failed", ex); _lastError = ex.Message; }
         finally
         {
             IsBusy = false;
@@ -396,18 +400,14 @@ public partial class NewsViewModel : ObservableObject
         if (_lastError is not null) StatusText = _lastError;
     }
 
-    private async Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct)
-    {
-        try { return await _data.GetQuotesAsync([symbol], ct); }
-        catch { return []; }
-    }
+    private Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct) => SafeData.QuotesAsync(_data, symbol, "news", ct);
 
     private async Task<(Fundamentals? Data, string? Error)> SafeFundamentals(string symbol, CancellationToken ct)
     {
         try { return (await _data.GetFundamentalsAsync(symbol, ct), null); }
         catch (AllSourcesFailedException) { return (null, _loc["Nf_FundFailed"]); }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { return (null, ex.Message); }
+        catch (Exception ex) { AppLog.Warn("news", $"load for {symbol} failed", ex); return (null, ex.Message); }
     }
 
     private async Task<(FinancialStatements? Data, string? Error)> SafeFinancials(string symbol, CancellationToken ct)
@@ -415,7 +415,7 @@ public partial class NewsViewModel : ObservableObject
         try { return (await _data.GetFinancialsAsync(symbol, ct), null); }
         catch (AllSourcesFailedException) { return (null, _loc["Nf_FinFailed"]); }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { return (null, ex.Message); }
+        catch (Exception ex) { AppLog.Warn("news", $"load for {symbol} failed", ex); return (null, ex.Message); }
     }
 
     private async Task<(IReadOnlyList<NewsItem>? Data, string? Error)> SafeNews(string symbol, CancellationToken ct)
@@ -423,7 +423,7 @@ public partial class NewsViewModel : ObservableObject
         try { return (await _data.GetNewsAsync(symbol, 30, ct), null); }
         catch (AllSourcesFailedException) { return (null, _loc["Nf_NewsFailed"]); }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { return (null, ex.Message); }
+        catch (Exception ex) { AppLog.Warn("news", $"load for {symbol} failed", ex); return (null, ex.Message); }
     }
 
     public static bool TryOpenUrl(string? url)
@@ -434,7 +434,11 @@ public partial class NewsViewModel : ObservableObject
             Process.Start(new ProcessStartInfo(url!) { UseShellExecute = true });
             return true;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            AppLog.Warn("news", $"could not open {url}", ex);
+            return false;
+        }
     }
 
     public static bool IsSafeUrl(string? url)
@@ -455,10 +459,10 @@ public partial class NewsViewModel : ObservableObject
     private static TimeZoneInfo ResolveBeijing()
     {
         try { return TimeZoneInfo.FindSystemTimeZoneById("China Standard Time"); }
-        catch
+        catch // expected: Windows id missing on non-Windows / trimmed ICU — try the IANA id next
         {
             try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai"); }
-            catch { return TimeZoneInfo.Local; }
+            catch { return TimeZoneInfo.Local; } // expected: last resort, local time is the user's own zone
         }
     }
 }

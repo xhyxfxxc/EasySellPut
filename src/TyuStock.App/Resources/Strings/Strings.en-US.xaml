@@ -537,4 +537,5 @@
     <sys:String x:Key="Set_CloseAction">Close button</sys:String>
     <sys:String x:Key="Set_CloseActionDesc">When the window close button is clicked</sys:String>
     <sys:String x:Key="Set_CloseAsk">Ask</sys:String>
+    <sys:String x:Key="Nf_OpenFailed">Could not open the link. Check your default browser.</sys:String>
 </ResourceDictionary>

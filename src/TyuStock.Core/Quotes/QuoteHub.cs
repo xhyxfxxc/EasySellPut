@@ -153,6 +153,7 @@ public sealed class QuoteHub
         {
             ConsecutiveFailures++;
             LastError = ex;
+            Diagnostics.AppLog.Warn("quotes", $"batch failed ({ConsecutiveFailures} in a row)", ex);
             batch = new QuoteBatch(symbols, [], ex, Now());
         }
         Updated?.Invoke(this, batch);

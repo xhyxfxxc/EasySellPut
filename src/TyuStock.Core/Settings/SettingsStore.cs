@@ -43,7 +43,9 @@ public sealed class SettingsStore
             catch (Exception ex) when (ex is JsonException or IOException or NotSupportedException)
             {
                 // Keep the broken file for inspection and start from defaults.
-                try { File.Copy(FilePath, FilePath + ".corrupt-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true); } catch { }
+                Diagnostics.AppLog.Error("settings", $"{FilePath} is unreadable, starting from defaults (copy kept as .corrupt-*)", ex);
+                try { File.Copy(FilePath, FilePath + ".corrupt-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true); }
+                catch (Exception copyEx) { Diagnostics.AppLog.Warn("settings", "could not keep a copy of the corrupt file", copyEx); }
             }
             Current = new AppSettings().Normalize();
             return Current;

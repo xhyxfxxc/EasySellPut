@@ -537,4 +537,5 @@
     <sys:String x:Key="Set_CloseAction">关闭按钮</sys:String>
     <sys:String x:Key="Set_CloseActionDesc">点窗口右上角的关闭按钮时</sys:String>
     <sys:String x:Key="Set_CloseAsk">每次询问</sys:String>
+    <sys:String x:Key="Nf_OpenFailed">无法打开链接，请检查默认浏览器设置</sys:String>
 </ResourceDictionary>

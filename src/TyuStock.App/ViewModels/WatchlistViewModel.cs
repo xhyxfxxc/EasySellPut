@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
@@ -225,7 +226,7 @@ public partial class WatchlistViewModel : ObservableObject
             Apply(quotes, symbols);
         }
         catch (OperationCanceledException) when (!_active) { }
-        catch (Exception ex) { _lastError = ErrorText(ex); }
+        catch (Exception ex) { AppLog.Warn("watchlist", "refresh failed", ex); _lastError = ErrorText(ex); }
         finally
         {
             _statusHint = null;
@@ -251,8 +252,9 @@ public partial class WatchlistViewModel : ObservableObject
             ShowSuggestions = Suggestions.Count > 0 || ShowSearchEmpty;
         }
         catch (OperationCanceledException) { }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Warn("watchlist", $"search '{q}' failed", ex);
             if (seq != _searchSeq) return;
             Suggestions.Clear();
             ShowSearchEmpty = true;

@@ -7,7 +7,7 @@ public enum LogLevel { Info, Warn, Error }
 /// <summary>
 /// Minimal thread-safe rolling text log: <c>&lt;data&gt;\logs\app-yyyyMMdd.log</c>, one file per day, at most
 /// <see cref="MaxBytesPerDay"/> per file, files older than <see cref="KeepDays"/> are deleted at start-up.
-/// Never throws. H2 (P2) can swap the backend for Serilog without touching callers.
+/// Never throws. H2: this stays the single logging facade (Serilog was evaluated and not added: same features here, one dependency less in the single-file exe).
 /// </summary>
 public static class AppLog
 {
@@ -33,7 +33,7 @@ public static class AppLog
             foreach (var f in System.IO.Directory.EnumerateFiles(dir, "app-*.log"))
                 if (File.GetLastWriteTime(f) < cutoff) File.Delete(f);
         }
-        catch { }
+        catch { } // expected: logging must never take the app down
     }
 
     public static void Info(string area, string message) => Write(LogLevel.Info, area, message, null);
@@ -49,7 +49,17 @@ public static class AppLog
                 .Append(now.ToString("yyyy-MM-dd HH:mm:ss.fff zzz")).Append(' ')
                 .Append(level.ToString().ToUpperInvariant().PadRight(5)).Append(' ')
                 .Append('[').Append(area).Append("] ").Append(message);
-            if (ex is not null) line.Append(" | ").Append(ex.GetType().Name).Append(": ").Append(ex.Message);
+            if (ex is not null)
+            {
+                // H2: errors keep the full stack; warnings keep type, message and the innermost cause.
+                if (level == LogLevel.Error) line.AppendLine().Append(ex);
+                else
+                {
+                    line.Append(" | ").Append(ex.GetType().Name).Append(": ").Append(ex.Message);
+                    var inner = ex.GetBaseException();
+                    if (!ReferenceEquals(inner, ex)) line.Append(" <- ").Append(inner.GetType().Name).Append(": ").Append(inner.Message);
+                }
+            }
             line.AppendLine();
             lock (Gate)
             {
@@ -61,6 +71,6 @@ public static class AppLog
             }
             Written?.Invoke(level, area, message);
         }
-        catch { }
+        catch { } // expected: logging must never take the app down
     }
 }

@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -15,14 +16,17 @@ public partial class App : Application
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnDispatcherUnhandledException;
+        // H2: background-thread and unobserved task failures are logged too (they used to vanish).
+        AppDomain.CurrentDomain.UnhandledException += (_, ev) => AppLog.Error("app", "unhandled exception (terminating=" + ev.IsTerminating + ")", ev.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, ev) => { AppLog.Warn("app", "unobserved task exception", ev.Exception); ev.SetObserved(); };
 
         var exeDir = AppContext.BaseDirectory;
         var dataDir = DataDirectoryResolver.Resolve(e.Args, exeDir,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
         Directory.CreateDirectory(dataDir.Path);
         AppServices.DataDirectory = dataDir;
-        TyuStock.Core.Diagnostics.AppLog.Initialize(dataDir.Path);
-        TyuStock.Core.Diagnostics.AppLog.Info("app", $"start {string.Join(' ', e.Args)} data={dataDir.Path} ({dataDir.Source})");
+        AppLog.Initialize(dataDir.Path);
+        AppLog.Info("app", $"start {string.Join(' ', e.Args)} data={dataDir.Path} ({dataDir.Source})");
 
         var options = AppLaunchOptions.Parse(e.Args);
         if (options.ExitOnClose)
@@ -62,8 +66,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        try { AppServices.Get<NotificationService>().Dispose(); } catch { }
-        try { AppServices.Get<AlertMonitor>().Dispose(); } catch { }
+        try { AppServices.Get<NotificationService>().Dispose(); } catch (Exception ex) { AppLog.Warn("app", "notification shutdown failed", ex); }
+        try { AppServices.Get<AlertMonitor>().Dispose(); } catch (Exception ex) { AppLog.Warn("app", "alert monitor shutdown failed", ex); }
+        AppLog.Info("app", $"exit code {e.ApplicationExitCode}");
         (AppServices.Provider as IDisposable)?.Dispose();
         base.OnExit(e);
     }
@@ -85,14 +90,15 @@ public partial class App : Application
             var log = Path.Combine(AppServices.DataDirectory?.Path ?? AppContext.BaseDirectory, "logs");
             Directory.CreateDirectory(log);
             File.AppendAllText(Path.Combine(log, "crash.log"), $"[{DateTime.Now:O}] {e.Exception}{Environment.NewLine}{Environment.NewLine}");
+            AppLog.Error("app", "unhandled UI exception (see crash.log)", e.Exception);
             var title = TryFindResource("App_Title") as string ?? "美丽稻谷卖方绿泡群专用终端";
             var message = e.Exception.Message;
             Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
             {
                 try { System.Windows.MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning); }
-                catch { }
+                catch (Exception ex) { AppLog.Error("app", "could not show the error dialog", ex); }
             });
         }
-        catch { }
+        catch { } // expected: last-chance handler — logging itself failed, nothing safer left to do
     }
 }

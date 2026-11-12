@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.IO;
 using System.Windows;
 using Microsoft.Win32;
@@ -53,6 +54,7 @@ public static class ExportUi
         }
         catch (Exception ex)
         {
+            AppLog.Error("export", "export failed", ex);
             return string.Format(loc["Ex_Failed"], ex.Message);
         }
     }

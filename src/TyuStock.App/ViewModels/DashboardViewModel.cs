@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows;
@@ -116,7 +117,7 @@ public partial class DashboardViewModel : ObservableObject
             Apply(quotes);
         }
         catch (OperationCanceledException) when (!_active) { }
-        catch (Exception ex) { _lastError = ErrorText(ex); }
+        catch (Exception ex) { AppLog.Warn("dashboard", "refresh failed", ex); _lastError = ErrorText(ex); }
         finally
         {
             IsBusy = false;

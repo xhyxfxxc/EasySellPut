@@ -1,3 +1,4 @@
+using TyuStock.Core.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Threading;
@@ -235,7 +236,7 @@ public partial class ChartsViewModel : ObservableObject
         catch (AllSourcesFailedException) { if (!refreshOnly || Series is null) Fail(_loc["Ch_AllFailed"]); }
         catch (OperationCanceledException) when (_active && !refreshOnly) { Fail(_loc["Ch_Timeout"]); }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Fail(ex.Message); }
+        catch (Exception ex) { AppLog.Warn("charts", "load failed", ex); Fail(ex.Message); }
         finally
         {
             IsBusy = false;
