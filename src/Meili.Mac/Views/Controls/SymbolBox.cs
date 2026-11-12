@@ -48,7 +48,7 @@ public sealed class SymbolBox : UserControl
     public SymbolBox()
     {
         _box = new TextBox { MinHeight = 32 };
-        _box[!TextBox.WatermarkProperty] = _box.GetResourceObservable("Sb_Placeholder").ToBinding();
+        _box[!TextBox.PlaceholderTextProperty] = _box.GetResourceObservable("Sb_Placeholder").ToBinding();
         _box.TextChanged += OnBoxTextChanged;
         _box.AddHandler(KeyDownEvent, OnBoxKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 

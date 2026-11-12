@@ -26,8 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
-    <AvaloniaXaml Remove="_todo\**" />
-    <None Remove="_todo\**" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Meili.Shared.Services" />

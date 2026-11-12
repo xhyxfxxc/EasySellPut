@@ -44,7 +44,7 @@
                 </DockPanel.IsVisible>
                 <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding CancelGroupEditCommand}" Content="{DynamicResource Wl_Cancel}" />
                 <Button DockPanel.Dock="Right" Classes="Accent" Command="{Binding ConfirmGroupEditCommand}" Content="{DynamicResource Wl_Ok}" />
-                <TextBox Text="{Binding GroupNameDraft}" Watermark="{DynamicResource Wl_GroupNameHint}" />
+                <TextBox Text="{Binding GroupNameDraft}" PlaceholderText="{DynamicResource Wl_GroupNameHint}" />
             </DockPanel>
 
             <!-- Search + actions -->
@@ -56,7 +56,7 @@
                 <Button DockPanel.Dock="Right" Margin="8,0,0,0" Command="{Binding RemoveSelectedCommand}" Content="{DynamicResource Wl_Remove}" />
                 <Button DockPanel.Dock="Right" Margin="8,0,0,0" Classes="Accent" Command="{Binding AddCommand}" Content="{DynamicResource Wl_Add}" />
                 <Panel>
-                    <TextBox x:Name="QueryBox" Text="{Binding Query}" Watermark="{DynamicResource Wl_SymbolHint}" />
+                    <TextBox x:Name="QueryBox" Text="{Binding Query}" PlaceholderText="{DynamicResource Wl_SymbolHint}" />
                     <Popup IsOpen="{Binding ShowSuggestions}" PlacementTarget="{Binding #QueryBox}" Placement="BottomEdgeAlignedLeft"
                            IsLightDismissEnabled="False">
                         <Border Classes="Popup" MinWidth="360" MaxHeight="280" Margin="0,4,0,0">

@@ -36,7 +36,7 @@
                     <StackPanel Margin="0,0,16,10" MinWidth="140">
                         <TextBlock Classes="Caption" Text="{DynamicResource Al_Threshold}" Margin="0,0,0,4" />
                         <TextBox Text="{Binding ThresholdText}"
-                                    Watermark="{Binding ThresholdHint}"
+                                    PlaceholderText="{Binding ThresholdHint}"
                                     FontSize="14" Padding="10,6,10,6" />
                     </StackPanel>
                     <StackPanel Margin="0,0,16,10" MinWidth="140">

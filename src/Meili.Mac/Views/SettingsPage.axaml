@@ -84,7 +84,7 @@
             <Border Classes="Card" Padding="16,12" Margin="0,0,0,4" IsEnabled="{Binding IsManualProxy}">
 <DockPanel>
 <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
-                <TextBox MinWidth="260" Watermark="http://127.0.0.1:7890" Text="{Binding ManualProxy}" />
+                <TextBox MinWidth="260" PlaceholderText="http://127.0.0.1:7890" Text="{Binding ManualProxy}" />
             </StackPanel>
 
                     <StackPanel>

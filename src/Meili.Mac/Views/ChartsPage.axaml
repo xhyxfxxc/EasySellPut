@@ -49,7 +49,7 @@
                         Command="{Binding StartDrawingCommand}" CommandParameter="{x:Static cs:DrawingKind.TrendLine}" />
                 <Button Margin="0,0,16,0" Content="{DynamicResource Ch_DrawClear}" Command="{Binding ClearDrawingsCommand}" />
                 <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{DynamicResource Ch_Compare}" />
-                <TextBox x:Name="CompareBox" Width="120" Text="{Binding CompareText}" Watermark="{DynamicResource Ch_ComparePlaceholder}" Margin="0,0,6,0" />
+                <TextBox x:Name="CompareBox" Width="120" Text="{Binding CompareText}" PlaceholderText="{DynamicResource Ch_ComparePlaceholder}" Margin="0,0,6,0" />
                 <Button Content="{DynamicResource Ch_CompareApply}" Command="{Binding ApplyCompareCommand}" />
                 <TextBlock Classes="Caption" VerticalAlignment="Center" Margin="10,0,0,0" Text="{Binding CompareStatus}" Foreground="{DynamicResource DegradedBrush}" />
             </WrapPanel>

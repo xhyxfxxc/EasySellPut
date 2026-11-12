@@ -66,12 +66,14 @@
 
 ## 6. 打包
 
-`build/pack-mac.sh`（在 Linux 开发机上跑）：
+`build/pack-mac.sh`（在 Linux 开发机上跑；`RCODESIGN` 指向 rcodesign 0.29）：
 
-1. `dotnet publish src/Meili.Mac -r osx-arm64`（及 `osx-x64`）`--self-contained`，不裁剪（Avalonia 反射较多）。
-2. 组装 `美丽稻谷卖方绿泡群专用终端.app/Contents/{MacOS,Resources,Info.plist}`；`CFBundleIdentifier = com.meilidaogu.terminal`；`LSMinimumSystemVersion = 26.0`；`NSHighResolutionCapable = true`；`LSApplicationCategoryType = public.app-category.finance`；图标 `AppIcon.icns`。
-3. `rcodesign sign`（ad-hoc）后 `rcodesign verify`。
-4. 用 `zip -y -r` 打包（保留符号链接和可执行权限）。
+1. `dotnet publish src/Meili.Mac -r osx-arm64`（及 `osx-x64`）`--self-contained`，不裁剪（Avalonia 反射较多），**单文件发布**（`PublishSingleFile`，原生库不打进单文件）。这样 `Contents/MacOS` 里只有 Mach-O：`MeiliMac` 与 4 个 `.dylib`。若把几百个 `.dll` 散放在 `Contents/MacOS`，签名工具会把它们当“嵌套代码”，签名只能写进扩展属性，zip 带不走，到 Mac 上就验不过。
+2. `build/mac/bundle.py app` 组装 `美丽稻谷卖方绿泡群专用终端.app/Contents/{MacOS,Resources,Info.plist,PkgInfo}`：`CFBundleIdentifier = com.meilidaogu.terminal`；`CFBundleDisplayName` 全名、`CFBundleName`「美丽稻谷终端」；`LSMinimumSystemVersion = 26.0`；`NSHighResolutionCapable = true`；`LSApplicationCategoryType = public.app-category.finance`；可执行文件与 `.dylib` 权限 755。
+3. 图标：`build/mac/make_icon.py` 按苹果图标网格（1024 画布、824 圆角方块、约 22% 圆角）重绘 Windows 图标，写出含 16–1024 各尺寸的 `AppIcon.icns`。
+4. `rcodesign sign`（ad-hoc）。rcodesign 0.29 的 `verify` 会因 ad-hoc 签名里的空 CMS 块报错（苹果 codesign 生成的 ad-hoc 签名同样带空 CMS），不能用；改用 `build/mac/verify_sig.py` 独立校验：每个 Mach-O（含通用二进制的每个切片）的 CodeDirectory 是 ad-hoc、逐页 SHA-256 与文件一致、需求/Info.plist/CodeResources 特殊槽一致，`CodeResources` 里每个文件的哈希一致且没有漏封的文件。改动任一字节（dylib、Info.plist、图标）都能被它查出。
+5. `build/mac/bundle.py zip`：用 Python zipfile 打包（开发机未必有 `zip` 命令），逐项写入 Unix 权限（`external_attr`），符号链接按链接保存，文件名带 UTF-8 标志；zip 内附 `使用说明.txt`。
+6. 产物：`美丽稻谷卖方绿泡群专用终端-macOS.zip`（arm64，主包）与 `-macOS-x64.zip`（Intel），连同 `使用说明.txt` 放进 `Installers\3-macOS便携版`。打包脚本最后检查包内没有开发机个人路径。
 
 ## 7. 测试
 

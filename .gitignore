@@ -28,3 +28,4 @@ Installers/
 # Parallel worktrees
 build/wt-*/
 
+__pycache__/
