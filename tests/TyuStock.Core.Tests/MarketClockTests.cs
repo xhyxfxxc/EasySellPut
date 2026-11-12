@@ -45,4 +45,11 @@ public class MarketClockTests
         var bj = new DateTimeOffset(2026, 11, 10, 19, 53, 0, TimeSpan.FromHours(8));
         Assert.Equal(MarketSession.PreMarket, MarketClock.GetSession(bj));
     }
+    [Theory]
+    [InlineData(2026, 11, 10, 10, 0, 5)]
+    [InlineData(2026, 11, 10, 6, 53, 10)]
+    [InlineData(2026, 11, 10, 16, 30, 10)]
+    [InlineData(2026, 11, 14, 11, 0, 60)]
+    public void QuoteRefreshInterval_MatchesSession(int y, int mo, int d, int h, int mi, int seconds) =>
+        Assert.Equal(TimeSpan.FromSeconds(seconds), MarketClock.QuoteRefreshInterval(Et(y, mo, d, h, mi)));
 }

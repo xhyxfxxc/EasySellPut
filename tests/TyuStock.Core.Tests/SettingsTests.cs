@@ -15,6 +15,8 @@ public class SettingsTests : IDisposable
         Assert.Equal(AppThemeMode.System, s.Theme);
         Assert.Equal(ProxyMode.AutoDetect, s.Network.ProxyMode);
         Assert.Contains("SPY", s.Watchlist);
+        Assert.Equal(WatchlistGroup.DefaultId, s.WatchlistGroups.Single().Id);
+        Assert.Equal(s.Watchlist, s.WatchlistGroups.Single().Symbols);
     }
 
     [Fact]
@@ -22,13 +24,14 @@ public class SettingsTests : IDisposable
     {
         var store = new SettingsStore(_dir);
         store.Load();
-        store.Update(s => { s.Language = "en-US"; s.Theme = AppThemeMode.Dark; s.Network.ProxyMode = ProxyMode.Manual; s.Network.ManualProxy = "http://127.0.0.1:7890"; s.Watchlist = ["aapl", " msft ", "AAPL"]; });
+        store.Update(s => { s.Language = "en-US"; s.Theme = AppThemeMode.Dark; s.Network.ProxyMode = ProxyMode.Manual; s.Network.ManualProxy = "http://127.0.0.1:7890"; s.Watchlist = ["aapl", " msft ", "AAPL"]; s.WatchlistGroups = []; });
         var again = new SettingsStore(_dir).Load();
         Assert.Equal("en-US", again.Language);
         Assert.Equal(AppThemeMode.Dark, again.Theme);
         Assert.Equal(ProxyMode.Manual, again.Network.ProxyMode);
         Assert.Equal("http://127.0.0.1:7890", again.Network.ManualProxy);
         Assert.Equal(["AAPL", "MSFT"], again.Watchlist);
+        Assert.Equal(["AAPL", "MSFT"], again.WatchlistGroups.Single().Symbols);
         Assert.Contains("\"theme\": \"Dark\"", File.ReadAllText(store.FilePath));
     }
 
@@ -50,8 +53,17 @@ public class SettingsTests : IDisposable
         Assert.Equal(3, s.Network.RequestTimeoutSeconds);
         Assert.Equal(5, s.Network.MaxRetries);
     }
+    [Fact]
+    public void Load_LegacyFlatWatchlist_MigratesToDefaultGroup()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(Path.Combine(_dir, "settings.json"), """{ "version": 1, "watchlist": ["IBM", "ge"] }""");
+        var s = new SettingsStore(_dir).Load();
+        Assert.Equal(["IBM", "GE"], s.Watchlist);
+        Assert.Equal(["IBM", "GE"], s.WatchlistGroups.Single().Symbols);
+        Assert.Equal(WatchlistGroup.DefaultId, s.WatchlistGroups.Single().Id);
+    }
 }
-
 public class DataDirectoryResolverTests : IDisposable
 {
     private readonly string _exe = Path.Combine(Path.GetTempPath(), "tyu-exe-" + Guid.NewGuid().ToString("N"));

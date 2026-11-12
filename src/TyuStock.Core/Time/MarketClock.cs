@@ -35,6 +35,14 @@ public static class MarketClock
         return MarketSession.Closed;
     }
 
+    /// <summary>Adaptive quote poll interval: 5 s regular, 10 s extended hours, 60 s when closed.</summary>
+    public static TimeSpan QuoteRefreshInterval(DateTimeOffset now) => GetSession(now) switch
+    {
+        MarketSession.Regular => TimeSpan.FromSeconds(5),
+        MarketSession.PreMarket or MarketSession.AfterHours => TimeSpan.FromSeconds(10),
+        _ => TimeSpan.FromSeconds(60),
+    };
+
     public static bool IsTradingDay(DateOnly d) =>
         d.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday) && !Holidays(d.Year).Contains(d);
 

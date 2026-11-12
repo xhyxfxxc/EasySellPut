@@ -45,7 +45,10 @@ public sealed class AppSettings
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public UpDownColorMode UpDownColors { get; set; } = UpDownColorMode.RedUp;
     public NetworkSettings Network { get; set; } = new();
+    /// <summary>Flattened symbol list (kept in sync with <see cref="WatchlistGroups"/> for older files and the dashboard).</summary>
     public List<string> Watchlist { get; set; } = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA"];
+    /// <summary>Grouped watchlists. When empty at load, a default group is created from <see cref="Watchlist"/>.</summary>
+    public List<WatchlistGroup> WatchlistGroups { get; set; } = [];
     public WindowPlacement? Window { get; set; }
 
     public static IReadOnlyList<string> SupportedLanguages { get; } = ["zh-CN", "en-US"];
@@ -59,9 +62,36 @@ public sealed class AppSettings
         Network.MaxRetries = Math.Clamp(Network.MaxRetries, 0, 5);
         Network.ManualProxy ??= "";
         Watchlist ??= [];
-        Watchlist = Watchlist.Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim().ToUpperInvariant()).Distinct().ToList();
+        Watchlist = CleanSymbols(Watchlist);
+        WatchlistGroups ??= [];
+        foreach (var g in WatchlistGroups)
+        {
+            g.Id = string.IsNullOrWhiteSpace(g.Id) ? Guid.NewGuid().ToString("N")[..8] : g.Id.Trim();
+            g.Name = (g.Name ?? "").Trim();
+            g.Symbols = CleanSymbols(g.Symbols);
+        }
+        WatchlistGroups = WatchlistGroups.Where(g => !string.IsNullOrWhiteSpace(g.Id)).ToList();
+        if (WatchlistGroups.Count == 0)
+        {
+            if (Watchlist.Count == 0)
+                Watchlist = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA"];
+            WatchlistGroups.Add(new WatchlistGroup { Id = WatchlistGroup.DefaultId, Name = "", Symbols = [.. Watchlist] });
+        }
+        Watchlist = WatchlistGroups.SelectMany(g => g.Symbols).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         return this;
     }
+
+    internal static List<string> CleanSymbols(IEnumerable<string>? raw) =>
+        (raw ?? []).Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s.Trim().ToUpperInvariant()).Distinct().ToList();
+}
+
+/// <summary>One named tab on the watchlist. An empty <see cref="Name"/> is shown as the localized default-group label.</summary>
+public sealed class WatchlistGroup
+{
+    public const string DefaultId = "default";
+    public string Id { get; set; } = DefaultId;
+    public string Name { get; set; } = "";
+    public List<string> Symbols { get; set; } = [];
 }
 
 public sealed class WindowPlacement
