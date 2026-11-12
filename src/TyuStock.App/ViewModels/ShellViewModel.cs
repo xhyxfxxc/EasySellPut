@@ -31,8 +31,9 @@ public partial class ShellViewModel : ObservableObject
         Tick();
     }
 
-    /// <summary>Set by the network layer (M1+) to describe the effective proxy.</summary>
-    public string NetworkDescription { get; set; } = "";
+    /// <summary>Set by <see cref="NetworkController"/> to describe the effective proxy.</summary>
+    public string NetworkDescription { get => _networkDescription; set { _networkDescription = value; Tick(); } }
+    private string _networkDescription = "";
 
     private void Tick()
     {

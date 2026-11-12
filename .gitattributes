@@ -3,3 +3,4 @@
 *.ico binary
 *.zip binary
 *.gz binary
+tests/**/Fixtures/** -text

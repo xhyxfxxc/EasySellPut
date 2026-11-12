@@ -1,0 +1,48 @@
+using TyuStock.Core.Abstractions;
+using TyuStock.Core.Models;
+using TyuStock.Core.Settings;
+using TyuStock.Data.Http;
+using TyuStock.Data.Providers;
+using TyuStock.Data.Providers.Yahoo;
+using TyuStock.Data.Routing;
+
+namespace TyuStock.Data;
+
+/// <summary>Composition of the whole data layer: one gateway, one cache, all providers, health tracking and the failover router.</summary>
+public sealed class DataServices : IDisposable
+{
+    /// <summary>Failover order per capability (docs/01 §5.3). Ids that a build doesn't contain are ignored.</summary>
+    public static readonly IReadOnlyDictionary<DataCapability, string[]> DefaultOrder = new Dictionary<DataCapability, string[]>
+    {
+        [DataCapability.Quote] = ["yahoo", "cnbc", "nasdaq", "sina", "tencent", "eastmoney", "cboe"],
+        [DataCapability.IntradayBars] = ["yahoo", "nasdaq", "cboe", "tencent"],
+        [DataCapability.DailyBars] = ["yahoo", "cboe", "nasdaq", "tencent", "sina", "eastmoney"],
+        [DataCapability.Options] = ["cboe", "yahoo", "nasdaq"],
+        [DataCapability.Fundamentals] = ["yahoo", "nasdaq", "cnbc"],
+        [DataCapability.Financials] = ["yahoo", "nasdaq", "sec"],
+        [DataCapability.News] = ["yahoo", "nasdaq"],
+        [DataCapability.Search] = ["yahoo", "sec"],
+    };
+
+    public HttpGateway Gateway { get; }
+    public ResponseCache Cache { get; } = new();
+    public HealthTracker Health { get; } = new();
+    public IReadOnlyList<ProviderBase> Providers { get; }
+    public FailoverRouter Router { get; }
+
+    public DataServices(NetworkSettings settings, ProxyResolution? proxy = null, HttpGateway? gateway = null)
+    {
+        Gateway = gateway ?? new HttpGateway(settings, proxy);
+        Providers = CreateProviders(Gateway, Cache);
+        foreach (var p in Providers) p.RegisterRateLimit();
+        Router = new FailoverRouter(Providers, Health, DefaultOrder);
+        Health.Attach(Gateway);
+    }
+
+    private static IReadOnlyList<ProviderBase> CreateProviders(HttpGateway http, ResponseCache cache) =>
+    [
+        new YahooProvider(http, cache),
+    ];
+
+    public void Dispose() => Gateway.Dispose();
+}

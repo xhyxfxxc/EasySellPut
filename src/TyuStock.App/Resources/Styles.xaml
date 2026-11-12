@@ -1,6 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:svc="clr-namespace:TyuStock.App.Services">
+    <svc:InverseBoolConverter x:Key="InverseBool" />
     <!-- Typography: nothing in the app is smaller than 12px. -->
     <FontFamily x:Key="AppFont">Segoe UI Variable Text, Segoe UI, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="NumberFont">Segoe UI Variable Text, Segoe UI</FontFamily>
