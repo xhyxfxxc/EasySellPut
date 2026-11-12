@@ -36,15 +36,14 @@ public partial class StrategyViewModel : ObservableObject
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly SymbolContext _context;
-    private readonly TyuStock.Core.Pricing.RiskFreeRateProvider _rates;
+    private readonly PricingAssumptions _pricing;
     private readonly StrategyStore _store;
-    private TyuStock.Core.Pricing.RiskFreeRate _rate;
+    private PricingInputs _inputs;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = RefreshCadence.OptionChain }; // C3
     private CancellationTokenSource? _cts;
     private bool _active, _manualLegs, _suppress, _hasChain;
     private string? _lastError;
     private IReadOnlyList<ListedQuote> _listed = [];
-    private double _yield;
     private string? _loadedSymbol;
     private StrategySeed? _pendingSeed;
 
@@ -95,12 +94,12 @@ public partial class StrategyViewModel : ObservableObject
     public event EventHandler? ChartChanged;
 
     public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
-        TyuStock.Core.Pricing.RiskFreeRateProvider rates, StrategyStore store)
+        PricingAssumptions pricing, StrategyStore store)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates; _store = store;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _pricing = pricing; _store = store;
         foreach (var x in store.All) Saved.Add(x);
-        _rate = rates.Current;
-        ModelText = PricingText.Model(_rate, loc);
+        _inputs = pricing.Initial;
+        ModelText = PricingText.Model(_inputs.Rate, loc);
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
         _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
@@ -112,7 +111,7 @@ public partial class StrategyViewModel : ObservableObject
         _watchlist.Changed += (_, _) => RebuildWatchSymbols();
         _loc.LanguageChanged += (_, _) =>
         {
-            ModelText = PricingText.Model(_rate, _loc);
+            ModelText = PricingText.Model(_inputs.Rate, _loc);
             RelabelExpirations();
             RebuildChoices();
             RelabelLegs();
@@ -190,58 +189,6 @@ public partial class StrategyViewModel : ObservableObject
         ChartChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>B7: save the current legs under <see cref="SaveName"/> (or "SYMBOL strategy date").</summary>
-    [RelayCommand]
-    private void SaveStrategy()
-    {
-        if (!TryCompile(out var strategy, out var err))
-        {
-            StatusText = err ?? _loc["St_NoLegs"];
-            return;
-        }
-        var name = SaveName.Trim();
-        if (name.Length == 0) name = $"{SymbolText} {strategy!.Name} {DateTime.Now:yyyy-MM-dd HH:mm}";
-        var saved = new SavedStrategy(name, SymbolText, strategy!.Kind, strategy.Legs.Select(SavedLeg.From).ToList(), DateTimeOffset.Now);
-        _store.Save(saved);
-        Saved.Clear();
-        foreach (var x in _store.All) Saved.Add(x);
-        SelectedSaved = Saved[0];
-        SaveName = "";
-        StatusText = string.Format(_loc["St_SavedOk"], name);
-    }
-
-    /// <summary>B7: load a saved strategy: its symbol's chain first, then its own legs (custom, so later refreshes keep them).</summary>
-    [RelayCommand]
-    private async Task LoadSavedAsync()
-    {
-        if (SelectedSaved is not { } saved) return;
-        List<StrategyLeg> legs;
-        try { legs = saved.Legs.Select(l => l.ToLeg()).ToList(); }
-        catch (ArgumentException ex)   // strategies.json edited by hand
-        {
-            StatusText = string.Format(_loc["St_SavedBad"], saved.Name, ex.Message);
-            return;
-        }
-        SymbolText = saved.Symbol;
-        _manualLegs = true;
-        _suppress = true;
-        try { SelectedPreset = Presets.FirstOrDefault(p => p.Kind == StrategyKind.Custom) ?? SelectedPreset; }
-        finally { _suppress = false; }
-        await LoadAsync();
-        ReplaceLegs(legs);
-        Recompute();
-        ChartChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    [RelayCommand]
-    private void DeleteSaved()
-    {
-        if (SelectedSaved is not { } saved) return;
-        _store.Delete(saved.Name);
-        Saved.Remove(saved);
-        SelectedSaved = Saved.FirstOrDefault();
-    }
-
     [RelayCommand]
     private void AddCall() => AddBlank(LegType.Call);
 
@@ -315,8 +262,8 @@ public partial class StrategyViewModel : ObservableObject
             catch (Exception ex) { AppLog.Warn("strategy", "chain load failed", ex); chainError = ex.Message; }
 
             if (chain is not null) _loadedSymbol = symbol;
+            var pricingTask = _pricing.ForAsync(symbol, "strategy", ct);
             var quotes = await SafeQuotes(symbol, ct);
-            _yield = await SafeYield(symbol, ct);
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
             // F8: the chain's own underlying price (same moment as the option quotes) drives IV/Greeks.
             var underlying = UnderlyingText.Describe(chain, q, _loc, DateTimeOffset.Now);
@@ -337,18 +284,13 @@ public partial class StrategyViewModel : ObservableObject
             }
             finally { _suppress = false; }
 
-            _rate = await _rates.GetAsync(ct);
-            ModelText = PricingText.Model(_rate, _loc);
+            _inputs = await pricingTask;
+            ModelText = PricingText.Model(_inputs.Rate, _loc);
             _listed = [];
             _hasChain = false;
             if (chain is not null)
             {
-                var settings = new OptionEnrichmentSettings
-                {
-                    RiskFreeRate = _rate.Rate,
-                    DividendYield = _yield,
-                    Now = DateTimeOffset.Now,
-                };
+                var settings = _inputs.Enrichment(DateTimeOffset.Now);
                 var expDate = SelectedExpiration?.Date ?? chain.Expiration;
                 var list = new List<ListedQuote>();
                 foreach (var c in chain.Contracts)
@@ -557,14 +499,14 @@ public partial class StrategyViewModel : ObservableObject
             var spot = Spot ?? (strategy.Strikes.Count > 0 ? strategy.Strikes[strategy.Strikes.Count / 2] : 100);
             var (lo, hi) = strategy.SuggestPriceRange(spot);
             var usedDefaultIv = strategy.Legs.Any(l => l.IsOption && !l.HasImpliedVolatility);
-            var nowVal = new StrategyValuation(DateTimeOffset.Now, _rate.Rate, _yield) { DefaultVolatility = DefaultVolatility };
+            var nowVal = new StrategyValuation(DateTimeOffset.Now, _inputs.Rate.Rate, _inputs.DividendYield) { DefaultVolatility = DefaultVolatility };
             StrategyValuation? overlay = nowVal;
             if (HorizonDays > 0)
             {
                 var etToday = DateOnly.FromDateTime(UsEastern.ToEastern(DateTimeOffset.Now).DateTime);
                 var target = etToday.AddDays(HorizonDays);
                 if (strategy.EarliestExpiry is { } e && target >= e) overlay = null;
-                else overlay = StrategyValuation.AtDate(target, _rate.Rate, _yield) with { DefaultVolatility = DefaultVolatility };
+                else overlay = StrategyValuation.AtDate(target, _inputs.Rate.Rate, _inputs.DividendYield) with { DefaultVolatility = DefaultVolatility };
             }
             Curve = strategy.Curve(lo, hi, 251, overlay);
             HasCurve = Curve.Prices.Length > 1;
@@ -692,130 +634,4 @@ public partial class StrategyViewModel : ObservableObject
     }
 
     private Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct) => SafeData.QuotesAsync(_data, symbol, "strategy", ct);
-
-    private Task<double> SafeYield(string symbol, CancellationToken ct) => SafeData.DividendYieldAsync(_data, symbol, "strategy", ct);
-}
-
-public sealed record PresetChoice(StrategyKind Kind, string Label)
-{
-    public override string ToString() => Label;
-}
-
-public sealed record EnumChoice<T>(T Value, string Label) where T : struct, Enum
-{
-    public override string ToString() => Label;
-}
-
-public partial class StrategyLegRow : ObservableObject
-{
-    private readonly StrategyViewModel _owner;
-    private bool _suppress;
-
-    [ObservableProperty] public partial LegType Type { get; set; } = LegType.Call;
-    [ObservableProperty] public partial PositionSide Side { get; set; } = PositionSide.Long;
-    [ObservableProperty] public partial string StrikeText { get; set; } = "";
-    [ObservableProperty] public partial string PremiumText { get; set; } = "";
-    [ObservableProperty] public partial string IvText { get; set; } = "";
-    [ObservableProperty] public partial string QtyText { get; set; } = "1";
-    [ObservableProperty] public partial string ExpiryText { get; set; } = "";
-    [ObservableProperty] public partial string TypeLabel { get; set; } = "";
-    [ObservableProperty] public partial string SideLabel { get; set; } = "";
-
-    public StrategyLegRow(StrategyViewModel owner) => _owner = owner;
-
-    public static StrategyLegRow From(StrategyLeg leg, StrategyViewModel owner)
-    {
-        var row = new StrategyLegRow(owner) { _suppress = true };
-        row.Type = leg.Type;
-        row.Side = leg.Side;
-        row.StrikeText = leg.IsOption ? F(leg.Strike) : "";
-        row.PremiumText = F(leg.Premium);
-        row.IvText = leg.HasImpliedVolatility ? (leg.ImpliedVolatility * 100).ToString("0.0", CultureInfo.InvariantCulture) : "";
-        row.QtyText = leg.Quantity.ToString(CultureInfo.InvariantCulture);
-        row.ExpiryText = leg.Expiry is { } d ? d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : "";
-        row._suppress = false;
-        row.RefreshLabels();
-        return row;
-    }
-
-    public void SetQuotes(double premium, double iv)
-    {
-        _suppress = true;
-        try
-        {
-            PremiumText = F(premium);
-            IvText = double.IsFinite(iv) ? (iv * 100).ToString("0.0", CultureInfo.InvariantCulture) : IvText;
-        }
-        finally { _suppress = false; }
-    }
-
-    public void RefreshLabels()
-    {
-        TypeLabel = Type switch { LegType.Put => L("St_Put"), LegType.Stock => L("St_Stock"), _ => L("St_Call") };
-        SideLabel = Side == PositionSide.Short ? L("St_Sell") : L("St_Buy");
-    }
-
-    public bool TryParseStrike(out double strike)
-        => double.TryParse(StrikeText, NumberStyles.Float, CultureInfo.InvariantCulture, out strike) && strike > 0
-           || double.TryParse(StrikeText, NumberStyles.Float, CultureInfo.CurrentCulture, out strike) && strike > 0;
-
-    public bool TryToLeg(out StrategyLeg? leg, out string error)
-    {
-        leg = null; error = "";
-        if (!int.TryParse(QtyText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var qty)
-            && !int.TryParse(QtyText, NumberStyles.Integer, CultureInfo.CurrentCulture, out qty) || qty <= 0)
-        { error = L("St_Qty"); return false; }
-        if (!TryParseMoney(PremiumText, out var premium) || premium < 0)
-        { error = L("St_Premium"); return false; }
-        double iv = double.NaN;
-        if (!string.IsNullOrWhiteSpace(IvText))
-        {
-            if (!TryParseMoney(IvText, out var ivPct) || ivPct < 0) { error = L("St_IV"); return false; }
-            iv = ivPct / 100.0;
-        }
-        try
-        {
-            if (Type == LegType.Stock)
-            {
-                leg = StrategyLeg.Stock(Side, qty, premium);
-                return true;
-            }
-            if (!TryParseStrike(out var strike)) { error = L("St_Strike"); return false; }
-            if (!DateOnly.TryParse(ExpiryText, CultureInfo.InvariantCulture, DateTimeStyles.None, out var exp)
-                && !DateOnly.TryParse(ExpiryText, CultureInfo.CurrentCulture, DateTimeStyles.None, out exp))
-            { error = L("St_Expiry"); return false; }
-            leg = Type == LegType.Call
-                ? StrategyLeg.Call(Side, strike, premium, exp, qty, iv)
-                : StrategyLeg.Put(Side, strike, premium, exp, qty, iv);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn("strategy", "leg parse failed", ex);
-            error = ex.Message;
-            return false;
-        }
-    }
-
-    private static bool TryParseMoney(string text, out double value)
-        => double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
-           || double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
-
-    private static string F(double v)
-        => v == Math.Truncate(v) ? v.ToString("0", CultureInfo.InvariantCulture) : v.ToString("0.00", CultureInfo.InvariantCulture);
-
-    private string L(string key) => System.Windows.Application.Current?.TryFindResource(key) as string ?? key;
-
-    partial void OnTypeChanged(LegType value) { RefreshLabels(); Notify(); }
-    partial void OnSideChanged(PositionSide value) { RefreshLabels(); Notify(); }
-    partial void OnStrikeTextChanged(string value) => Notify();
-    partial void OnPremiumTextChanged(string value) => Notify();
-    partial void OnIvTextChanged(string value) => Notify();
-    partial void OnQtyTextChanged(string value) => Notify();
-    partial void OnExpiryTextChanged(string value) => Notify();
-
-    private void Notify()
-    {
-        if (!_suppress) _owner.OnLegEdited();
-    }
 }

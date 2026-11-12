@@ -26,8 +26,8 @@ public partial class OptionsViewModel : ObservableObject
     private readonly IMarketDataService _data;
     private readonly LocalizationService _loc;
     private readonly SymbolContext _context;
-    private readonly TyuStock.Core.Pricing.RiskFreeRateProvider _rates;
-    private TyuStock.Core.Pricing.RiskFreeRate _rate;
+    private readonly PricingAssumptions _pricing;
+    private PricingInputs _inputs;
     private readonly DispatcherTimer _timer = new(DispatcherPriority.Background) { Interval = RefreshCadence.OptionChain }; // C3
     private CancellationTokenSource? _cts;
     private bool _active;
@@ -86,20 +86,13 @@ public partial class OptionsViewModel : ObservableObject
     private readonly SettingsStore _settings;
     private readonly VolatilityInsights _insights;
 
-    // B6: IV Rank (from the locally recorded IV history), ATM term structure, OI change vs. the previous stored day.
-    [ObservableProperty] public partial string IvRankText { get; set; } = "";
-    [ObservableProperty] public partial string IvRankTip { get; set; } = "";
-    [ObservableProperty] public partial bool ShowTerm { get; set; }
-    [ObservableProperty] public partial bool ShowOiChange { get; set; } = true;
-    public IReadOnlyList<TermPoint> TermPoints { get; private set; } = [];
-
     public OptionsViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
-        TyuStock.Core.Pricing.RiskFreeRateProvider rates, SettingsStore settings, VolatilityInsights insights)
+        PricingAssumptions pricing, SettingsStore settings, VolatilityInsights insights)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _rates = rates; _settings = settings; _insights = insights;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _pricing = pricing; _settings = settings; _insights = insights;
         CompactColumns = settings.Current.Options.CompactColumns;
-        _rate = rates.Current;
-        ModelText = PricingText.Model(_rate, loc);
+        _inputs = pricing.Initial;
+        ModelText = PricingText.Model(_inputs.Rate, loc);
         // D1: follow the shared symbol while visible; when hidden, ActivateAsync adopts it on the next visit.
         _context.Changed += (_, sym) => { if (_active && _context.ShouldAdopt(SymbolText)) _ = AdoptContextAsync(); };
         SymbolText = watchlist.AllSymbols.Contains("AAPL", StringComparer.OrdinalIgnoreCase)
@@ -110,7 +103,7 @@ public partial class OptionsViewModel : ObservableObject
         _watchlist.Changed += (_, _) => RebuildWatchSymbols();
         _loc.LanguageChanged += (_, _) =>
         {
-            ModelText = PricingText.Model(_rate, _loc);
+            ModelText = PricingText.Model(_inputs.Rate, _loc);
             RelabelExpirations();
             RelabelHeader();
             UpdateStatus();
@@ -210,7 +203,7 @@ public partial class OptionsViewModel : ObservableObject
                 r.Put?.Bid ?? "", r.Put?.Ask ?? "", r.Put?.Last ?? "", EnrichedSide.Raw(r.Put?.VolumeValue), EnrichedSide.Raw(r.Put?.OiValue), r.Put?.Iv ?? "",
                 r.Put?.Delta ?? "", r.Put?.Gamma ?? "", r.Put?.Theta ?? "", r.Put?.Vega ?? "",
             ]).ToList(),
-            Metadata = ExportUi.Metadata(_loc, _lastChain, _rate, Headline),
+            Metadata = ExportUi.Metadata(_loc, _lastChain, _inputs.Rate, Headline),
         };
         var msg = ExportUi.Save($"{SymbolText}-{exp}", [table], _loc);
         if (msg is not null) StatusText = msg;
@@ -275,12 +268,11 @@ public partial class OptionsViewModel : ObservableObject
             var exp = string.Equals(symbol, _loadedSymbol, StringComparison.OrdinalIgnoreCase) ? SelectedExpiration?.Date : null;
             var chainTask = _data.GetChainAsync(symbol, exp, ct);
             var quoteTask = SafeQuotes(symbol, ct);
-            var fundTask = SafeYield(symbol, ct);
+            var pricingTask = _pricing.ForAsync(symbol, "options", ct);
             var chain = await chainTask;
             _loadedSymbol = symbol;
             _lastChain = chain;
             var quotes = await quoteTask;
-            var yield = await fundTask;
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
             // F8: the chain's own underlying price (same moment as the option quotes) drives IV/Greeks.
             var underlying = UnderlyingText.Describe(chain, q, _loc, DateTimeOffset.Now);
@@ -298,14 +290,9 @@ public partial class OptionsViewModel : ObservableObject
             }
             finally { _suppressExpChange = false; }
 
-            _rate = await _rates.GetAsync(ct);
-            ModelText = PricingText.Model(_rate, _loc);
-            var settings = new OptionEnrichmentSettings
-            {
-                RiskFreeRate = _rate.Rate,
-                DividendYield = yield,
-                Now = DateTimeOffset.Now,
-            };
+            _inputs = await pricingTask;
+            ModelText = PricingText.Model(_inputs.Rate, _loc);
+            var settings = _inputs.Enrichment(DateTimeOffset.Now);
             var usedLocal = false;
             var prevOi = OpenInterestBefore(symbol, chain);
             var calls = new Dictionary<double, EnrichedSide>();
@@ -432,51 +419,6 @@ public partial class OptionsViewModel : ObservableObject
         return $"{d:yyyy-MM-dd}  ·  {days}";
     }
 
-    /// <summary>B6: stores today's open interest and returns the previous stored day's (empty when there is none).</summary>
-    private IReadOnlyDictionary<string, double> OpenInterestBefore(string symbol, OptionChain chain)
-    {
-        var day = DateOnly.FromDateTime(MarketClock.ToEastern(chain.AsOf ?? DateTimeOffset.Now).Date);
-        try { return _insights.SwapOpenInterest(symbol, day, chain.Contracts); }
-        catch (Microsoft.Data.Sqlite.SqliteException ex)
-        {
-            AppLog.Warn("options", "open interest history unavailable", ex);
-            return new Dictionary<string, double>();
-        }
-    }
-
-    private async Task LoadInsightsAsync(string symbol, IReadOnlyList<DateOnly> expirations, double spot, CancellationToken ct)
-    {
-        IvRankText = "";
-        IvRankTip = "";
-        TermPoints = [];
-        try
-        {
-            var now = DateTimeOffset.Now;
-            if (await _insights.RankAsync(symbol, now, ct) is var (sample, rank, days))
-            {
-                var basis = NotificationService.IvBasisText(sample, _loc);
-                var inv = CultureInfo.InvariantCulture;
-                if (rank is { } r)
-                {
-                    IvRankText = string.Format(inv, _loc["Op_IvRank"], r.Rank, r.Percentile);
-                    IvRankTip = string.Format(inv, _loc["Op_IvRankTip"], r.Days, basis, r.Low * 100, r.High * 100, sample.Iv * 100);
-                }
-                else
-                {
-                    IvRankText = string.Format(inv, _loc["Op_IvRankPending"], days, TyuStock.Analytics.IvRank.MinDays);
-                    IvRankTip = _loc["Op_IvRankPendingTip"];
-                }
-            }
-            TermPoints = await _insights.TermStructureAsync(symbol, expirations, spot, now, ct);
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is AllSourcesFailedException or Microsoft.Data.Sqlite.SqliteException)
-        {
-            AppLog.Warn("options", "volatility insights failed", ex);
-        }
-        if (string.Equals(symbol, _loadedSymbol, StringComparison.OrdinalIgnoreCase)) TableChanged?.Invoke(this, EventArgs.Empty);
-    }
-
     /// <summary>E4: header/status texts from the last load, rebuilt in the current language.</summary>
     private void RelabelHeader()
     {
@@ -487,7 +429,7 @@ public partial class OptionsViewModel : ObservableObject
         LivePriceText = u.Live;
         DelayText = _lastChain is { } c ? FreshnessText.ChainTiming(c, _loc, now) : "";
         HasDelay = DelayText.Length > 0;
-        LocalNote = _hdrLocal ? string.Format(_loc["Op_LocalGreeks"], _rate.Rate) : "";
+        LocalNote = _hdrLocal ? string.Format(_loc["Op_LocalGreeks"], _inputs.Rate.Rate) : "";
         if (_lastError is null && _lastChain is { } ch)
             StatusText = string.Format(_loc["Op_Source"], SourceNames.Display(ch.Source, _loc), Rows.Count);
     }
@@ -498,8 +440,6 @@ public partial class OptionsViewModel : ObservableObject
     }
 
     private Task<IReadOnlyList<Quote>> SafeQuotes(string symbol, CancellationToken ct) => SafeData.QuotesAsync(_data, symbol, "options", ct);
-
-    private Task<double> SafeYield(string symbol, CancellationToken ct) => SafeData.DividendYieldAsync(_data, symbol, "options", ct);
 }
 
 public sealed record ExpirationChoice(DateOnly Date, string Label)
