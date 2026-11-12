@@ -508,4 +508,14 @@
     <sys:String x:Key="Set_FixedRate">固定利率（%）</sys:String>
     <sys:String x:Key="Set_FixedRateDesc">选“固定利率”时使用；取不到美债收益率时也用它兜底</sys:String>
     <sys:String x:Key="Set_RateInvalid">请输入 -1 到 20 之间的数字</sys:String>
+    <sys:String x:Key="Al_Kind_IvAbove">隐含波动率升至</sys:String>
+    <sys:String x:Key="Al_Kind_IvBelow">隐含波动率降至</sys:String>
+    <sys:String x:Key="Al_FiredIvAbove">隐含波动率 {0}% 已升至 {1}%</sys:String>
+    <sys:String x:Key="Al_FiredIvBelow">隐含波动率 {0}% 已降至 {1}%</sys:String>
+    <sys:String x:Key="Al_IvThresholdHint">IV 百分数，如 45 表示 45%（每 5 分钟取样）</sys:String>
+    <sys:String x:Key="Al_IvBasisIv30">{0} 30 天 IV 指数</sys:String>
+    <sys:String x:Key="Al_IvBasisAtm">{0} 平值 IV，{1} 到期（{2} 天）</sys:String>
+    <sys:String x:Key="Al_IvFailed">{0} 取样失败</sys:String>
+    <sys:String x:Key="Al_IvPending">{0} 等待取样</sys:String>
+    <sys:String x:Key="Al_IvNotePrefix">IV 取样（每 5 分钟；优先 CBOE IV30，取不到时用约 30 天到期的平值 IV）：</sys:String>
 </ResourceDictionary>

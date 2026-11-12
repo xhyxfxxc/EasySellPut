@@ -32,7 +32,7 @@
                     <StackPanel Margin="0,0,16,10" MinWidth="140">
                         <TextBlock Style="{StaticResource Caption}" Text="{DynamicResource Al_Threshold}" Margin="0,0,0,4" />
                         <ui:TextBox Text="{Binding ThresholdText, UpdateSourceTrigger=PropertyChanged}"
-                                    PlaceholderText="{DynamicResource Al_ThresholdHint}"
+                                    PlaceholderText="{Binding ThresholdHint}"
                                     FontSize="14" Padding="10,6,10,6" />
                     </StackPanel>
                     <StackPanel Margin="0,0,16,10" MinWidth="140">
@@ -54,7 +54,7 @@
                     </StackPanel>
                     <StackPanel Margin="0,8,16,10" VerticalAlignment="Bottom">
                         <CheckBox Content="{DynamicResource Al_Extended}"
-                                  IsChecked="{Binding IncludeExtendedHours}"
+                                  IsChecked="{Binding IncludeExtendedHours}" IsEnabled="{Binding IsQuoteKind}"
                                   FontSize="14" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,10" VerticalAlignment="Bottom">
@@ -83,6 +83,10 @@
             <TextBlock Style="{StaticResource Caption}" Text="{Binding StaleNote}" Margin="0,6,0,0" TextWrapping="Wrap"
                        Foreground="{DynamicResource SystemFillColorCautionBrush}"
                        Visibility="{Binding HasStaleNote, Converter={StaticResource BoolToVis}}" />
+            <!-- B1: latest IV readings for IV alerts -->
+            <TextBlock Style="{StaticResource Caption}" Text="{Binding IvNote}" Margin="0,6,0,0" TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="AlertsIvNote"
+                       Visibility="{Binding HasIvNote, Converter={StaticResource BoolToVis}}" />
         </StackPanel>
 
         <Grid Margin="32,0,32,24">

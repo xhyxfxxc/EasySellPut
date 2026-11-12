@@ -63,7 +63,14 @@ public partial class AlertsViewModel : ObservableObject
     public ObservableCollection<HistoryRowViewModel> History { get; } = [];
 
     [ObservableProperty] public partial string SymbolText { get; set; } = "";
-    [ObservableProperty] public partial KindOption? SelectedKind { get; set; }
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(IsIvKind), nameof(IsQuoteKind), nameof(ThresholdHint))]
+    public partial KindOption? SelectedKind { get; set; }
+    /// <summary>B1: IV alerts are sampled every 5 minutes; their threshold is in percent and extended hours do not apply.</summary>
+    public bool IsIvKind => SelectedKind?.Kind.IsIv() == true;
+    public bool IsQuoteKind => !IsIvKind;
+    public string ThresholdHint => IsIvKind ? _loc["Al_IvThresholdHint"] : _loc["Al_ThresholdHint"];
+    [ObservableProperty] public partial bool HasIvNote { get; set; }
+    [ObservableProperty] public partial string IvNote { get; set; } = "";
     [ObservableProperty] public partial string ThresholdText { get; set; } = "";
     [ObservableProperty] public partial bool IncludeExtendedHours { get; set; } = true;
     [ObservableProperty] public partial RepeatOption? SelectedRepeat { get; set; }
@@ -82,9 +89,13 @@ public partial class AlertsViewModel : ObservableObject
     public IReadOnlyList<int> MaxDelayChoices { get; } = [5, 10, 15, 20, 30, 60];
 
     private readonly SettingsStore _settings;
+    private readonly IvAlertSampler? _iv;
 
-    public AlertsViewModel(AlertStore store, WatchlistStore watchlist, LocalizationService loc, AlertMonitor monitor, SettingsStore settings)
+    public AlertsViewModel(AlertStore store, WatchlistStore watchlist, LocalizationService loc, AlertMonitor monitor, SettingsStore settings,
+        IvAlertSampler? iv = null)
     {
+        _iv = iv;
+        if (iv is not null) iv.Updated += (_, _) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(RefreshIvNote);
         _store = store;
         _watchlist = watchlist;
         _loc = loc;
@@ -100,6 +111,7 @@ public partial class AlertsViewModel : ObservableObject
         {
             var keep = SelectedRow?.Id;
             Reload();
+            RefreshIvNote();
             if (keep is not null)
                 SelectedRow = Rows.FirstOrDefault(r => r.Id == keep);
         };
@@ -112,8 +124,28 @@ public partial class AlertsViewModel : ObservableObject
             SelectedRepeat = RepeatOptions.FirstOrDefault(r => r.Mode == repeat) ?? RepeatOptions.FirstOrDefault();
             Reload();
             RefreshMonitorState();
+            RefreshIvNote();
+            OnPropertyChanged(nameof(ThresholdHint));
         };
         RefreshMonitorState();
+        RefreshIvNote();
+    }
+
+    /// <summary>B1: latest IV reading per IV-alert symbol, with what it measured, or that sampling failed.</summary>
+    public void RefreshIvNote()
+    {
+        var symbols = _store.IvSymbols;
+        if (_iv is null || symbols.Count == 0) { HasIvNote = false; IvNote = ""; return; }
+        var parts = new List<string>();
+        foreach (var s in symbols)
+        {
+            if (_iv.Failed.Contains(s)) parts.Add(string.Format(_loc["Al_IvFailed"], s));
+            else if (_iv.Latest.TryGetValue(s, out var sample))
+                parts.Add($"{s} {sample.Percent.ToString("0.0", CultureInfo.InvariantCulture)}% ({NotificationService.IvBasisText(sample, _loc)})");
+            else parts.Add(string.Format(_loc["Al_IvPending"], s));
+        }
+        IvNote = _loc["Al_IvNotePrefix"] + " " + string.Join("; ", parts);
+        HasIvNote = true;
     }
 
     partial void OnMaxDelayMinutesChanged(int value)
@@ -191,6 +223,8 @@ public partial class AlertsViewModel : ObservableObject
             alert.LastSeenPrice = existing.LastSeenPrice;
             alert.LastSeenChangePercent = existing.LastSeenChangePercent;
             alert.LastSeenVolume = existing.LastSeenVolume;
+            alert.LastSeenIv = existing.LastSeenIv;
+            alert.LastSeenIvBasis = existing.LastSeenIvBasis;
             alert.HasSeenQuote = existing.HasSeenQuote &&
                 existing.Kind == alert.Kind &&
                 existing.Threshold == alert.Threshold &&
@@ -261,7 +295,7 @@ public partial class AlertsViewModel : ObservableObject
             IsEmpty = Rows.Count == 0;
             HistoryEmpty = History.Count == 0;
             if (string.IsNullOrEmpty(StatusText) || StatusText.StartsWith(_loc["Al_Monitor"].Replace("{0}", ""), StringComparison.Ordinal))
-                StatusText = string.Format(_loc["Al_Monitor"], _store.EnabledSymbols.Count);
+                StatusText = string.Format(_loc["Al_Monitor"], _store.EnabledSymbols.Concat(_store.IvSymbols).Distinct(StringComparer.OrdinalIgnoreCase).Count());
         }
         finally { _suppressToggle = false; }
     }
@@ -296,7 +330,8 @@ public partial class AlertsViewModel : ObservableObject
     private void RebuildOptions()
     {
         KindOptions.Clear();
-        foreach (var kind in new[] { AlertKind.PriceAbove, AlertKind.PriceBelow, AlertKind.PercentUp, AlertKind.PercentDown, AlertKind.VolumeAbove })
+        foreach (var kind in new[] { AlertKind.PriceAbove, AlertKind.PriceBelow, AlertKind.PercentUp, AlertKind.PercentDown, AlertKind.VolumeAbove,
+                     AlertKind.IvAbove, AlertKind.IvBelow })
             KindOptions.Add(new KindOption { Kind = kind, Title = _loc[$"Al_Kind_{kind}"] });
         RepeatOptions.Clear();
         RepeatOptions.Add(new RepeatOption { Mode = AlertRepeatMode.Once, Title = _loc["Al_Repeat_Once"] });
@@ -327,7 +362,7 @@ public partial class AlertsViewModel : ObservableObject
             error = _loc["Al_Err_Threshold"];
             return false;
         }
-        if (threshold <= 0)
+        if (threshold <= 0 || ((SelectedKind?.Kind.IsIv() ?? false) && threshold > 1000))
         {
             error = _loc["Al_Err_Threshold"];
             return false;

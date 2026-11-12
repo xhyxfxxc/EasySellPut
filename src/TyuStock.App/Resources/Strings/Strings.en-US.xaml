@@ -508,4 +508,14 @@
     <sys:String x:Key="Set_FixedRate">Fixed rate (%)</sys:String>
     <sys:String x:Key="Set_FixedRateDesc">Used in fixed mode, and as the fallback when the T-bill yield cannot be fetched</sys:String>
     <sys:String x:Key="Set_RateInvalid">Enter a number between -1 and 20</sys:String>
+    <sys:String x:Key="Al_Kind_IvAbove">Implied volatility rises to</sys:String>
+    <sys:String x:Key="Al_Kind_IvBelow">Implied volatility falls to</sys:String>
+    <sys:String x:Key="Al_FiredIvAbove">Implied volatility {0}% rose to {1}%</sys:String>
+    <sys:String x:Key="Al_FiredIvBelow">Implied volatility {0}% fell to {1}%</sys:String>
+    <sys:String x:Key="Al_IvThresholdHint">IV in percent, e.g. 45 for 45% (sampled every 5 min)</sys:String>
+    <sys:String x:Key="Al_IvBasisIv30">{0} 30-day IV index</sys:String>
+    <sys:String x:Key="Al_IvBasisAtm">{0} ATM IV, expiry {1} ({2} days)</sys:String>
+    <sys:String x:Key="Al_IvFailed">{0} sample failed</sys:String>
+    <sys:String x:Key="Al_IvPending">{0} waiting for first sample</sys:String>
+    <sys:String x:Key="Al_IvNotePrefix">IV samples (every 5 min; CBOE IV30 first, otherwise ATM IV of the expiry nearest 30 days):</sys:String>
 </ResourceDictionary>

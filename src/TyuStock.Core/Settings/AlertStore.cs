@@ -74,6 +74,23 @@ public sealed class AlertStore
         get { lock (_gate) return Current.History.ToList(); }
     }
 
+    /// <summary>B1: symbols that have an enabled IV alert (sampled by the IV sampler, not the quote stream).</summary>
+    public IReadOnlyList<string> IvSymbols
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return Current.Alerts
+                    .Where(a => a.Enabled && a.Kind.IsIv() && !string.IsNullOrWhiteSpace(a.Symbol))
+                    .Select(a => a.Symbol)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+        }
+    }
+
+    /// <summary>Symbols with an enabled price / change / volume alert (quote-driven).</summary>
     public IReadOnlyList<string> EnabledSymbols
     {
         get
@@ -81,7 +98,7 @@ public sealed class AlertStore
             lock (_gate)
             {
                 return Current.Alerts
-                    .Where(a => a.Enabled && !string.IsNullOrWhiteSpace(a.Symbol))
+                    .Where(a => a.Enabled && !a.Kind.IsIv() && !string.IsNullOrWhiteSpace(a.Symbol))
                     .Select(a => a.Symbol)
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();

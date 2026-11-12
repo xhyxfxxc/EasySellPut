@@ -131,7 +131,7 @@ public sealed class AlertMonitor : IDisposable
         var applied = new List<(PriceAlert Next, AlertHistoryEntry? History)>();
         foreach (var alert in _store.Alerts)
         {
-            if (!alert.Enabled) continue;
+            if (!alert.Enabled || alert.Kind.IsIv()) continue;
             if (!bySymbol.TryGetValue(alert.Symbol, out var quote)) continue;
             var (use, _) = AlertQuoteGate.Check(quote, now, maxDelay);
             if (use == AlertQuoteUse.TooStale)

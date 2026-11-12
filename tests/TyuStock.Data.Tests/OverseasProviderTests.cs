@@ -17,6 +17,7 @@ public class CboeTests
         Assert.Equal(348.51, q.PreviousClose!.Value, 2);
         Assert.Equal(15, q.DelayMinutes);
         Assert.Equal(0.21772, CboeProvider.ParseIv30(d.RootElement)!.Value, 5);
+        Assert.Equal(0.21772, q.ImpliedVolatility30!.Value, 5); // B1: carried on the quote
         Assert.Equal(new DateTime(2026, 11, 11, 15, 59, 59), MarketClock.ToEastern(q.AsOf!.Value));
     }
 

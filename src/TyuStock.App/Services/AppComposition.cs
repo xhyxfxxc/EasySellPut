@@ -32,6 +32,10 @@ public static class AppComposition
         s.AddSingleton<QuotePump>();
         s.AddSingleton(sp => new TyuStock.Core.Pricing.RiskFreeRateProvider(sp.GetRequiredService<IMarketDataService>(),
             () => sp.GetRequiredService<SettingsStore>().Current.Pricing));
+        s.AddSingleton<IIvSource>(sp => new IvSource(
+            (symbols, ct) => sp.GetRequiredService<DataServices>().Providers.OfType<TyuStock.Data.Providers.Cboe.CboeProvider>().First().GetQuotesAsync(symbols, ct),
+            sp.GetRequiredService<IMarketDataService>(), sp.GetRequiredService<TyuStock.Core.Pricing.RiskFreeRateProvider>()));
+        s.AddSingleton<IvAlertSampler>();
         s.AddSingleton<NetworkController>();
         s.AddSingleton<INetworkController>(sp => sp.GetRequiredService<NetworkController>());
         s.AddTransient<SettingsViewModel>();
@@ -51,6 +55,7 @@ public static class AppComposition
         _ = sp.GetRequiredService<NetworkController>().ReconfigureAsync();
         sp.GetRequiredService<AlertStore>().Load();
         sp.GetRequiredService<AlertMonitor>().Start();
+        sp.GetRequiredService<IvAlertSampler>().Start();
         sp.GetRequiredService<QuotePump>().Start();
     }
 }

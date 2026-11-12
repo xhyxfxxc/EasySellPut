@@ -55,6 +55,7 @@ public sealed class CboeProvider(HttpGateway http, ResponseCache cache) : Provid
             PreviousClose = d.Num("prev_day_close"), Open = d.Num("open"), High = d.Num("high"), Low = d.Num("low"),
             Volume = d.Num("volume"), Bid = Pos(d.Num("bid")), Ask = Pos(d.Num("ask")), BidSize = d.Num("bid_size"), AskSize = d.Num("ask_size"),
             MarketState = Eastern.SessionNow(),
+            ImpliedVolatility30 = ParseIv30(root),
             AsOf = Eastern.Parse(d.Str("last_trade_time")) ?? Utc(root.Str("timestamp")),
             Source = "cboe", IsRealtime = false, DelayMinutes = 15,
         };

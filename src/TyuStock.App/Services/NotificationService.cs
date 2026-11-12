@@ -97,6 +97,33 @@ public sealed class NotificationService : IDisposable
         }
     }
 
+    /// <summary>B1: IV alert toast; the third line says what was measured (IV30 index or ATM IV of which expiry).</summary>
+    public void ShowIvAlertToast(PriceAlert alert, AlertEvalResult result, IvSample sample)
+    {
+        if (_options.NoAlerts || !result.Fired) return;
+        try
+        {
+            new ToastContentBuilder()
+                .AddText(string.Format(_loc["Al_FiredToastTitle"], alert.Symbol))
+                .AddText(FormatBody(alert, result))
+                .AddText(IvBasisText(sample, _loc))
+                .AddArgument("action", "open")
+                .AddArgument("symbol", alert.Symbol)
+                .Show();
+        }
+        catch (Exception ex) { Log(ex); }
+    }
+
+    public static string IvBasisText(IvSample sample, LocalizationService loc)
+    {
+        var src = TyuStock.App.ViewModels.SourceNames.Display(sample.Source, loc);
+        var text = sample.Basis == IvBasis.Iv30
+            ? string.Format(loc["Al_IvBasisIv30"], src)
+            : string.Format(loc["Al_IvBasisAtm"], src, sample.Expiration?.ToString("yyyy-MM-dd") ?? "—", sample.DaysToExpiry ?? 0);
+        if (sample.AsOf is { } t) text += " · " + t.ToLocalTime().ToString("MM-dd HH:mm");
+        return text;
+    }
+
     /// <summary>F10: tray balloon when alert monitoring stops getting quotes (once per interruption).</summary>
     public void ShowMonitorInterrupted(MonitorHealth health)
     {
@@ -142,6 +169,8 @@ public sealed class NotificationService : IDisposable
             AlertKind.PercentUp => "Al_FiredPercentUp",
             AlertKind.PercentDown => "Al_FiredPercentDown",
             AlertKind.VolumeAbove => "Al_FiredVolumeAbove",
+            AlertKind.IvAbove => "Al_FiredIvAbove",
+            AlertKind.IvBelow => "Al_FiredIvBelow",
             _ => "Al_FiredPriceAbove",
         };
         return string.Format(_loc[key], value, FormatValue(alert.Kind, alert.Threshold));
@@ -150,6 +179,7 @@ public sealed class NotificationService : IDisposable
     public static string FormatValue(AlertKind kind, double value) => kind switch
     {
         AlertKind.PercentUp or AlertKind.PercentDown => value.ToString("0.##", CultureInfo.InvariantCulture),
+        AlertKind.IvAbove or AlertKind.IvBelow => value.ToString("0.0", CultureInfo.InvariantCulture),
         AlertKind.VolumeAbove => value.ToString("N0", CultureInfo.InvariantCulture),
         _ => TyuStock.Core.Models.NumberDisplay.Price(value),
     };

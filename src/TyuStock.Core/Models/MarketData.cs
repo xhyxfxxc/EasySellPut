@@ -74,6 +74,8 @@ public sealed record Quote : SourcedData
     public double? FiftyTwoWeekHigh { get; init; }
     public double? FiftyTwoWeekLow { get; init; }
     public double? MarketCap { get; init; }
+    /// <summary>B1: the source's 30-day implied volatility index as a fraction (CBOE "iv30"), when it publishes one.</summary>
+    public double? ImpliedVolatility30 { get; init; }
     public MarketState MarketState { get; init; }
     /// <summary>Pre-market or after-hours last price, when the market is in an extended session.</summary>
     public double? ExtendedPrice { get; init; }

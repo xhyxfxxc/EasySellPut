@@ -77,12 +77,15 @@ public class AppLogTests
         {
             AppLog.Initialize(dir);
             string? seen = null;
-            void H(LogLevel l, string a, string m) => seen = $"{l}:{a}:{m}";
+            // AppLog is process-wide and other tests run in parallel: only look at our own area.
+            void H(LogLevel l, string a, string m) { if (a == "test") seen = $"{l}:{a}:{m}"; }
             AppLog.Written += H;
             AppLog.Warn("test", "hello", new InvalidOperationException("boom"));
             AppLog.Written -= H;
             var file = Directory.GetFiles(Path.Combine(dir, "logs"), "app-*.log").Single();
-            var text = File.ReadAllText(file);
+            // Other parallel tests may be appending to the same file: read with shared write access.
+            using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var text = new StreamReader(fs).ReadToEnd();
             Assert.Contains("WARN  [test] hello | InvalidOperationException: boom", text);
             Assert.Equal("Warn:test:hello", seen);
         }
