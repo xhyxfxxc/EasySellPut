@@ -19,6 +19,11 @@ public enum StrategyKind
     IronCondor,
     LongCallButterfly,
     LongPutButterfly,
+    Collar,
+    IronButterfly,
+    CalendarCall,
+    CalendarPut,
+    DiagonalCall,
 }
 
 /// <summary>

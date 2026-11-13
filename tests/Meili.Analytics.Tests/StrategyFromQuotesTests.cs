@@ -110,6 +110,60 @@ public sealed class StrategyFromQuotesTests
         Assert.Equal(b.MaxLoss, a.MaxLoss);
     }
 
+    [Fact]
+    public void Collar_and_iron_butterfly_build()
+    {
+        var collar = StrategyFromQuotes.TryBuild(StrategyKind.Collar, 100, Exp, Chain());
+        Assert.NotNull(collar);
+        Assert.Equal(StrategyKind.Collar, collar!.Kind);
+        Assert.Equal(3, collar.Legs.Count);
+        Assert.Equal(PositionSide.Long, collar.Legs.Single(l => l.Type == LegType.Stock).Side);
+        Assert.Equal(PositionSide.Short, collar.Legs.Single(l => l.Type == LegType.Call).Side);
+        Assert.Equal(105, collar.Legs.Single(l => l.Type == LegType.Call).Strike);
+        Assert.Equal(PositionSide.Long, collar.Legs.Single(l => l.Type == LegType.Put).Side);
+        Assert.Equal(95, collar.Legs.Single(l => l.Type == LegType.Put).Strike);
+
+        var fly = StrategyFromQuotes.TryBuild(StrategyKind.IronButterfly, 100, Exp, Chain(), wingSteps: 2);
+        Assert.NotNull(fly);
+        Assert.Equal(new[] { 90.0, 100.0, 110.0 }, fly!.Strikes.ToArray());
+        Assert.Equal(2, fly.Legs.Count(l => l.Side == PositionSide.Short && l.Strike == 100));
+        Assert.Equal(PositionSide.Long, fly.Legs.Single(l => l.Type == LegType.Put && l.Strike == 90).Side);
+        Assert.Equal(PositionSide.Long, fly.Legs.Single(l => l.Type == LegType.Call && l.Strike == 110).Side);
+    }
+
+    [Fact]
+    public void Calendar_and_diagonal_use_the_far_chain()
+    {
+        var near = Chain();
+        var farExp = Exp.AddDays(28);
+        var far = new[]
+        {
+            C(90, 12.0, 0.29), C(95, 8.0, 0.26), C(100, 5.0, 0.24), C(105, 3.0, 0.22), C(110, 1.6, 0.21),
+            P(90, 1.1, 0.21), P(95, 2.2, 0.22), P(100, 4.2, 0.24), P(105, 6.8, 0.26), P(110, 10.5, 0.29),
+        };
+        var cal = StrategyFromQuotes.TryBuild(StrategyKind.CalendarCall, 100, Exp, near, farExpiry: farExp, farQuotes: far);
+        Assert.NotNull(cal);
+        Assert.Equal(StrategyKind.CalendarCall, cal!.Kind);
+        Assert.True(cal.HasMixedExpiries);
+        Assert.Equal(Exp, cal.EarliestExpiry);
+        Assert.Equal(farExp, cal.LatestExpiry);
+        Assert.All(cal.Legs, l => Assert.Equal(100, l.Strike));
+        Assert.Equal(PositionSide.Short, cal.Legs.Single(l => l.Expiry == Exp).Side);
+        Assert.Equal(PositionSide.Long, cal.Legs.Single(l => l.Expiry == farExp).Side);
+        Assert.Equal(5.0, cal.Legs.Single(l => l.Expiry == farExp).Premium);
+
+        var put = StrategyFromQuotes.TryBuild(StrategyKind.CalendarPut, 100, Exp, near, farExpiry: farExp, farQuotes: far);
+        Assert.NotNull(put);
+        Assert.All(put!.Legs, l => Assert.Equal(LegType.Put, l.Type));
+
+        var diag = StrategyFromQuotes.TryBuild(StrategyKind.DiagonalCall, 100, Exp, near, wingSteps: 1, farExpiry: farExp, farQuotes: far);
+        Assert.NotNull(diag);
+        Assert.True(diag!.HasMixedExpiries);
+        Assert.NotEqual(diag.Legs[0].Strike, diag.Legs[1].Strike);
+
+        Assert.Null(StrategyFromQuotes.TryBuild(StrategyKind.CalendarCall, 100, Exp, near));
+    }
+
     private static ListedQuote[] Chain()
     {
         // 90, 95, 100, 105, 110 — both calls and puts, premiums roughly offset from ATM.

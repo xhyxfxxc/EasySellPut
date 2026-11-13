@@ -15,7 +15,8 @@ public static class StrategyFromQuotes
 
     /// <summary>
     /// Builds <paramref name="kind"/> at <paramref name="expiry"/> using mid-style <paramref name="quotes"/>.
-    /// <paramref name="spot"/> is also the stock entry for covered-call and protective-put presets.
+    /// <paramref name="spot"/> is also the stock entry for covered-call, protective-put and collar presets.
+    /// Calendar and diagonal kinds need <paramref name="farExpiry"/> and <paramref name="farQuotes"/> (a later chain).
     /// </summary>
     public static OptionStrategy? TryBuild(
         StrategyKind kind,
@@ -23,7 +24,9 @@ public static class StrategyFromQuotes
         DateOnly expiry,
         IReadOnlyList<ListedQuote> quotes,
         int quantity = 1,
-        int wingSteps = DefaultWingSteps)
+        int wingSteps = DefaultWingSteps,
+        DateOnly? farExpiry = null,
+        IReadOnlyList<ListedQuote>? farQuotes = null)
     {
         ArgumentNullException.ThrowIfNull(quotes);
         if (quantity <= 0) throw new ArgumentOutOfRangeException(nameof(quantity), quantity, "Quantity must be positive.");
@@ -51,6 +54,11 @@ public static class StrategyFromQuotes
             StrategyKind.IronCondor => Iron(calls, puts, spot, wingSteps, expiry, quantity),
             StrategyKind.LongCallButterfly => Fly(calls, OptionRight.Call, spot, wingSteps, expiry, quantity),
             StrategyKind.LongPutButterfly => Fly(puts, OptionRight.Put, spot, wingSteps, expiry, quantity),
+            StrategyKind.Collar => Collar(calls, puts, spot, expiry, quantity),
+            StrategyKind.IronButterfly => IronFly(calls, puts, spot, wingSteps, expiry, quantity),
+            StrategyKind.CalendarCall => Calendar(OptionRight.Call, calls, Unique(farQuotes ?? [], OptionRight.Call), spot, expiry, farExpiry, quantity),
+            StrategyKind.CalendarPut => Calendar(OptionRight.Put, puts, Unique(farQuotes ?? [], OptionRight.Put), spot, expiry, farExpiry, quantity),
+            StrategyKind.DiagonalCall => Diagonal(calls, Unique(farQuotes ?? [], OptionRight.Call), spot, wingSteps, expiry, farExpiry, quantity),
             _ => null,
         };
     }
@@ -186,5 +194,84 @@ public static class StrategyFromQuotes
         if (lo < 0 || hi >= list.Count) return null;
         if (!(list[lo].Strike < list[mid].Strike && list[mid].Strike < list[hi].Strike)) return null;
         return StrategyPresets.Butterfly(right, Q(list[lo]), Q(list[mid]), Q(list[hi]), expiry, quantity);
+    }
+
+    private static OptionStrategy? Collar(
+        IReadOnlyList<ListedQuote> calls, IReadOnlyList<ListedQuote> puts, double spot, DateOnly expiry, int quantity)
+    {
+        int? calli = FirstAbove(calls, spot) ?? FirstAtOrAbove(calls, spot);
+        int? puti = LastBelow(puts, spot) ?? LastAtOrBelow(puts, spot);
+        if (calli is not { } ci || puti is not { } pi) return null;
+        if (!(puts[pi].Strike < calls[ci].Strike)) return null;
+        return StrategyPresets.Collar(spot, Q(calls[ci]), Q(puts[pi]), expiry, quantity);
+    }
+
+    private static OptionStrategy? IronFly(
+        IReadOnlyList<ListedQuote> calls, IReadOnlyList<ListedQuote> puts, double spot, int wing, DateOnly expiry, int quantity)
+    {
+        if (Atm(calls, spot) is not { } ci) return null;
+        var bodyCall = calls[ci];
+        var bodyPut = puts.FirstOrDefault(p => p.Strike == bodyCall.Strike);
+        if (bodyPut.Strike != bodyCall.Strike)
+        {
+            if (Atm(puts, spot) is not { } pi) return null;
+            bodyPut = puts[pi];
+            var match = calls.FirstOrDefault(c => c.Strike == bodyPut.Strike);
+            if (match.Strike == bodyPut.Strike) bodyCall = match;
+            if (bodyCall.Strike != bodyPut.Strike) return null;
+        }
+        int callBody = IndexOfStrike(calls, bodyCall.Strike);
+        int putBody = IndexOfStrike(puts, bodyPut.Strike);
+        int longPut = putBody - wing, longCall = callBody + wing;
+        if (longPut < 0 || longCall >= calls.Count) return null;
+        if (!(puts[longPut].Strike < bodyPut.Strike && bodyCall.Strike < calls[longCall].Strike)) return null;
+        return StrategyPresets.IronButterfly(Q(puts[longPut]), Q(bodyPut), Q(bodyCall), Q(calls[longCall]), expiry, quantity);
+    }
+
+    private static OptionStrategy? Calendar(
+        OptionRight right, IReadOnlyList<ListedQuote> near, IReadOnlyList<ListedQuote> far, double spot, DateOnly nearExp, DateOnly? farExp, int quantity)
+    {
+        if (farExp is not { } farDate || farDate <= nearExp || far.Count == 0) return null;
+        if (Atm(near, spot) is not { } ni) return null;
+        var n = near[ni];
+        var f = far.FirstOrDefault(q => q.Strike == n.Strike);
+        if (f.Strike != n.Strike)
+        {
+            if (Atm(far, spot) is not { } fi) return null;
+            f = far[fi];
+            var match = near.FirstOrDefault(q => q.Strike == f.Strike);
+            if (match.Strike == f.Strike) n = match;
+            if (n.Strike != f.Strike) return null;
+        }
+        return right == OptionRight.Call
+            ? StrategyPresets.CalendarCall(Q(n), nearExp, Q(f), farDate, quantity)
+            : StrategyPresets.CalendarPut(Q(n), nearExp, Q(f), farDate, quantity);
+    }
+
+    private static OptionStrategy? Diagonal(
+        IReadOnlyList<ListedQuote> near, IReadOnlyList<ListedQuote> far, double spot, int wing, DateOnly nearExp, DateOnly? farExp, int quantity)
+    {
+        if (farExp is not { } farDate || farDate <= nearExp || far.Count == 0) return null;
+        // Short the nearer ATM (or first above) call; long a farther call one wing higher (poor-man's covered-call shape).
+        int ni = FirstAbove(near, spot) ?? Atm(near, spot) ?? -1;
+        if (ni < 0) return null;
+        var n = near[ni];
+        int fi = (Atm(far, spot) ?? 0) + wing;
+        if (fi >= far.Count) fi = far.Count - 1;
+        var f = far[fi];
+        if (f.Strike == n.Strike)
+        {
+            if (fi + 1 < far.Count) f = far[fi + 1];
+            else if (fi - 1 >= 0) f = far[fi - 1];
+        }
+        if (f.Strike == n.Strike) return null;
+        return StrategyPresets.DiagonalCall(Q(n), nearExp, Q(f), farDate, quantity);
+    }
+
+    private static int IndexOfStrike(IReadOnlyList<ListedQuote> list, double strike)
+    {
+        for (int i = 0; i < list.Count; i++)
+            if (list[i].Strike == strike) return i;
+        return -1;
     }
 }

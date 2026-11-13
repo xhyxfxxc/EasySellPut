@@ -89,7 +89,65 @@ public static class StrategyPresets
             leg(L, lower, expiry, quantity), leg(S, middle, expiry, checked(2 * quantity)), leg(L, upper, expiry, quantity));
     }
 
+    /// <summary>Long stock + short call + long put (typically put strike below the call). Share count is <c>contracts x 100</c>.</summary>
+    public static OptionStrategy Collar(double stockPrice, LegQuote shortCall, LegQuote longPut, DateOnly expiry, int contracts = 1)
+    {
+        if (!(longPut.Strike < shortCall.Strike))
+            throw new ArgumentException("A collar needs the put strike strictly below the call strike.", nameof(longPut));
+        return Build(StrategyKind.Collar, Shares(stockPrice, contracts), Call(S, shortCall, expiry, contracts), Put(L, longPut, expiry, contracts));
+    }
+
+    /// <summary>
+    /// Short iron butterfly (net credit): long put (lowest), short put and short call at the same body strike, long call (highest).
+    /// </summary>
+    public static OptionStrategy IronButterfly(LegQuote longPut, LegQuote shortPut, LegQuote shortCall, LegQuote longCall, DateOnly expiry, int quantity = 1)
+    {
+        if (shortPut.Strike != shortCall.Strike)
+            throw new ArgumentException("An iron butterfly needs the short put and short call at the same strike.", nameof(shortCall));
+        if (!(longPut.Strike < shortPut.Strike && shortCall.Strike < longCall.Strike))
+            throw new ArgumentException("Strikes must be long-put < body < long-call.", nameof(longCall));
+        return Build(StrategyKind.IronButterfly,
+            Put(L, longPut, expiry, quantity), Put(S, shortPut, expiry, quantity),
+            Call(S, shortCall, expiry, quantity), Call(L, longCall, expiry, quantity));
+    }
+
+    /// <summary>Call calendar: short the nearer expiry, long the farther expiry, same strike.</summary>
+    public static OptionStrategy CalendarCall(LegQuote shortNear, DateOnly nearExpiry, LegQuote longFar, DateOnly farExpiry, int quantity = 1)
+    {
+        SameStrike(shortNear, longFar);
+        Later(nearExpiry, farExpiry);
+        return Build(StrategyKind.CalendarCall, Call(S, shortNear, nearExpiry, quantity), Call(L, longFar, farExpiry, quantity));
+    }
+
+    /// <summary>Put calendar: short the nearer expiry, long the farther expiry, same strike.</summary>
+    public static OptionStrategy CalendarPut(LegQuote shortNear, DateOnly nearExpiry, LegQuote longFar, DateOnly farExpiry, int quantity = 1)
+    {
+        SameStrike(shortNear, longFar);
+        Later(nearExpiry, farExpiry);
+        return Build(StrategyKind.CalendarPut, Put(S, shortNear, nearExpiry, quantity), Put(L, longFar, farExpiry, quantity));
+    }
+
+    /// <summary>Call diagonal: short the nearer expiry, long the farther expiry, different strikes.</summary>
+    public static OptionStrategy DiagonalCall(LegQuote shortNear, DateOnly nearExpiry, LegQuote longFar, DateOnly farExpiry, int quantity = 1)
+    {
+        if (shortNear.Strike == longFar.Strike)
+            throw new ArgumentException("A diagonal needs different strikes; use a calendar for the same strike.", nameof(longFar));
+        Later(nearExpiry, farExpiry);
+        return Build(StrategyKind.DiagonalCall, Call(S, shortNear, nearExpiry, quantity), Call(L, longFar, farExpiry, quantity));
+    }
+
     private static OptionStrategy Build(StrategyKind kind, params StrategyLeg[] legs) => new(legs, kind.ToString(), kind);
+
+    private static void SameStrike(LegQuote a, LegQuote b)
+    {
+        if (a.Strike != b.Strike) throw new ArgumentException("A calendar needs the same strike on both expiries.", nameof(b));
+    }
+
+    private static void Later(DateOnly near, DateOnly far)
+    {
+        if (far <= near) throw new ArgumentException("The far expiry must be after the near expiry.", nameof(far));
+    }
+
 
     private static StrategyLeg Call(PositionSide side, LegQuote q, DateOnly expiry, int quantity)
         => StrategyLeg.Call(side, q.Strike, q.Premium, expiry, quantity, q.ImpliedVolatility);
