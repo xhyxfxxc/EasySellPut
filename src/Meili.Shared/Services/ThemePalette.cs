@@ -14,7 +14,8 @@ public sealed record ThemePalette(
     uint Series1, uint Series2, uint Series3, uint Series4, uint Series5, uint Series6)
 {
     /// <summary>Alpha of the up/down tag fills behind up/down text.</summary>
-    public const byte TintAlpha = 0x1A;
+    // 0x1A left dark-theme Down on the card fill at 4.49:1; 0x18 (~9%) restores 2265 4.5:1.
+    public const byte TintAlpha = 0x18;
 
     public static readonly ThemePalette Dark = new(
         Window: 0xFF24221F, Sidebar: 0xFF1F1D1B, Card: 0xFF2C2A27, Chart: 0xFF201E1C, Control: 0xFF32302C, Border: 0xFF433F3A,

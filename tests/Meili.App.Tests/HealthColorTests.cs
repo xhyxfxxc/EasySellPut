@@ -16,7 +16,9 @@ public class HealthColorTests
         {
             Color C(string key) => ((SolidColorBrush)Application.Current.FindResource(key)).Color;
             var health = new[] { "HealthyBrush", "DegradedBrush", "DownStateBrush", "UnknownBrush" }.Select(C).ToList();
-            Assert.Equal(4, health.Distinct().Count());
+            // 0.4.2 tokens use one colour for DownState and Unknown; Healthy and Degraded stay distinct, and none equals up/down.
+            Assert.Equal(3, health.Distinct().Count());
+            Assert.Equal(C("DownStateBrush"), C("UnknownBrush"));
             try
             {
                 foreach (var mode in new[] { UpDownColorMode.RedUp, UpDownColorMode.GreenUp })

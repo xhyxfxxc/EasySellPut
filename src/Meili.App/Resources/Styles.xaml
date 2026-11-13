@@ -19,8 +19,8 @@
     <!-- Defaults match ThemePalette.Dark; ThemeService overwrites every key after a theme apply. -->
     <SolidColorBrush x:Key="UpBrush" Color="#CC8E8A" />
     <SolidColorBrush x:Key="DownBrush" Color="#6EAA8A" />
-    <SolidColorBrush x:Key="UpBackgroundBrush" Color="#1ACC8E8A" />
-    <SolidColorBrush x:Key="DownBackgroundBrush" Color="#1A6EAA8A" />
+    <SolidColorBrush x:Key="UpBackgroundBrush" Color="#18CC8E8A" />
+    <SolidColorBrush x:Key="DownBackgroundBrush" Color="#186EAA8A" />
     <!-- Health/status colours are neutral so they never read as "up" or "down". State is also shown by an icon and a word. -->
     <SolidColorBrush x:Key="HealthyBrush" Color="#7EA6C0" />
     <SolidColorBrush x:Key="DegradedBrush" Color="#C4A46A" />
