@@ -20,8 +20,9 @@ $ProductName = "美丽稻谷卖方绿泡群专用终端"
 $ExeFileName = "$ProductName.exe"
 $PortableLabel = "$ProductName-便携版"
 $SetupLabel = "$ProductName-安装程序"
-[xml]$props = Get-Content (Join-Path $Root "Directory.Build.props")
-$Version = ([string]$props.Project.PropertyGroup.Version).Trim()
+# Read the version with a regex so a missing XML declaration or the Chinese metadata in the props file cannot break [xml].
+$Version = ([regex]::Match((Get-Content (Join-Path $Root "Directory.Build.props") -Raw), "<Version>([^<]+)</Version>")).Groups[1].Value
+if (-not $Version) { throw "Version not found in Directory.Build.props" }
 
 $PublishDir = Join-Path $Root "build\out\publish"
 $PayloadDir = Join-Path $Root "build\out\payload"
