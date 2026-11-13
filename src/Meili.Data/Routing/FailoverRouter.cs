@@ -107,7 +107,7 @@ public sealed class FailoverRouter : IMarketDataService
             try
             {
                 // WaitAsync bounds a source that ignores its token; the abandoned call is left to finish on its own.
-                var all = await p.GetQuotesAsync(ask, budget.Token).WaitAsync(budget.Token).ConfigureAwait(false);
+                var all = await ObserveFault(p.GetQuotesAsync(ask, budget.Token)).WaitAsync(budget.Token).ConfigureAwait(false);
                 var r = all.Where(q => q.Price > 0 && double.IsFinite(q.Price)).ToList();
                 RecordAnswer(p.Id, ask, r);
                 if (r.Count == 0) { Fail(p.Id, "no quotes returned", hard: false, errors); continue; }
@@ -128,6 +128,14 @@ public sealed class FailoverRouter : IMarketDataService
             throw new AllSourcesFailedException(DataCapability.Quote, errors);
         }
         return wanted.Where(got.ContainsKey).Select(s => got[s]).ToList();
+    }
+
+    /// <summary>A call abandoned at the budget may fail later; read its exception so it never surfaces as unobserved.</summary>
+    private static Task<T> ObserveFault<T>(Task<T> task)
+    {
+        _ = task.ContinueWith(static t => { _ = t.Exception; }, CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        return task;
     }
 
     // ---------------- miss memory: a source that answered without a symbol is not asked for it again for a while ----------------

@@ -44,8 +44,19 @@ public sealed class ResponseCache
     private Lazy<Task<object>> NewShared<T>(string key, TimeSpan ttl, Func<CancellationToken, Task<T>> factory) where T : notnull
     {
         Lazy<Task<object>>? self = null;
-        self = new Lazy<Task<object>>(() => RunSharedAsync(key, ttl, factory, self!));
+        self = new Lazy<Task<object>>(() => ObserveFault(RunSharedAsync(key, ttl, factory, self!)));
         return self;
+    }
+
+    /// <summary>
+    /// The shared task can fail after every caller has stopped waiting; reading its exception here keeps that from
+    /// surfacing as an unobserved task exception. Callers that do await it still receive the exception.
+    /// </summary>
+    private static Task<object> ObserveFault(Task<object> task)
+    {
+        _ = task.ContinueWith(static t => { _ = t.Exception; }, CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+        return task;
     }
 
     private async Task<object> RunSharedAsync<T>(string key, TimeSpan ttl, Func<CancellationToken, Task<T>> factory, Lazy<Task<object>> self) where T : notnull

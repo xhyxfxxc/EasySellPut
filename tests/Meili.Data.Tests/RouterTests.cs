@@ -28,13 +28,15 @@ public class RouterTests
     private sealed class HangingQuotes(string id, bool ignoreToken = false) : IQuoteProvider
     {
         public int Calls;
+        /// <summary>The answer the token-ignoring variant is stuck on; tests can fault it after the budget has expired.</summary>
+        public TaskCompletionSource<IReadOnlyList<Quote>> Never { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public string Id => id;
         public string DisplayName => id;
         public DataCapability Capabilities => DataCapability.Quote;
         public Task<IReadOnlyList<Quote>> GetQuotesAsync(IReadOnlyList<string> symbols, CancellationToken ct = default)
         {
             Calls++;
-            return ignoreToken ? new TaskCompletionSource<IReadOnlyList<Quote>>().Task : Hang(ct);
+            return ignoreToken ? Never.Task : Hang(ct);
         }
         private static async Task<IReadOnlyList<Quote>> Hang(CancellationToken ct) { await Task.Delay(Timeout.Infinite, ct); return []; }
     }
@@ -271,6 +273,39 @@ public class RouterTests
         var q = await r.GetQuotesAsync(["AAPL"]).WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal("b", Assert.Single(q).Source);
         Assert.Equal(1, r.Health.Get("a")!.Failures);
+    }
+
+    [Fact]
+    public async Task A_source_abandoned_at_the_budget_that_faults_later_raises_no_unobserved_exception()
+    {
+        var marker = new InvalidOperationException("abandoned quote call failed");
+        var seen = new System.Collections.Concurrent.ConcurrentBag<Exception>();
+        void OnUnobserved(object? _, UnobservedTaskExceptionEventArgs e)
+        {
+            if (e.Exception.Flatten().InnerExceptions.Any(x => ReferenceEquals(x, marker))) seen.Add(e.Exception);
+        }
+        TaskScheduler.UnobservedTaskException += OnUnobserved;
+        try
+        {
+            await AbandonAtBudgetThenFailAsync(marker);
+            GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+            Assert.Empty(seen);
+        }
+        finally { TaskScheduler.UnobservedTaskException -= OnUnobserved; }
+    }
+
+    /// <summary>Kept out of line so nothing here keeps the abandoned call alive.</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static async Task AbandonAtBudgetThenFailAsync(Exception boom)
+    {
+        var a = new HangingQuotes("a", ignoreToken: true);
+        var b = new FakeQuotes("b", s => s.Select(x => Q(x, "b")).ToList());
+        var r = Router(a, b);
+        r.QuoteSourceBudget = TimeSpan.FromMilliseconds(50);
+        var q = await r.GetQuotesAsync(["AAPL"]).WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Equal("b", Assert.Single(q).Source);
+        a.Never.SetException(boom); // the call the router gave up on fails afterwards
+        await Task.Delay(100);
     }
 
     [Fact]
