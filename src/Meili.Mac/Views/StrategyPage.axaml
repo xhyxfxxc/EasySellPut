@@ -69,23 +69,23 @@
                 <controls:SymbolBox x:Name="SymbolInput" MinWidth="160" Text="{Binding SymbolText}" WatchSymbols="{Binding WatchSymbols}"
                                     CommitCommand="{Binding LoadFromBoxCommand}" />
             </DockPanel>
-            <DockPanel Margin="0,0,0,6">
-                <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="60" Height="8" Margin="0,0,8,0" IsVisible="{Binding IsBusy}" />
-                <TextBlock DockPanel.Dock="Left" Classes="Caption" Text="{Binding Headline}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <TextBlock DockPanel.Dock="Left" Classes="Caption" Text="{Binding LivePriceText}" VerticalAlignment="Center" Margin="0,0,8,0"
+            <WrapPanel Margin="0,0,0,2">
+                <ProgressBar IsIndeterminate="True" Width="60" Height="8" Margin="0,0,8,4" IsVisible="{Binding IsBusy}" />
+                <TextBlock Classes="Caption" Text="{Binding Headline}" TextWrapping="NoWrap" VerticalAlignment="Center" Margin="0,0,12,4" />
+                <TextBlock Classes="Caption" Text="{Binding LivePriceText}" TextWrapping="NoWrap" VerticalAlignment="Center" Margin="0,0,8,4"
                            ToolTip.Tip="{DynamicResource Op_LivePriceTip}" />
-                <Border DockPanel.Dock="Left" Margin="0,0,8,0" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                <Border Margin="0,0,8,4" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
                         Background="{DynamicResource ControlFillColorSecondaryBrush}" IsVisible="{Binding HasDelay}">
-                    <TextBlock Classes="Caption" Text="{Binding DelayText}" />
+                    <TextBlock Classes="Caption" Text="{Binding DelayText}" TextWrapping="NoWrap" />
                 </Border>
-                <Border DockPanel.Dock="Left" Margin="0,0,8,0" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
+                <Border Margin="0,0,8,4" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
                         Background="{DynamicResource ControlFillColorSecondaryBrush}" ToolTip.Tip="{DynamicResource Px_ModelTip}">
-                    <TextBlock Classes="Caption" Text="{Binding ModelText}" />
+                    <TextBlock Classes="Caption" Text="{Binding ModelText}" TextWrapping="NoWrap" />
                 </Border>
-                <TextBlock DockPanel.Dock="Left" Classes="Caption" Text="{Binding SourceText}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,12,0" />
-                <TextBlock Classes="Caption" Text="{Binding LocalNote}" VerticalAlignment="Center" />
-            </DockPanel>
+                <TextBlock Classes="Caption" Text="{Binding SourceText}" TextWrapping="NoWrap" VerticalAlignment="Center" Margin="0,0,12,4" />
+                <TextBlock Classes="Caption" Text="{Binding StatusText}" VerticalAlignment="Center" Margin="0,0,12,4" />
+                <TextBlock Classes="Caption" Text="{Binding LocalNote}" VerticalAlignment="Center" Margin="0,0,0,4" />
+            </WrapPanel>
         </StackPanel>
 
         <ScrollViewer x:Name="MidScroll" Grid.Row="1" Margin="32,0,32,8" MaxHeight="360" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
