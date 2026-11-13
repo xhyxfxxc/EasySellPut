@@ -14,7 +14,7 @@
             <Setter Property="Foreground" Value="{DynamicResource DownBrush}" />
         </Style>
     </UserControl.Styles>
-    <Grid RowDefinitions="Auto,*,*">
+    <Grid RowDefinitions="Auto,Auto,*">
         <StackPanel x:Name="HeaderPanel" Grid.Row="0" Margin="32,16,32,4">
             <TextBlock Classes="PageTitle" Text="{DynamicResource St_Title}" />
             <Border Margin="0,8,0,8" Padding="12,8" CornerRadius="8"
@@ -88,7 +88,7 @@
             </DockPanel>
         </StackPanel>
 
-        <ScrollViewer x:Name="MidScroll" Grid.Row="1" Margin="32,0,32,8" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer x:Name="MidScroll" Grid.Row="1" Margin="32,0,32,8" MaxHeight="360" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Grid ColumnDefinitions="*,20,*">
                 <DockPanel Grid.Column="0">
                     <TextBlock DockPanel.Dock="Top" Classes="Caption" Text="{DynamicResource St_Summary}" Margin="0,0,0,4" />
