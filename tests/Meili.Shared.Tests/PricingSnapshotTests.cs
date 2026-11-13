@@ -59,7 +59,7 @@ public class PricingSnapshotTests : IDisposable
         var data = new SnapshotData();
         var settings = new SettingsStore(_directory);
         var rate = new RiskFreeRateProvider(data, () => new PricingSettings { RateMode = RiskFreeRateMode.Fixed, FixedRatePercent = 0 });
-        var vm = new StrategyViewModel(new WatchlistStore(settings), data, _loc, new SymbolContext(), new PricingAssumptions(data, rate), new StrategyStore(_directory));
+        var vm = new StrategyViewModel(new WatchlistStore(settings), data, _loc, new SymbolContext(), new PricingAssumptions(data, rate), new StrategyStore(_directory), settings);
         var first = new DateOnly(2099, 12, 18);
         var second = first.AddDays(28);
         vm.Spot = 100;
@@ -110,7 +110,7 @@ public class PricingSnapshotTests : IDisposable
         Assert.Equal(0.4, options.Rows.Single().Call!.IvValue!.Value, 6);
         options.Deactivate();
 
-        var strategy = new StrategyViewModel(new WatchlistStore(settings), data, _loc, new SymbolContext(), pricing, new StrategyStore(_directory));
+        var strategy = new StrategyViewModel(new WatchlistStore(settings), data, _loc, new SymbolContext(), pricing, new StrategyStore(_directory), settings);
         strategy.Seed(new StrategySeed("TEST", expiration, CRight.Call, PositionSide.Long, 100));
         await strategy.LoadAsync();
         Assert.Equal("40.0", strategy.Legs.Single().IvText);
