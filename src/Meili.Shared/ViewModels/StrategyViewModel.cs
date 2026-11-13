@@ -22,12 +22,14 @@ public partial class StrategyViewModel : ObservableObject
 
     private static readonly StrategyKind[] PresetOrder =
     [
-        StrategyKind.CoveredCall, StrategyKind.ProtectivePut,
+        StrategyKind.CoveredCall, StrategyKind.ProtectivePut, StrategyKind.Collar,
         StrategyKind.BullCallSpread, StrategyKind.BearCallSpread,
         StrategyKind.BullPutSpread, StrategyKind.BearPutSpread,
         StrategyKind.LongStraddle, StrategyKind.ShortStraddle,
         StrategyKind.LongStrangle, StrategyKind.ShortStrangle,
-        StrategyKind.IronCondor, StrategyKind.LongCallButterfly, StrategyKind.LongPutButterfly,
+        StrategyKind.IronCondor, StrategyKind.IronButterfly,
+        StrategyKind.LongCallButterfly, StrategyKind.LongPutButterfly,
+        StrategyKind.CalendarCall, StrategyKind.CalendarPut, StrategyKind.DiagonalCall,
         StrategyKind.LongCall, StrategyKind.LongPut, StrategyKind.Custom,
     ];
 
@@ -37,6 +39,7 @@ public partial class StrategyViewModel : ObservableObject
     private readonly SymbolContext _context;
     private readonly PricingAssumptions _pricing;
     private readonly StrategyStore _store;
+    private readonly SettingsStore _settings;
     private PricingInputs _inputs;
     private readonly IUiTimer _timer = Ui.Timer(RefreshCadence.OptionChain); // C3
     private CancellationTokenSource? _cts;
@@ -94,9 +97,10 @@ public partial class StrategyViewModel : ObservableObject
     public event EventHandler? ChartChanged;
 
     public StrategyViewModel(WatchlistStore watchlist, IMarketDataService data, LocalizationService loc, SymbolContext context,
-        PricingAssumptions pricing, StrategyStore store)
+        PricingAssumptions pricing, StrategyStore store, SettingsStore settings)
     {
-        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _pricing = pricing; _store = store;
+        _watchlist = watchlist; _data = data; _loc = loc; _context = context; _pricing = pricing; _store = store; _settings = settings;
+        ShowHint = !settings.Current.StrategyHintDismissed;
         foreach (var x in store.All) Saved.Add(x);
         _inputs = pricing.Initial;
         ModelText = PricingText.Model(_inputs.Rate, loc);
@@ -117,6 +121,7 @@ public partial class StrategyViewModel : ObservableObject
             RelabelLegs();
             RelabelHeader();
             Recompute();
+            ChartChanged?.Invoke(this, EventArgs.Empty);
         };
     }
 
@@ -216,6 +221,7 @@ public partial class StrategyViewModel : ObservableObject
     partial void OnSelectedPresetChanged(PresetChoice? value)
     {
         if (_suppress || value is null) return;
+        SyncFarExpirations();
         if (value.Kind == StrategyKind.Custom)
         {
             _manualLegs = true;
@@ -261,7 +267,12 @@ public partial class StrategyViewModel : ObservableObject
             catch (OperationCanceledException) { throw; }
             catch (Exception ex) { AppLog.Warn("strategy", "chain load failed", ex); chainError = ex.Message; }
 
-            if (chain is not null) _loadedSymbol = symbol;
+            if (chain is not null)
+            {
+                if (!string.Equals(symbol, _loadedSymbol, StringComparison.OrdinalIgnoreCase))
+                    ClearQuoteCache();
+                _loadedSymbol = symbol;
+            }
             var pricingTask = _pricing.ForAsync(symbol, "strategy", ct);
             var quotes = await SafeQuotes(symbol, ct);
             var q = quotes.FirstOrDefault(x => x.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
@@ -298,9 +309,10 @@ public partial class StrategyViewModel : ObservableObject
                     if (expDate is { } se && c.Expiration != se) continue;
                     list.Add(ToListed(c, spot, settings));
                 }
-                _listed = list;
+                RememberQuotes(SelectedExpiration?.Date ?? chain.Expiration, list);
                 _hasChain = list.Count > 0;
                 _lastError = _hasChain ? null : (chainError ?? _loc["St_NoChain"]);
+                SyncFarExpirations();
             }
             else
             {
@@ -392,7 +404,24 @@ public partial class StrategyViewModel : ObservableObject
             return;
         }
         var qty = Math.Max(1, Quantity);
-        var built = StrategyFromQuotes.TryBuild(kind, spot, SelectedExpiration.Date, _listed, qty);
+        DateOnly? far = null;
+        IReadOnlyList<ListedQuote>? farQuotes = null;
+        if (IsFarKind(kind))
+        {
+            far = SelectedFarExpiration?.Date ?? FarExpirations.FirstOrDefault()?.Date;
+            if (far is null)
+            {
+                if (force) { _lastError = _loc["St_BuildFailed"]; UpdateStatus(); }
+                return;
+            }
+            if (!_quotesByExpiry.ContainsKey(far.Value))
+            {
+                _ = BuildFromPresetAfterFarAsync(far.Value);
+                return;
+            }
+            farQuotes = _quotesByExpiry[far.Value];
+        }
+        var built = StrategyFromQuotes.TryBuild(kind, spot, SelectedExpiration.Date, _listed, qty, farExpiry: far, farQuotes: farQuotes);
         if (built is null)
         {
             _lastError = _loc["St_BuildFailed"];
@@ -405,14 +434,31 @@ public partial class StrategyViewModel : ObservableObject
         ChartChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    private async Task BuildFromPresetAfterFarAsync(DateOnly far)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        try { await EnsureQuotesAsync(far, cts.Token); }
+        catch (OperationCanceledException) { return; }
+        if (!_active || !_quotesByExpiry.ContainsKey(far))
+        {
+            _lastError = _loc["St_BuildFailed"];
+            UpdateStatus();
+            return;
+        }
+        BuildFromPreset(force: true);
+    }
+
     private void RefreshLegQuotes()
     {
         foreach (var row in Legs)
         {
             if (row.Type == LegType.Stock) continue;
             if (!row.TryParseStrike(out var k)) continue;
-            var right = row.Type == LegType.Call ? ARight.Call : ARight.Put;
-            var q = _listed.FirstOrDefault(x => x.Right == right && Math.Abs(x.Strike - k) < 1e-8);
+            DateOnly? exp = null;
+            if (DateOnly.TryParse(row.ExpiryText, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d)
+                || DateOnly.TryParse(row.ExpiryText, System.Globalization.CultureInfo.CurrentCulture, System.Globalization.DateTimeStyles.None, out d))
+                exp = d;
+            var q = FindQuote(row.Type, k, exp);
             if (q.Strike <= 0) continue;
             row.SetQuotes(q.Premium, q.ImpliedVolatility);
         }
@@ -471,6 +517,15 @@ public partial class StrategyViewModel : ObservableObject
         }
         Recompute();
         ChartChanged?.Invoke(this, EventArgs.Empty);
+        _ = FillThenRecomputeAsync();
+    }
+
+    private async Task FillThenRecomputeAsync()
+    {
+        try { await FillLegQuotesAsync(); }
+        catch (OperationCanceledException) { return; }
+        Recompute();
+        ChartChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void Recompute()
@@ -484,8 +539,10 @@ public partial class StrategyViewModel : ObservableObject
         {
             if (strategy is null && Legs.Count == 0)
             {
-                Curve = null; ExpiryAnalysis = null; HasCurve = false;
+                Curve = null; ExpiryAnalysis = null; HasCurve = false; _compiled = null;
                 CostText = MaxProfitText = MaxLossText = BreakevenText = "";
+                StrategySummaryText = CapitalText = CapitalDetailText = MaxProfitConditionText = MaxLossConditionText = BreakevenConditionText = "";
+                ResetWhatIfAfterRecompute();
                 if (_lastError is null) StatusText = err ?? _loc["St_NoLegs"];
             }
             else if (err is not null) StatusText = err;
@@ -496,8 +553,12 @@ public partial class StrategyViewModel : ObservableObject
         {
             var analysis = strategy!.HasMixedExpiries ? null : strategy.AnalyzeAtExpiry();
             ExpiryAnalysis = analysis;
+            _compiled = strategy;
             var spot = Spot ?? (strategy.Strikes.Count > 0 ? strategy.Strikes[strategy.Strikes.Count / 2] : 100);
             var (lo, hi) = strategy.SuggestPriceRange(spot);
+            ChartLow = lo;
+            ChartHigh = hi;
+            RebuildRuler(snapPrice: false);
             var usedDefaultIv = strategy.Legs.Any(l => l.IsOption && !l.HasImpliedVolatility);
             var nowVal = new StrategyValuation(DateTimeOffset.Now, _inputs.Rate.Rate, _inputs.DividendYield) { DefaultVolatility = DefaultVolatility };
             StrategyValuation? overlay = nowVal;
@@ -508,6 +569,7 @@ public partial class StrategyViewModel : ObservableObject
                 if (strategy.EarliestExpiry is { } e && target >= e) overlay = null;
                 else overlay = StrategyValuation.AtDate(target, _inputs.Rate.Rate, _inputs.DividendYield) with { DefaultVolatility = DefaultVolatility };
             }
+            _whatIfValuation = overlay;
             var curve = strategy.Curve(lo, hi, 251, overlay);
             ExpiryCurveLabel = _loc[strategy.HasMixedExpiries ? "St_FirstExpiryCurve" : "St_ExpiryCurve"];
             if (strategy.HasMixedExpiries)
@@ -519,13 +581,15 @@ public partial class StrategyViewModel : ObservableObject
             Curve = curve;
             HasCurve = Curve.Prices.Length > 1;
             CostText = FormatCost(strategy.NetCost);
-            MaxProfitText = analysis is null ? "—" : FormatBound(analysis.MaxProfit, analysis.MaxProfitPrice, unbounded: analysis.IsMaxProfitUnbounded);
-            MaxLossText = analysis is null ? "—" : FormatBound(analysis.MaxLoss, analysis.MaxLossPrice, unbounded: analysis.IsMaxLossUnbounded);
+            MaxProfitText = analysis is null ? "—" : FormatBound(analysis.MaxProfit, at: null, unbounded: analysis.IsMaxProfitUnbounded);
+            MaxLossText = analysis is null ? "—" : FormatBound(analysis.MaxLoss, at: null, unbounded: analysis.IsMaxLossUnbounded);
             BreakevenText = analysis is null || analysis.Breakevens.Count == 0
                 ? "—"
                 : string.Join("  ·  ", analysis.Breakevens.Select(b => NumberDisplay.Price(b)));
             if (analysis is not null && double.IsFinite(analysis.RewardToRisk))
                 RewardText = string.Format(_loc["St_RewardRisk"], analysis.RewardToRisk);
+            PublishResults(strategy, analysis);
+            ResetWhatIfAfterRecompute();
             if (Spot is { } s && overlay is { } val)
             {
                 var g = strategy.GreeksAt(s, val);
@@ -548,6 +612,8 @@ public partial class StrategyViewModel : ObservableObject
         {
             AppLog.Warn("strategy", "valuation failed", ex);
             HasCurve = false;
+            _compiled = null;
+            ResetWhatIfAfterRecompute();
             StatusText = ex.Message;
         }
     }
@@ -602,6 +668,8 @@ public partial class StrategyViewModel : ObservableObject
             Expirations.Clear();
             foreach (var d in dates) Expirations.Add(new ExpirationChoice(d, FormatExp(d)));
             SelectedExpiration = Expirations.FirstOrDefault(e => e.Date == keep) ?? Expirations.FirstOrDefault();
+            SyncFarExpirations();
+            UpdateExpirationWarning();
         }
         finally { _suppress = false; }
     }
@@ -632,8 +700,18 @@ public partial class StrategyViewModel : ObservableObject
         LivePriceText = u.Live;
         DelayText = _hdrChain is { } c ? FreshnessText.ChainTiming(c, _loc, now) : "";
         HasDelay = DelayText.Length > 0;
-        if (_hasChain && _lastError is null && _hdrChain is { } ch)
-            StatusText = string.Format(_loc["St_Source"], SourceNames.Display(ch.Source, _loc), _listed.Count);
+        if (_hasChain && _hdrChain is { } ch)
+            SourceText = string.Format(_loc["St_Source"], SourceNames.Display(ch.Source, _loc), _listed.Count);
+        else
+            SourceText = "";
+        if (_lastError is null)
+            StatusText = "";
+        UpdateExpirationWarning();
+    }
+
+    private void UpdateExpirationWarning()
+    {
+        IsExpirationToday = SelectedExpiration is { } e && OptionTime.DaysToExpiry(e.Date, DateTimeOffset.Now) == 0;
     }
 
     private void UpdateStatus()
