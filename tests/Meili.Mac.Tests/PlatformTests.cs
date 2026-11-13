@@ -15,7 +15,7 @@ public class PlatformTests : IDisposable
     [Fact]
     public void Bundle_parent_is_the_folder_holding_the_app()
     {
-        var exe = Path.Combine(_root, "美丽稻谷终端.app", "Contents", "MacOS") + "/";
+        var exe = Path.Combine(_root, "EasySellPut.app", "Contents", "MacOS") + "/";
         Assert.Equal(_root, MacDataDirectory.BundleParent(exe));
         Assert.Equal(Path.Combine(_root, "bin"), MacDataDirectory.BundleParent(Path.Combine(_root, "bin")));
     }
@@ -27,7 +27,7 @@ public class PlatformTests : IDisposable
         Directory.CreateDirectory(exe);
         var home = Path.Combine(_root, "home");
         var normal = MacDataDirectory.Resolve([], exe, home);
-        Assert.Equal(Path.Combine(home, "Library", "Application Support", "美丽稻谷终端"), normal.Path);
+        Assert.Equal(Path.Combine(home, "Library", "Application Support", "EasySellPut"), normal.Path);
         Assert.Equal(DataDirectorySource.LocalAppData, normal.Source);
 
         File.WriteAllText(Path.Combine(_root, DataDirectoryResolver.PortableFlagFile), "");

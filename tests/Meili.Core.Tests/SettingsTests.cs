@@ -129,6 +129,46 @@ public class DataDirectoryResolverTests : IDisposable
     }
 
     [Fact]
+    public void MigratesPreviousAppFolderWhenPossible()
+    {
+        var lad = Path.Combine(Path.GetTempPath(), "tyu-lad-" + Guid.NewGuid().ToString("N"));
+        var previous = Path.Combine(lad, DataDirectoryResolver.PreviousAppFolderName);
+        var modern = Path.Combine(lad, DataDirectoryResolver.AppFolderName);
+        Directory.CreateDirectory(previous);
+        File.WriteAllText(Path.Combine(previous, "settings.json"), "{ }");
+        try
+        {
+            var r = DataDirectoryResolver.Resolve([], _exe, lad);
+            Assert.Equal(modern, r.Path);
+            Assert.True(File.Exists(Path.Combine(modern, "settings.json")));
+            Assert.False(Directory.Exists(previous));
+        }
+        finally { try { Directory.Delete(lad, true); } catch { } }
+    }
+
+    [Fact]
+    public void PrefersPreviousFolderOverOlderLegacyWhenModernMissing()
+    {
+        var lad = Path.Combine(Path.GetTempPath(), "tyu-lad-" + Guid.NewGuid().ToString("N"));
+        var previous = Path.Combine(lad, DataDirectoryResolver.PreviousAppFolderName);
+        var legacy = Path.Combine(lad, DataDirectoryResolver.LegacyAppFolderName);
+        var modern = Path.Combine(lad, DataDirectoryResolver.AppFolderName);
+        Directory.CreateDirectory(previous);
+        Directory.CreateDirectory(legacy);
+        File.WriteAllText(Path.Combine(previous, "settings.json"), "prev");
+        File.WriteAllText(Path.Combine(legacy, "settings.json"), "old");
+        try
+        {
+            var r = DataDirectoryResolver.Resolve([], _exe, lad);
+            Assert.Equal(modern, r.Path);
+            Assert.Equal("prev", File.ReadAllText(Path.Combine(modern, "settings.json")));
+            Assert.True(Directory.Exists(legacy));
+        }
+        finally { try { Directory.Delete(lad, true); } catch { } }
+    }
+
+
+    [Fact]
     public void PrefersModernFolderIfBothExist()
     {
         var lad = Path.Combine(Path.GetTempPath(), "tyu-lad-" + Guid.NewGuid().ToString("N"));

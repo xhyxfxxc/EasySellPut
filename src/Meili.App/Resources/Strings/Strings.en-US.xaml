@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-    <sys:String x:Key="App_Title">Meili Daogu Seller Green-Bubble Group Terminal</sys:String>
+    <sys:String x:Key="App_Title">EasySellPut</sys:String>
     <sys:String x:Key="App_Subtitle">US stocks · ETFs · Options — free multi-source data with automatic failover</sys:String>
 
     <sys:String x:Key="Nav_Dashboard">Overview</sys:String>
@@ -27,7 +27,7 @@
     <sys:String x:Key="Status_DataDir">Data folder</sys:String>
     <sys:String x:Key="Status_Proxy">Network</sys:String>
 
-    <sys:String x:Key="Dash_Welcome">Welcome to Meili Daogu Seller Green-Bubble Group Terminal</sys:String>
+    <sys:String x:Key="Dash_Welcome">Welcome to EasySellPut</sys:String>
     <sys:String x:Key="Dash_WelcomeBody">Live quotes, K-line charts, option chains with Greeks, strategy P/L, alerts and export — all from free sources that need no account. If one source fails, the next one takes over automatically.</sys:String>
     <sys:String x:Key="Dash_Watchlist">My watchlist</sys:String>
     <sys:String x:Key="Dash_Market">Market overview</sys:String>
@@ -74,7 +74,7 @@
     <sys:String x:Key="Set_DataDirDesc">Settings, watchlist and caches live here. Override with --data-dir, or put portable.flag next to the exe for portable mode</sys:String>
     <sys:String x:Key="Set_OpenFolder">Open folder</sys:String>
     <sys:String x:Key="Set_About">About</sys:String>
-    <sys:String x:Key="Set_AboutDesc">Data comes from public endpoints of Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney. It may be delayed, interrupted or wrong. For personal reference only, not investment advice. Free public sources do not provide Level 2 order book (bid/ask depth) or tick-by-tick trades, so the app shows last price, volume and bars only. Follow each source's terms and do not redistribute the data commercially. Closing the main window hides the app in the tray; right-click the tray icon and choose Exit to quit.</sys:String>
+    <sys:String x:Key="Set_AboutDesc">Data comes from public endpoints of Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney. It may be delayed, interrupted or wrong. For reference only, not investment advice. Free public sources do not provide Level 2 order book (bid/ask depth) or tick-by-tick trades, so the app shows last price, volume and bars only. Follow each source's terms and do not redistribute the data commercially. Closing the main window hides the app in the tray; right-click the tray icon and choose Exit to quit.</sys:String>
     <sys:String x:Key="Set_Company">Meili Daogu</sys:String>
     <sys:String x:Key="Set_Version">Version</sys:String>
 
@@ -633,11 +633,11 @@
     <sys:String x:Key="Dash_NoProxyBody">No data source is reachable and no local proxy was found. Overseas sources usually need a proxy from mainland China: start Clash or a similar tool and click Re-detect proxy, or enter a proxy in Settings. Prices below are the last ones received.</sys:String>
     <sys:String x:Key="Dash_OpenSettings">Open settings</sys:String>
     <sys:String x:Key="Net_FromMac">from macOS proxy setting</sys:String>
-    <sys:String x:Key="Mac_AppShort">Meili Terminal</sys:String>
-    <sys:String x:Key="Menu_About">About Meili Terminal</sys:String>
+    <sys:String x:Key="Mac_AppShort">EasySellPut</sys:String>
+    <sys:String x:Key="Menu_About">About EasySellPut</sys:String>
     <sys:String x:Key="Menu_Settings">Settings…</sys:String>
-    <sys:String x:Key="Menu_Hide">Hide Meili Terminal</sys:String>
-    <sys:String x:Key="Menu_Quit">Quit Meili Terminal</sys:String>
+    <sys:String x:Key="Menu_Hide">Hide EasySellPut</sys:String>
+    <sys:String x:Key="Menu_Quit">Quit EasySellPut</sys:String>
     <sys:String x:Key="Menu_File">File</sys:String>
     <sys:String x:Key="Menu_Export">Export Current Table…</sys:String>
     <sys:String x:Key="Menu_View">View</sys:String>

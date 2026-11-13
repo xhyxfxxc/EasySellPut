@@ -9,7 +9,7 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 out=${1:-$root/artifacts/mac}
 rcodesign=${RCODESIGN:-rcodesign}
-name="美丽稻谷卖方绿泡群专用终端"
+name="EasySellPut"
 version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$root/Directory.Build.props")
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT

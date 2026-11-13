@@ -16,7 +16,7 @@ if (-not $env:DOTNET_ROOT) {
     . (Join-Path $Root "tools\env.ps1")
 }
 
-$ProductName = "美丽稻谷卖方绿泡群专用终端"
+$ProductName = "EasySellPut"
 $ExeFileName = "$ProductName.exe"
 $PortableLabel = "$ProductName-便携版"
 $SetupLabel = "$ProductName-安装程序"
@@ -109,17 +109,17 @@ if (-not (Test-Path $Iscc)) { throw "ISCC.exe not found at $Iscc" }
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
 
 $readme = @"
-美丽稻谷卖方绿泡群专用终端（版本 $Version）
+EasySellPut（版本 $Version）
 ================================
 
 本目录有两种使用方式，请任选其一。都不必使用管理员权限。
 
 1）安装包
     文件：${SetupLabel}.exe
-    双击运行即可安装到当前用户目录（%LOCALAPPDATA%\Programs\美丽稻谷终端）。
+    双击运行即可安装到当前用户目录（%LOCALAPPDATA%\Programs\EasySellPut）。
     可选择是否创建桌面快捷方式。开始菜单和“应用和功能”里显示的名称都是「$ProductName」。
     卸载也可在系统设置的应用列表中完成。
-    设置和自选数据保存在 %LOCALAPPDATA%\美丽稻谷终端，卸载时默认保留。
+    设置和自选数据保存在 %LOCALAPPDATA%\EasySellPut，卸载时默认保留。
 
 2）便携版（免安装）
     推荐：解压「${PortableLabel}.zip」，或直接打开「$PortableLabel」文件夹，双击「$ExeFileName」。
@@ -127,7 +127,7 @@ $readme = @"
 
 使用提示
     关闭主窗口会最小化到托盘，并不会退出。要退出，请右键点击托盘图标，选择「退出」。
-    本软件仅供个人参考，不构成投资建议。行情和期权数据来自第三方公开接口，可能延迟或不准确。
+    本软件仅作参考，不构成投资建议。行情和期权数据来自第三方公开接口，可能延迟或不准确。
     免费公开源不提供 Level 2 盘口（买卖档位）和逐笔成交，因此本软件不显示这两类数据。
 
 公司：美丽稻谷
@@ -153,26 +153,26 @@ Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
 1. 解压「${PortableLabel}.zip」，或直接使用同目录下的「$PortableLabel」文件夹。
 2. 双击文件夹里的「$ExeFileName」运行。
 3. 设置、自选、提醒保存在该文件夹的 data\ 目录；整个文件夹可拷到 U 盘或其他电脑继续使用。
-4. 请勿删除 portable.flag，否则数据会改存到 %LOCALAPPDATA%\美丽稻谷终端。
+4. 请勿删除 portable.flag，否则数据会改存到 %LOCALAPPDATA%\EasySellPut。
 5. 关闭主窗口会最小化到托盘；要退出请右键托盘图标选择「退出」。
 6. 访问海外行情（Yahoo、CBOE 等）需要本机代理（如 Clash），程序会自动检测。
 
 系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
-本软件仅供个人参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
+本软件仅作参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
 "@
 Copy-Item (Join-Path $DistDir "${SetupLabel}.exe") $SetupOut
 Write-Utf8 (Join-Path $SetupOut "使用说明.txt") @"
 「$ProductName」Windows 安装版（$Version）。
 
-1. 双击「${SetupLabel}.exe」，按提示安装。只安装到当前用户（%LOCALAPPDATA%\Programs\美丽稻谷终端），不需要管理员权限。
+1. 双击「${SetupLabel}.exe」，按提示安装。只安装到当前用户（%LOCALAPPDATA%\Programs\EasySellPut），不需要管理员权限。
 2. 可选创建桌面快捷方式；开始菜单里的名称为「$ProductName」。
-3. 设置和自选数据保存在 %LOCALAPPDATA%\美丽稻谷终端，卸载时默认保留。
+3. 设置和自选数据保存在 %LOCALAPPDATA%\EasySellPut，卸载时默认保留。
 4. 卸载：系统设置 → 应用 → 已安装的应用 → 「$ProductName」→ 卸载。
 5. 关闭主窗口会最小化到托盘；要退出请右键托盘图标选择「退出」。
 6. 访问海外行情（Yahoo、CBOE 等）需要本机代理（如 Clash），程序会自动检测。
 
 系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
-本软件仅供个人参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
+本软件仅作参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
 "@
 Write-Host "=== artifacts ==="
 Get-ChildItem $DistDir, $Installers -Recurse -File | Where-Object { $_.FullName -notmatch '\\data\\' } | ForEach-Object {

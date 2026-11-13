@@ -102,7 +102,7 @@ public partial class App : Application
             Directory.CreateDirectory(log);
             File.AppendAllText(Path.Combine(log, "crash.log"), $"[{DateTime.Now:O}] {e.Exception}{Environment.NewLine}{Environment.NewLine}");
             AppLog.Error("app", "unhandled UI exception (see crash.log)", e.Exception);
-            var title = TryFindResource("App_Title") as string ?? "美丽稻谷卖方绿泡群专用终端";
+            var title = TryFindResource("App_Title") as string ?? "EasySellPut";
             var message = e.Exception.Message;
             Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
             {

@@ -9,8 +9,8 @@ symlinks: Finder's Archive Utility restores both, and an executable that lost it
 """
 import os, plistlib, shutil, stat, sys, zipfile
 
-DISPLAY_NAME = "美丽稻谷卖方绿泡群专用终端"
-SHORT_NAME = "美丽稻谷终端"          # CFBundleName: menu-bar app menu, ≤ 15 characters
+DISPLAY_NAME = "EasySellPut"
+SHORT_NAME = "EasySellPut"          # CFBundleName: menu-bar app menu, ≤ 15 characters
 BUNDLE_ID = "com.meilidaogu.terminal"
 EXECUTABLE = "MeiliMac"
 

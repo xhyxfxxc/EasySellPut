@@ -6,10 +6,10 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Version>0.4.2</Version>
     <Company>美丽稻谷</Company>
-    <Product>美丽稻谷卖方绿泡群专用终端</Product>
-    <AssemblyTitle>美丽稻谷卖方绿泡群专用终端</AssemblyTitle>
-    <FileDescription>美丽稻谷卖方绿泡群专用终端</FileDescription>
-    <Copyright>Personal use</Copyright>
+    <Product>EasySellPut</Product>
+    <AssemblyTitle>EasySellPut</AssemblyTitle>
+    <FileDescription>EasySellPut</FileDescription>
+    <Copyright>Copyright (c) 2026 Carl Yu</Copyright>
     <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>

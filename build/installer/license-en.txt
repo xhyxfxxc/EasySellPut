@@ -1,9 +1,17 @@
-﻿Meili Daogu Seller Green-Bubble Group Terminal
+﻿EasySellPut
 
-This software is provided by Meili Daogu for personal study and reference only. It is not investment advice.
+This software is licensed under the MIT License. Copyright (c) 2026 Carl Yu.
+You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, subject to the MIT License. The full terms are in the
+LICENSE file in the project repository.
 
-Quotes, options, news and fundamentals come from third-party public endpoints (including but not limited to Yahoo Finance, CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney). Data may be delayed, interrupted or incorrect. You use this software at your own risk.
+This software is not investment advice. Quotes, options, news and fundamentals
+come from third-party public endpoints (including but not limited to Yahoo Finance,
+CBOE, Nasdaq, CNBC, SEC, Sina, Tencent and Eastmoney). Data may be delayed,
+interrupted or incorrect. You use this software at your own risk.
 
-Please follow each data source's terms of use. Do not redistribute data obtained through this software commercially.
+Please follow each data source's terms of use. Do not redistribute data obtained
+through this software commercially.
 
-Closing the main window hides the app in the system tray. To quit, right-click the tray icon and choose Exit.
+Closing the main window hides the app in the system tray. To quit, right-click
+the tray icon and choose Exit.

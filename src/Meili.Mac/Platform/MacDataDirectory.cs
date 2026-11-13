@@ -4,7 +4,7 @@ namespace Meili.Mac.Platform;
 
 /// <summary>
 /// Where the Mac app keeps its data: <c>--data-dir</c>; else <c>data/</c> next to the .app when a <c>portable.flag</c>
-/// sits beside it; else <c>~/Library/Application Support/美丽稻谷终端</c>.
+/// sits beside it; else <c>~/Library/Application Support/EasySellPut</c>.
 /// </summary>
 public static class MacDataDirectory
 {

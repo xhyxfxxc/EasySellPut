@@ -1,10 +1,10 @@
-﻿; Per-user installer for 美丽稻谷卖方绿泡群专用终端.
+﻿; Per-user installer for EasySellPut.
 ; Compile with tools\InnoSetup\ISCC.exe. No "tyu" in visible names.
-#define MyAppName "美丽稻谷卖方绿泡群专用终端"
-#define MyAppNameEn "Meili Daogu Seller Green-Bubble Group Terminal"
+#define MyAppName "EasySellPut"
+#define MyAppNameEn "EasySellPut"
 #define MyAppPublisher "美丽稻谷"
 #define MyAppVersion "0.4.2"
-#define MyAppExeName "美丽稻谷卖方绿泡群专用终端.exe"
+#define MyAppExeName "EasySellPut.exe"
 #define MyAppAumid "MeiliDaogu.SellerTerminal"
 
 [Setup]
@@ -13,19 +13,19 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-AppCopyright=Personal use
+AppCopyright=Copyright (c) 2026 Carl Yu
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoProductName={#MyAppName}
 VersionInfoDescription={#MyAppName}
-VersionInfoCopyright=Personal use
-DefaultDirName={localappdata}\Programs\美丽稻谷终端
+VersionInfoCopyright=Copyright (c) 2026 Carl Yu
+DefaultDirName={localappdata}\Programs\EasySellPut
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\..\dist
-OutputBaseFilename=美丽稻谷卖方绿泡群专用终端-安装程序
+OutputBaseFilename=EasySellPut-安装程序
 SetupIconFile=..\..\src\Meili.App\Assets\app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
