@@ -89,7 +89,7 @@ $portableReadme = @"
 1. 把本文件夹整份拷到任意位置（例如 U 盘或文档目录）。
 2. 双击「$ExeFileName」即可运行，无需安装，也不需要管理员权限。
 3. 设置、自选和提醒会保存在本文件夹里的 data\ 目录，不会写入系统安装位置。
-4. 关闭主窗口会最小化到托盘。要退出程序，请右键点击托盘图标，选择「退出」。
+4. 关闭主窗口会退出程序。若希望点关闭时最小化到托盘，可在设置中更改。
 
 请勿删除同目录下的 portable.flag，否则程序会改用当前用户的本地数据目录。
 "@
@@ -126,7 +126,7 @@ EasySellPut（版本 $Version）
     没有 portable.flag 时，便携版 exe 会改用上面的当前用户数据目录。
 
 使用提示
-    关闭主窗口会最小化到托盘，并不会退出。要退出，请右键点击托盘图标，选择「退出」。
+    关闭主窗口会退出程序。若希望点关闭时最小化到托盘，可在设置中更改。
     本软件仅作参考，不构成投资建议。行情和期权数据来自第三方公开接口，可能延迟或不准确。
     免费公开源不提供 Level 2 盘口（买卖档位）和逐笔成交，因此本软件不显示这两类数据。
 
@@ -135,16 +135,14 @@ EasySellPut（版本 $Version）
 Write-Utf8 (Join-Path $DistDir "使用说明.txt") $readme
 
 Write-Host "=== Installers ==="
-# Hand-out folder for the user: one subfolder per edition. Regenerated on every pack (gitignored like dist\).
+# Each edition lives under Installers\1 or \2, but every build goes into a version subfolder
+# (e.g. 1-Windows便携版\0.5.0). Never delete the parent folders or older versions.
 $Installers = Join-Path $Root "Installers"
-$PortableOut = Join-Path $Installers "1-Windows便携版"
-$SetupOut = Join-Path $Installers "2-Windows安装版"
-# Only replace folders 1 and 2. A Windows pack must not delete the macOS portable build in folder 3.
-New-Item -ItemType Directory -Force -Path $Installers | Out-Null
-foreach ($dir in @($PortableOut, $SetupOut)) {
-    if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
-    New-Item -ItemType Directory -Force -Path $dir | Out-Null
-}
+$PortableOut = Join-Path $Installers (Join-Path "1-Windows便携版" $Version)
+$SetupOut = Join-Path $Installers (Join-Path "2-Windows安装版" $Version)
+New-Item -ItemType Directory -Force -Path $PortableOut, $SetupOut | Out-Null
+# Re-packing the same version may replace that version folder only.
+Get-ChildItem $PortableOut, $SetupOut -Force | Remove-Item -Recurse -Force
 Copy-Item $PortableDir (Join-Path $PortableOut $PortableLabel) -Recurse
 Copy-Item $portableZip $PortableOut
 Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
@@ -154,7 +152,7 @@ Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
 2. 双击文件夹里的「$ExeFileName」运行。
 3. 设置、自选、提醒保存在该文件夹的 data\ 目录；整个文件夹可拷到 U 盘或其他电脑继续使用。
 4. 请勿删除 portable.flag，否则数据会改存到 %LOCALAPPDATA%\EasySellPut。
-5. 关闭主窗口会最小化到托盘；要退出请右键托盘图标选择「退出」。
+5. 关闭主窗口会退出程序。若希望点关闭时最小化到托盘，可在设置中更改。
 6. 访问海外行情（Yahoo、CBOE 等）需要本机代理（如 Clash），程序会自动检测。
 
 系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
@@ -168,7 +166,7 @@ Write-Utf8 (Join-Path $SetupOut "使用说明.txt") @"
 2. 可选创建桌面快捷方式；开始菜单里的名称为「$ProductName」。
 3. 设置和自选数据保存在 %LOCALAPPDATA%\EasySellPut，卸载时默认保留。
 4. 卸载：系统设置 → 应用 → 已安装的应用 → 「$ProductName」→ 卸载。
-5. 关闭主窗口会最小化到托盘；要退出请右键托盘图标选择「退出」。
+5. 关闭主窗口会退出程序。若希望点关闭时最小化到托盘，可在设置中更改。
 6. 访问海外行情（Yahoo、CBOE 等）需要本机代理（如 Clash），程序会自动检测。
 
 系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。

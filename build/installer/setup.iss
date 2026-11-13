@@ -3,7 +3,7 @@
 #define MyAppName "EasySellPut"
 #define MyAppNameEn "EasySellPut"
 #define MyAppPublisher "美丽稻谷"
-#define MyAppVersion "0.4.2"
+#define MyAppVersion "0.5.0"
 #define MyAppExeName "EasySellPut.exe"
 #define MyAppAumid "MeiliDaogu.SellerTerminal"
 

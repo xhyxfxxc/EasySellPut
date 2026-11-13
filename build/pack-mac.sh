@@ -14,7 +14,10 @@ version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$root/Directory.Build.p
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-mkdir -p "$out"
+# Each build goes into a version subfolder (e.g. artifacts/mac/0.5.0 or Installers/3-macOS便携版/0.5.0).
+# Never delete $out — older versions in sibling folders must stay untouched.
+dest="$out/$version"
+mkdir -p "$dest"
 python3 "$root/build/mac/make_icon.py" "$work/AppIcon.icns"
 cp "$root/build/mac/使用说明.txt" "$work/使用说明.txt"
 
@@ -30,9 +33,9 @@ for arch in arm64 x64; do
   "$rcodesign" sign "$app" >/dev/null
   python3 "$root/build/mac/verify_sig.py" "$app"
   if grep -rlaE "tyuStock|Users/tyu|Users\\\\tyu" "$app"; then echo "personal path leaked into the bundle" >&2; exit 1; fi
-  zip="$out/$name-macOS-$arch.zip"
-  [ "$arch" = arm64 ] && zip="$out/$name-macOS.zip"      # main package: Apple silicon
+  zip="$dest/$name-macOS-$arch.zip"
+  [ "$arch" = arm64 ] && zip="$dest/$name-macOS.zip"      # main package: Apple silicon
   python3 "$root/build/mac/bundle.py" zip "$zip" "$work/使用说明.txt" "$app"
   echo "$zip $(stat -c %s "$zip")"
 done
-cp "$work/使用说明.txt" "$out/使用说明.txt"
+cp "$work/使用说明.txt" "$dest/使用说明.txt"
