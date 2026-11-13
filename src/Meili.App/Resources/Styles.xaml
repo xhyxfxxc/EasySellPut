@@ -16,20 +16,23 @@
     <sys:Double x:Key="TitleFontSize">20</sys:Double>
     <sys:Double x:Key="DisplayFontSize">28</sys:Double>
 
-    <SolidColorBrush x:Key="UpBrush" Color="#E5484D" />
-    <SolidColorBrush x:Key="DownBrush" Color="#22A06B" />
-    <SolidColorBrush x:Key="UpBackgroundBrush" Color="#1AE5484D" />
-    <SolidColorBrush x:Key="DownBackgroundBrush" Color="#1A22A06B" />
-    <!-- E1: health/status colours are neutral (blue / amber / slate / grey) so they never read as "up" or "down",
-         whichever up/down colour convention is active. State is also shown by an icon and a word. -->
-    <SolidColorBrush x:Key="HealthyBrush" Color="#3B82D6" />
-    <SolidColorBrush x:Key="DegradedBrush" Color="#B07408" />
-    <SolidColorBrush x:Key="DownStateBrush" Color="#7A8594" />
-    <SolidColorBrush x:Key="UnknownBrush" Color="#8A8A8A" />
-    <!-- E4: fill of small warning tags (stale quote) behind #1A1A1A text; ThemeService re-tones the brushes above per theme. -->
-    <SolidColorBrush x:Key="StaleBadgeBrush" Color="#D99A1E" />
-    <!-- E4: ATM / flashing row fill; readable with the theme's primary text (the accent fill was not). -->
-    <SolidColorBrush x:Key="RowHighlightBrush" Color="#3E2F48" />
+    <!-- Defaults match ThemePalette.Dark; ThemeService overwrites every key after a theme apply. -->
+    <SolidColorBrush x:Key="UpBrush" Color="#CC8E8A" />
+    <SolidColorBrush x:Key="DownBrush" Color="#6EAA8A" />
+    <SolidColorBrush x:Key="UpBackgroundBrush" Color="#1ACC8E8A" />
+    <SolidColorBrush x:Key="DownBackgroundBrush" Color="#1A6EAA8A" />
+    <!-- Health/status colours are neutral so they never read as "up" or "down". State is also shown by an icon and a word. -->
+    <SolidColorBrush x:Key="HealthyBrush" Color="#7EA6C0" />
+    <SolidColorBrush x:Key="DegradedBrush" Color="#C4A46A" />
+    <SolidColorBrush x:Key="DownStateBrush" Color="#9A958C" />
+    <SolidColorBrush x:Key="UnknownBrush" Color="#9A958C" />
+    <SolidColorBrush x:Key="StaleBadgeBrush" Color="#C4A46A" />
+    <SolidColorBrush x:Key="BadgeTextBrush" Color="#1A1816" />
+    <SolidColorBrush x:Key="RowHighlightBrush" Color="#35322E" />
+    <SolidColorBrush x:Key="ItmBrush" Color="#22C4B3D4" />
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#1F1D1B" />
+    <SolidColorBrush x:Key="ErrorBarBrush" Color="#3A2A28" />
+    <SolidColorBrush x:Key="InfoBarBrush" Color="#2C2A28" />
 
     <Style x:Key="PageTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="{StaticResource DisplayFontSize}" />

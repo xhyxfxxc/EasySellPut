@@ -12,7 +12,7 @@
         Icon="avares://MeiliMac/Assets/app-256.png">
     <Grid RowDefinitions="*,Auto" ColumnDefinitions="220,*">
         <!-- Navigation (⌘1…⌘9 in this order) -->
-        <DockPanel Grid.Row="0" Grid.Column="0" Background="{DynamicResource LayerFillColorDefaultBrush}">
+        <DockPanel Grid.Row="0" Grid.Column="0" Background="{DynamicResource SidebarBackgroundBrush}">
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8" Spacing="6">
                 <Button x:Name="LanguageButton" Classes="Subtle" MinWidth="40" FontWeight="SemiBold"
                         Content="{DynamicResource Title_LanguageButton}" ToolTip.Tip="{DynamicResource Title_ToggleLanguage}"

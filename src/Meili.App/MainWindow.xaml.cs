@@ -28,7 +28,16 @@ public partial class MainWindow : FluentWindow
         InitializeComponent();
         DataContext = AppServices.Get<ShellViewModel>();
         RestorePlacement();
-        RootNavigation.Loaded += (_, _) => RootNavigation.Navigate(StartPageFromArgs() ?? typeof(DashboardPage));
+        RootNavigation.Loaded += (_, _) =>
+        {
+            // The pane template is transparent over the window; paint it with the slightly darker sidebar token.
+            if (RootNavigation.Template?.FindName("PaneGrid", RootNavigation) is System.Windows.FrameworkElement pane)
+            {
+                pane.SetResourceReference(System.Windows.Controls.Panel.BackgroundProperty, "SidebarBackgroundBrush");
+                pane.Margin = new Thickness(0);
+            }
+            RootNavigation.Navigate(StartPageFromArgs() ?? typeof(DashboardPage));
+        };
         Loaded += (_, _) =>
         {
             // System theme watching needs a loaded window handle.

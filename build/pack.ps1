@@ -20,7 +20,8 @@ $ProductName = "美丽稻谷卖方绿泡群专用终端"
 $ExeFileName = "$ProductName.exe"
 $PortableLabel = "$ProductName-便携版"
 $SetupLabel = "$ProductName-安装程序"
-$Version = "0.4.1"
+[xml]$props = Get-Content (Join-Path $Root "Directory.Build.props")
+$Version = ([string]$props.Project.PropertyGroup.Version).Trim()
 
 $PublishDir = Join-Path $Root "build\out\publish"
 $PayloadDir = Join-Path $Root "build\out\payload"
@@ -137,9 +138,12 @@ Write-Host "=== Installers ==="
 $Installers = Join-Path $Root "Installers"
 $PortableOut = Join-Path $Installers "1-Windows便携版"
 $SetupOut = Join-Path $Installers "2-Windows安装版"
-$MacOut = Join-Path $Installers "3-macOS便携版"
-if (Test-Path $Installers) { Remove-Item $Installers -Recurse -Force }
-New-Item -ItemType Directory -Force -Path $PortableOut, $SetupOut, $MacOut | Out-Null
+# Only replace folders 1 and 2. A Windows pack must not delete the macOS portable build in folder 3.
+New-Item -ItemType Directory -Force -Path $Installers | Out-Null
+foreach ($dir in @($PortableOut, $SetupOut)) {
+    if (Test-Path $dir) { Remove-Item $dir -Recurse -Force }
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+}
 Copy-Item $PortableDir (Join-Path $PortableOut $PortableLabel) -Recurse
 Copy-Item $portableZip $PortableOut
 Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
@@ -169,13 +173,6 @@ Write-Utf8 (Join-Path $SetupOut "使用说明.txt") @"
 系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
 本软件仅供个人参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
 "@
-Write-Utf8 (Join-Path $MacOut "README.txt") @"
-「$ProductName」macOS 便携版（macOS 26 及以上）——尚未提供。
-
-macOS 版将作为单独一步制作：复用与平台无关的 Meili.Core / Meili.Data / Meili.Analytics，
-另做 macOS 界面，并针对 macOS 26 的差异、显示性能和防卡死/崩溃专门测试。完成后会放在本文件夹。
-"@
-
 Write-Host "=== artifacts ==="
 Get-ChildItem $DistDir, $Installers -Recurse -File | Where-Object { $_.FullName -notmatch '\\data\\' } | ForEach-Object {
     "{0,12:N0}  {1}" -f $_.Length, $_.FullName.Replace($Root + '\', '')

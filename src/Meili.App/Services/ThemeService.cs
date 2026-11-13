@@ -76,27 +76,34 @@ public sealed class ThemeService : IThemeController
     /// <summary>Raised after the up/down and health brushes were replaced; view models holding one re-fetch it.</summary>
     public static event EventHandler? ColorsChanged;
 
-    /// <summary>E4: price and health colours are re-toned per theme so text keeps a 4.5:1 contrast on both.</summary>
+    /// <summary>
+    /// Writes the 0.4.2 palette over WPF-UI's Fluent brushes (which Apply resets to #202020/#FFFFFF) and then
+    /// the semantic tones. Called from <see cref="ApplicationThemeManager.Changed"/> so it always runs after Apply,
+    /// including a change the system watcher makes on its own. Never copies resources onto a window (0.4.1 fix).
+    /// </summary>
     public static void ApplySemanticColors(bool dark)
     {
-        var p = SemanticPalette.For(dark);
-        var up = _upDown == UpDownColorMode.RedUp ? p.Red : p.Green;
-        var down = _upDown == UpDownColorMode.RedUp ? p.Green : p.Red;
-        Set("UpBrush", up);
-        Set("DownBrush", down);
-        Set("UpBackgroundBrush", Color.FromArgb(SemanticPalette.TintAlpha, up.R, up.G, up.B));
-        Set("DownBackgroundBrush", Color.FromArgb(SemanticPalette.TintAlpha, down.R, down.G, down.B));
-        Set("HealthyBrush", p.Healthy);
-        Set("DegradedBrush", p.Degraded);
-        Set("DownStateBrush", p.DownState);
-        Set("UnknownBrush", p.Unknown);
-        Set("RowHighlightBrush", p.RowHighlight);
-        // E4 final pass: a translucent ITM shade shows on plain and highlighted rows in both themes (the WPF-UI
-        // secondary fill is near-white in light mode), and placeholders keep 4.5:1 even on hovered dark inputs.
-        Set("ItmBrush", p.ItmTint);
-        Set("TextControlPlaceholderForeground", p.Placeholder);
+        var p = ThemePalette.For(dark);
+        foreach (var (key, argb) in p.ResourceBrushes())
+            Set(key, C(argb));
+        var (up, down) = p.UpDown(_upDown);
+        Set("UpBrush", C(up));
+        Set("DownBrush", C(down));
+        Set("UpBackgroundBrush", C(ThemePalette.Tint(up)));
+        Set("DownBackgroundBrush", C(ThemePalette.Tint(down)));
+        Set("HealthyBrush", C(p.Healthy));
+        Set("DegradedBrush", C(p.Degraded));
+        Set("DownStateBrush", C(p.DownState));
+        Set("UnknownBrush", C(p.Unknown));
+        Set("RowHighlightBrush", C(p.RowHighlight));
+        Set("ItmBrush", C(p.ItmTint));
+        Application.Current.Resources["ApplicationBackgroundColor"] = C(p.Window);
+        Application.Current.Resources["SystemAccentColor"] = C(p.Accent);
+        Application.Current.Resources["SystemAccentColorPrimary"] = C(p.Accent);
         ColorsChanged?.Invoke(null, EventArgs.Empty);
     }
+
+    private static Color C(uint argb) => Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);
 
     // WPF freezes brushes held in application resources, so each change installs a new brush.
     private static void Set(string key, Color color)
@@ -119,7 +126,7 @@ public sealed record SemanticPalette(Color Red, Color Green, Color Healthy, Colo
     public static readonly SemanticPalette Light = From(SemanticColors.Light);
     public static readonly SemanticPalette Dark = From(SemanticColors.Dark);
 
-    /// <summary>Badge fill behind dark (#1A1A1A) text, e.g. the "stale" tag; the same in both themes.</summary>
+    /// <summary>Badge fill behind BadgeText, e.g. the stale-quote tag; the same in both themes.</summary>
     public static readonly Color Badge = C(SemanticColors.Badge);
 
     /// <summary>Alpha of the up/down tag fills behind up/down text.</summary>

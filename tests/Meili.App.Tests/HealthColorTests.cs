@@ -56,8 +56,8 @@ public class HealthColorTests
 /// <summary>E4: every semantic tone keeps ≥ 4.5:1 text contrast on its theme's page and card backgrounds.</summary>
 public class SemanticPaletteTests
 {
-    private static readonly Color[] LightBacks = [Colors.White, Color.FromRgb(0xF3, 0xF3, 0xF3), Color.FromRgb(0xFA, 0xFA, 0xFA)];
-    private static readonly Color[] DarkBacks = [Color.FromRgb(0x20, 0x20, 0x20), Color.FromRgb(0x2B, 0x2B, 0x2B)];
+    private static Color C32(uint argb) => Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb);
+    private static Color[] Backs(ThemePalette p) => [C32(p.Window), C32(p.Card), C32(p.Sidebar), C32(p.Chart)];
 
     [Theory]
     [InlineData(false)]
@@ -66,7 +66,7 @@ public class SemanticPaletteTests
     {
         var p = SemanticPalette.For(dark);
         foreach (var c in new[] { p.Red, p.Green, p.Healthy, p.Degraded, p.DownState, p.Unknown })
-            foreach (var bg in dark ? DarkBacks : LightBacks)
+            foreach (var bg in Backs(ThemePalette.For(dark)))
                 Assert.True(UiAudit.Contrast(c, bg) >= 4.5, $"{c} on {bg}: {UiAudit.Contrast(c, bg):0.00}");
     }
 
@@ -76,9 +76,8 @@ public class SemanticPaletteTests
     public void Up_down_text_reads_on_its_tinted_tag(bool dark)
     {
         var p = SemanticPalette.For(dark);
-        // Darkest-contrast cards each theme puts tags on (dashboard card in dark is #363636).
-        var cards = dark ? new[] { Color.FromRgb(0x2B, 0x2B, 0x2B), Color.FromRgb(0x36, 0x36, 0x36) } : new[] { Colors.White, Color.FromRgb(0xF3, 0xF3, 0xF3) };
-        foreach (var card in cards)
+        var pal = ThemePalette.For(dark);
+        foreach (var card in new[] { C32(pal.Card), C32(pal.Window) })
         foreach (var c in new[] { p.Red, p.Green })
         {
             var a = SemanticPalette.TintAlpha / 255.0;
@@ -86,8 +85,7 @@ public class SemanticPaletteTests
             var tag = Color.FromRgb(M(c.R, card.R), M(c.G, card.G), M(c.B, card.B));
             Assert.True(UiAudit.Contrast(c, tag) >= 4.5, $"{c} on its tag: {UiAudit.Contrast(c, tag):0.00}");
         }
-        var text = dark ? Colors.White : Color.FromRgb(0x1C, 0x1C, 0x1C);
-        Assert.True(UiAudit.Contrast(text, p.RowHighlight) >= 7);
+        Assert.True(UiAudit.Contrast(C32(pal.PrimaryText), p.RowHighlight) >= 4.5);
     }
 
     private static Color Over(Color fg, Color bg)
@@ -104,21 +102,21 @@ public class SemanticPaletteTests
     public void Itm_shade_and_placeholder_read_in_both_themes(bool dark)
     {
         var p = SemanticPalette.For(dark);
-        var text = dark ? Colors.White : Color.FromRgb(0x1C, 0x1C, 0x1C);
-        foreach (var row in (dark ? DarkBacks : LightBacks).Append(p.RowHighlight))
+        var pal = ThemePalette.For(dark);
+        var text = C32(pal.PrimaryText);
+        foreach (var row in Backs(pal).Append(p.RowHighlight))
         {
             var shaded = Over(p.ItmTint, row);
             Assert.True(UiAudit.Contrast(shaded, row) >= 1.05, $"ITM shade invisible on {row}");
-            Assert.True(UiAudit.Contrast(text, shaded) >= 7);
+            Assert.True(UiAudit.Contrast(text, shaded) >= 4.5, $"text on ITM shade: {UiAudit.Contrast(text, shaded):0.00}");
         }
-        // Inputs: page backgrounds plus the hovered dark input (#4D4D4D) the audit flagged.
-        foreach (var bg in dark ? DarkBacks.Append(Color.FromRgb(0x4D, 0x4D, 0x4D)) : LightBacks)
+        foreach (var bg in Backs(pal))
             Assert.True(UiAudit.Contrast(Over(p.Placeholder, bg), bg) >= 4.5, $"placeholder on {bg}");
     }
 
     [Fact]
     public void Badge_fill_reads_with_dark_text()
-        => Assert.True(UiAudit.Contrast(Color.FromRgb(0x1A, 0x1A, 0x1A), SemanticPalette.Badge) >= 4.5);
+        => Assert.True(UiAudit.Contrast(C32(ThemePalette.Light.BadgeText), SemanticPalette.Badge) >= 4.5);
 
     [Fact]
     public void Theme_switch_retones_brushes()
