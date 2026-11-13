@@ -4,3 +4,4 @@
 *.zip binary
 *.gz binary
 tests/**/Fixtures/** -text
+*.sh text eol=lf

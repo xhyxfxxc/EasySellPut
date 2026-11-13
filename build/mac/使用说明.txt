@@ -3,8 +3,8 @@ EasySellPut —— macOS 便携版 使用说明
 
 一、适用系统与选哪个包
   · 需要 macOS 26（Tahoe）或更新版本。
-  · Apple 芯片（M1/M2/M3/M4/M5 等）：用「EasySellPut-macOS.zip」。
-  · Intel 芯片的 Mac：用「EasySellPut-macOS-x64.zip」。
+  · Apple 芯片（M1/M2/M3/M4/M5 等）：用「EasySellPut-__VERSION__-macos-arm64.zip」。
+  · Intel 芯片的 Mac：用「EasySellPut-__VERSION__-macos-x64.zip」。
     （macOS 26 是最后一个支持 Intel 的版本。）
   · 不确定是哪种芯片：点屏幕左上角苹果菜单 → 关于本机，看“芯片”或“处理器”一栏。
 

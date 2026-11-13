@@ -23,10 +23,12 @@ $SetupLabel = "$ProductName-安装程序"
 # Read the version with a regex so a missing XML declaration or the Chinese metadata in the props file cannot break [xml].
 $Version = ([regex]::Match((Get-Content (Join-Path $Root "Directory.Build.props") -Raw), "<Version>([^<]+)</Version>")).Groups[1].Value
 if (-not $Version) { throw "Version not found in Directory.Build.props" }
+$PortablePackage = "$ProductName-$Version-windows-portable"
+$SetupPackage = "$ProductName-$Version-windows-installer"
 
 $PublishDir = Join-Path $Root "build\out\publish"
 $PayloadDir = Join-Path $Root "build\out\payload"
-$PortableDir = Join-Path $Root "dist\$PortableLabel"
+$PortableDir = Join-Path $Root "dist\$PortablePackage"
 $DistDir = Join-Path $Root "dist"
 $Iscc = Join-Path $Root "tools\InnoSetup\ISCC.exe"
 $AppProj = Join-Path $Root "src\Meili.App\Meili.App.csproj"
@@ -95,12 +97,12 @@ $portableReadme = @"
 "@
 Write-Utf8 (Join-Path $PortableDir "使用说明.txt") $portableReadme
 
-$portableZip = Join-Path $DistDir "$PortableLabel.zip"
+$portableZip = Join-Path $DistDir "$PortablePackage.zip"
 if (Test-Path $portableZip) { Remove-Item $portableZip -Force }
 # Zip the folder contents so extracting yields the exe and flag at the top level of the named folder.
 Push-Location $DistDir
 try {
-    Compress-Archive -Path $PortableLabel -DestinationPath $portableZip -CompressionLevel Optimal
+    Compress-Archive -Path $PortablePackage -DestinationPath $portableZip -CompressionLevel Optimal
 } finally { Pop-Location }
 
 Write-Host "=== Inno Setup installer ==="
@@ -115,14 +117,14 @@ EasySellPut（版本 $Version）
 本目录有两种使用方式，请任选其一。都不必使用管理员权限。
 
 1）安装包
-    文件：${SetupLabel}.exe
+    文件：${SetupPackage}.exe
     双击运行即可安装到当前用户目录（%LOCALAPPDATA%\Programs\EasySellPut）。
     可选择是否创建桌面快捷方式。开始菜单和“应用和功能”里显示的名称都是「$ProductName」。
     卸载也可在系统设置的应用列表中完成。
     设置和自选数据保存在 %LOCALAPPDATA%\EasySellPut，卸载时默认保留。
 
 2）便携版（免安装）
-    推荐：解压「${PortableLabel}.zip」，或直接打开「$PortableLabel」文件夹，双击「$ExeFileName」。
+    推荐：解压「${PortablePackage}.zip」，或直接打开「$PortablePackage」文件夹，双击「$ExeFileName」。
     没有 portable.flag 时，便携版 exe 会改用上面的当前用户数据目录。
 
 使用提示
@@ -135,20 +137,21 @@ EasySellPut（版本 $Version）
 Write-Utf8 (Join-Path $DistDir "使用说明.txt") $readme
 
 Write-Host "=== Installers ==="
-# Each edition lives under Installers\1 or \2, but every build goes into a version subfolder
-# (e.g. 1-Windows便携版\0.5.0). Never delete the parent folders or older versions.
+# Each edition lives under Installers\1 or \2, but every build goes into a
+# package-named version folder (e.g. 1-Windows便携版\EasySellPut-0.5.0-windows-portable).
+# Never delete the parent folders or older versions.
 $Installers = Join-Path $Root "Installers"
-$PortableOut = Join-Path $Installers (Join-Path "1-Windows便携版" $Version)
-$SetupOut = Join-Path $Installers (Join-Path "2-Windows安装版" $Version)
+$PortableOut = Join-Path $Installers (Join-Path "1-Windows便携版" $PortablePackage)
+$SetupOut = Join-Path $Installers (Join-Path "2-Windows安装版" $SetupPackage)
 New-Item -ItemType Directory -Force -Path $PortableOut, $SetupOut | Out-Null
 # Re-packing the same version may replace that version folder only.
 Get-ChildItem $PortableOut, $SetupOut -Force | Remove-Item -Recurse -Force
-Copy-Item $PortableDir (Join-Path $PortableOut $PortableLabel) -Recurse
-Copy-Item $portableZip $PortableOut
+Copy-Item $PortableDir (Join-Path $PortableOut $PortablePackage) -Recurse
+Copy-Item $portableZip (Join-Path $PortableOut "$PortablePackage.zip")
 Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
 「$ProductName」Windows 便携版（$Version），免安装，不需要管理员权限。
 
-1. 解压「${PortableLabel}.zip」，或直接使用同目录下的「$PortableLabel」文件夹。
+1. 解压「${PortablePackage}.zip」，或直接使用同目录下的「$PortablePackage」文件夹。
 2. 双击文件夹里的「$ExeFileName」运行。
 3. 设置、自选、提醒保存在该文件夹的 data\ 目录；整个文件夹可拷到 U 盘或其他电脑继续使用。
 4. 请勿删除 portable.flag，否则数据会改存到 %LOCALAPPDATA%\EasySellPut。
@@ -158,11 +161,11 @@ Write-Utf8 (Join-Path $PortableOut "使用说明.txt") @"
 系统要求：Windows 10 2004 及以上（推荐 Windows 11），64 位。
 本软件仅作参考，不构成投资建议。免费公开源不提供 Level 2 盘口和逐笔成交。
 "@
-Copy-Item (Join-Path $DistDir "${SetupLabel}.exe") $SetupOut
+Copy-Item (Join-Path $DistDir "${SetupLabel}.exe") (Join-Path $SetupOut "$SetupPackage.exe")
 Write-Utf8 (Join-Path $SetupOut "使用说明.txt") @"
 「$ProductName」Windows 安装版（$Version）。
 
-1. 双击「${SetupLabel}.exe」，按提示安装。只安装到当前用户（%LOCALAPPDATA%\Programs\EasySellPut），不需要管理员权限。
+1. 双击「${SetupPackage}.exe」，按提示安装。只安装到当前用户（%LOCALAPPDATA%\Programs\EasySellPut），不需要管理员权限。
 2. 可选创建桌面快捷方式；开始菜单里的名称为「$ProductName」。
 3. 设置和自选数据保存在 %LOCALAPPDATA%\EasySellPut，卸载时默认保留。
 4. 卸载：系统设置 → 应用 → 已安装的应用 → 「$ProductName」→ 卸载。
