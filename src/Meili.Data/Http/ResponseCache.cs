@@ -29,17 +29,34 @@ public sealed class ResponseCache
     public void Remove(string key) => _entries.TryRemove(key, out _);
     public void Clear() => _entries.Clear();
 
+    /// <remarks>
+    /// The shared request is detached from its callers: it runs with <see cref="CancellationToken.None"/>, stores its own
+    /// result and removes its own in-flight entry. A caller's <paramref name="ct"/> only ends that caller's wait, so one
+    /// page navigating away cannot cancel the request another page is sharing.
+    /// </remarks>
     public async Task<T> GetOrAddAsync<T>(string key, TimeSpan ttl, Func<CancellationToken, Task<T>> factory, CancellationToken ct = default) where T : notnull
     {
         if (TryGet<T>(key, out var hit)) return hit;
-        var lazy = _inflight.GetOrAdd(key, _ => new Lazy<Task<object>>(async () => (object)(await factory(ct).ConfigureAwait(false))));
+        var lazy = _inflight.GetOrAdd(key, _ => NewShared(key, ttl, factory));
+        return (T)await lazy.Value.WaitAsync(ct).ConfigureAwait(false);
+    }
+
+    private Lazy<Task<object>> NewShared<T>(string key, TimeSpan ttl, Func<CancellationToken, Task<T>> factory) where T : notnull
+    {
+        Lazy<Task<object>>? self = null;
+        self = new Lazy<Task<object>>(() => RunSharedAsync(key, ttl, factory, self!));
+        return self;
+    }
+
+    private async Task<object> RunSharedAsync<T>(string key, TimeSpan ttl, Func<CancellationToken, Task<T>> factory, Lazy<Task<object>> self) where T : notnull
+    {
         try
         {
-            var value = (T)await lazy.Value.ConfigureAwait(false);
+            var value = await factory(CancellationToken.None).ConfigureAwait(false);
             if (ttl > TimeSpan.Zero) Set(key, value, ttl);
             return value;
         }
-        finally { _inflight.TryRemove(new KeyValuePair<string, Lazy<Task<object>>>(key, lazy)); }
+        finally { _inflight.TryRemove(new KeyValuePair<string, Lazy<Task<object>>>(key, self)); }
     }
 
     private void Prune()
