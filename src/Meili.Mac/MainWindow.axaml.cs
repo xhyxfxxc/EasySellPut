@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private readonly Dictionary<AppPage, Control> _pages = [];
     private readonly DispatcherTimer _bannerTimer = new(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(12) };
     private bool _allowClose;
+    private bool _asking;
     private bool _syncingNav;
 
     public MainWindow()
@@ -217,7 +218,7 @@ public partial class MainWindow : Window
         WizardBox.Text = "";
     }
 
-    // ---------------- window life cycle (Mac convention) ----------------
+    // ---------------- window life cycle ----------------
 
     /// <summary>Called when the app really quits (⌘Q, menu, Dock › Quit, logout).</summary>
     public void AllowClose()
@@ -236,17 +237,48 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         if (_allowClose) return;
-        SavePlacement();
-        if (_options.ExitOnClose)
+        switch (CloseDecision.Decide(_settings.Current.CloseAction, exitRequested: false, _options.ExitOnClose))
         {
-            _allowClose = true;
-            Dispatcher.UIThread.Post(() => (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown());
-            return;
+            case CloseOutcome.Exit:
+                AllowClose();
+                Dispatcher.UIThread.Post(() => (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown());
+                return;
+            case CloseOutcome.HideToTray:
+                e.Cancel = true;
+                HideToDock();
+                return;
+            default:
+                e.Cancel = true;
+                if (!_asking) Dispatcher.UIThread.Post(() => _ = AskCloseActionAsync());
+                return;
         }
-        // The red close button hides the window; the app keeps running in the Dock and alerts keep working.
-        e.Cancel = true;
+    }
+
+    private void HideToDock()
+    {
+        SavePlacement();
         Hide();
         _notify.ShowHiddenHint();
+    }
+
+    private async System.Threading.Tasks.Task AskCloseActionAsync()
+    {
+        _asking = true;
+        try
+        {
+            var choice = await new CloseAskDialog().ShowDialog<CloseAction?>(this);
+            if (choice is null) return;
+            _settings.Update(s => s.CloseAction = choice.Value);
+            if (choice == CloseAction.Exit)
+            {
+                AllowClose();
+                Close();
+                Dispatcher.UIThread.Post(() => (Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown());
+            }
+            else
+                HideToDock();
+        }
+        finally { _asking = false; }
     }
 
     private void RestorePlacement()

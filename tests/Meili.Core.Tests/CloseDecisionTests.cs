@@ -16,11 +16,11 @@ public class CloseDecisionTests
         Assert.Equal(expected, CloseDecision.Decide(setting, exitRequested, exitOnClose));
 
     [Fact]
-    public void Default_is_ask_and_bad_values_are_reset()
+    public void Default_is_exit_and_bad_values_are_reset()
     {
-        Assert.Equal(CloseAction.Ask, new AppSettings().CloseAction);
+        Assert.Equal(CloseAction.Exit, new AppSettings().CloseAction);
         var s = new AppSettings { CloseAction = (CloseAction)42 }.Normalize();
-        Assert.Equal(CloseAction.Ask, s.CloseAction);
+        Assert.Equal(CloseAction.Exit, s.CloseAction);
     }
 
     [Fact]

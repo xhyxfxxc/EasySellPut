@@ -61,6 +61,23 @@
 </DockPanel>
 </Border>
 
+            <!-- Close button -->
+            <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
+<DockPanel>
+<StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0">
+                <ComboBox MinWidth="240" SelectedIndex="{Binding CloseActionIndex}" AutomationProperties.AutomationId="SettingsCloseAction">
+                    <ComboBoxItem Content="{DynamicResource Set_CloseAsk}" />
+                    <ComboBoxItem Content="{DynamicResource Close_ToTray}" />
+                    <ComboBoxItem Content="{DynamicResource Close_Exit}" />
+                </ComboBox>
+            </StackPanel>
+                    <StackPanel>
+                        <TextBlock Classes="CardTitle" Text="{DynamicResource Set_CloseAction}" />
+                        <TextBlock Classes="Caption" Text="{DynamicResource Set_CloseActionDesc}" TextWrapping="Wrap" />
+                    </StackPanel>
+</DockPanel>
+</Border>
+
             <!-- Network -->
             <TextBlock Classes="SectionTitle" Text="{DynamicResource Set_Network}" />
             <Border Classes="Card" Padding="16,12" Margin="0,0,0,4">
